@@ -8,6 +8,46 @@ import { steamId64ToAccountId } from './steam-id';
 const REQUEST_TIMEOUT_MS = 8_000;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const RECENT_MATCH_LIMIT = 20;
+export const HISTORY_PAGE_SIZE = 100;
+
+const HISTORY_PROJECT_FIELDS = [
+  'match_id',
+  'start_time',
+  'duration',
+  'radiant_win',
+  'game_mode',
+  'lobby_type',
+  'version',
+  'hero_id',
+  'hero_variant',
+  'player_slot',
+  'kills',
+  'deaths',
+  'assists',
+  'gold_per_min',
+  'xp_per_min',
+  'last_hits',
+  'denies',
+  'hero_damage',
+  'tower_damage',
+  'hero_healing',
+  'level',
+  'net_worth',
+  'leaver_status',
+  'party_size',
+  'lane',
+  'lane_role',
+  'is_roaming',
+  'average_rank',
+  'cluster',
+  'radiant_team_id',
+  'dire_team_id',
+  'leagueid',
+  'series_id',
+  'series_type',
+  'radiant_score',
+  'dire_score',
+] as const;
 
 type JsonObject = Record<string, unknown>;
 
@@ -116,6 +156,109 @@ export async function loadRecentMatches(
   return { accountId, matches };
 }
 
+export type ArchivedPlayerMatch = {
+  matchId: string;
+  startTime: number | null;
+  durationSeconds: number | null;
+  radiantWin: boolean;
+  gameMode: number | null;
+  lobbyType: number | null;
+  averageRank: number | null;
+  cluster: number | null;
+  version: number | null;
+  radiantTeamId: number | null;
+  direTeamId: number | null;
+  leagueId: number | null;
+  seriesId: number | null;
+  seriesType: number | null;
+  radiantScore: number | null;
+  direScore: number | null;
+  playerSlot: number;
+  heroId: number;
+  heroVariant: number | null;
+  kills: number | null;
+  deaths: number | null;
+  assists: number | null;
+  goldPerMinute: number | null;
+  xpPerMinute: number | null;
+  lastHits: number | null;
+  denies: number | null;
+  heroDamage: number | null;
+  towerDamage: number | null;
+  heroHealing: number | null;
+  level: number | null;
+  netWorth: number | null;
+  leaverStatus: number | null;
+  partySize: number | null;
+  lane: number | null;
+  laneRole: number | null;
+  isRoaming: boolean | null;
+};
+
+export type PlayerMatchesPage = {
+  accountId: number;
+  offset: number;
+  limit: number;
+  matches: ArchivedPlayerMatch[];
+  nextOffset: number;
+  hasMore: boolean;
+};
+
+export async function loadPlayerMatchesPage(
+  baseUrl: string,
+  accountId: number,
+  offset: number,
+  limit: number = HISTORY_PAGE_SIZE,
+  fetcher: typeof fetch = fetch,
+): Promise<PlayerMatchesPage> {
+  if (!Number.isSafeInteger(offset) || offset < 0) {
+    throw new OpenDotaError('Некорректный offset истории матчей', 400);
+  }
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > HISTORY_PAGE_SIZE) {
+    throw new OpenDotaError('Некорректный размер страницы истории матчей', 400);
+  }
+
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  for (const field of HISTORY_PROJECT_FIELDS) {
+    query.append('project', field);
+  }
+
+  const payload = await fetchOpenDotaJson(
+    baseUrl,
+    `/players/${accountId}/matches?${query.toString()}`,
+    fetcher,
+  );
+
+  if (!Array.isArray(payload)) {
+    throw new OpenDotaError('OpenDota вернула неожиданный формат истории', 502);
+  }
+
+  const matches: ArchivedPlayerMatch[] = [];
+  const seenMatchIds = new Set<string>();
+
+  for (const value of payload) {
+    const match = normalizeArchivedPlayerMatch(value);
+    if (!match || seenMatchIds.has(match.matchId)) {
+      continue;
+    }
+
+    seenMatchIds.add(match.matchId);
+    matches.push(match);
+  }
+
+  return {
+    accountId,
+    offset,
+    limit,
+    matches,
+    nextOffset: offset + payload.length,
+    hasMore: payload.length >= limit,
+  };
+}
+
 async function fetchOpenDotaJson(
   baseUrl: string,
   pathname: string,
@@ -189,4 +332,64 @@ function readNullableInteger(value: unknown): number | null {
 
 function readBoolean(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null;
+}
+
+function normalizeArchivedPlayerMatch(
+  value: unknown,
+): ArchivedPlayerMatch | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  const matchId = readInteger(value.match_id);
+  const playerSlot = readInteger(value.player_slot);
+  const heroId = readInteger(value.hero_id);
+  const radiantWin = readBoolean(value.radiant_win);
+  if (
+    matchId === null ||
+    playerSlot === null ||
+    heroId === null ||
+    radiantWin === null
+  ) {
+    return null;
+  }
+
+  return {
+    matchId: String(matchId),
+    startTime: readNullableInteger(value.start_time),
+    durationSeconds: readNullableInteger(value.duration),
+    radiantWin,
+    gameMode: readNullableInteger(value.game_mode),
+    lobbyType: readNullableInteger(value.lobby_type),
+    averageRank: readNullableInteger(value.average_rank),
+    cluster: readNullableInteger(value.cluster),
+    version: readNullableInteger(value.version),
+    radiantTeamId: readNullableInteger(value.radiant_team_id),
+    direTeamId: readNullableInteger(value.dire_team_id),
+    leagueId: readNullableInteger(value.leagueid),
+    seriesId: readNullableInteger(value.series_id),
+    seriesType: readNullableInteger(value.series_type),
+    radiantScore: readNullableInteger(value.radiant_score),
+    direScore: readNullableInteger(value.dire_score),
+    playerSlot,
+    heroId,
+    heroVariant: readNullableInteger(value.hero_variant),
+    kills: readNullableInteger(value.kills),
+    deaths: readNullableInteger(value.deaths),
+    assists: readNullableInteger(value.assists),
+    goldPerMinute: readNullableInteger(value.gold_per_min),
+    xpPerMinute: readNullableInteger(value.xp_per_min),
+    lastHits: readNullableInteger(value.last_hits),
+    denies: readNullableInteger(value.denies),
+    heroDamage: readNullableInteger(value.hero_damage),
+    towerDamage: readNullableInteger(value.tower_damage),
+    heroHealing: readNullableInteger(value.hero_healing),
+    level: readNullableInteger(value.level),
+    netWorth: readNullableInteger(value.net_worth),
+    leaverStatus: readNullableInteger(value.leaver_status),
+    partySize: readNullableInteger(value.party_size),
+    lane: readNullableInteger(value.lane),
+    laneRole: readNullableInteger(value.lane_role),
+    isRoaming: readBoolean(value.is_roaming),
+  };
 }

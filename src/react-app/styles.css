@@ -737,6 +737,107 @@
     margin: 0;
   }
 
+  .archive-sync {
+    margin-top: 34px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+
+  .archive-sync__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .archive-sync__status {
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    gap: 7px;
+    letter-spacing: 0.1em;
+  }
+
+  .archive-sync__status > span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--rust);
+  }
+
+  .archive-sync__status.is-ready > span {
+    background: var(--acid);
+    box-shadow: 0 0 10px rgba(198, 242, 74, 0.5);
+  }
+
+  .archive-sync h3 {
+    margin-top: 18px;
+    color: var(--paper);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .archive-sync p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+
+  .archive-sync p strong {
+    color: var(--paper);
+    font-weight: 600;
+  }
+
+  .archive-sync__button {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding: 0 16px;
+    background: var(--acid);
+    color: var(--ink);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: transform 160ms ease, opacity 160ms ease;
+  }
+
+  .archive-sync__button:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  .archive-sync__button:disabled {
+    cursor: wait;
+    opacity: 0.45;
+  }
+
+  .archive-sync__button > span:last-child {
+    font-size: 1rem;
+  }
+
+  .archive-sync__result,
+  .archive-sync__error {
+    font-family: var(--font-mono);
+    font-size: 0.6rem !important;
+  }
+
+  .archive-sync__result strong {
+    color: var(--acid) !important;
+  }
+
+  .archive-sync__error {
+    color: var(--error) !important;
+  }
+
   .match-list {
     border-top: 1px solid var(--line-strong);
   }

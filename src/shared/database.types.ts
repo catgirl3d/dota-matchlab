@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           backfill_complete: boolean
           backfill_offset: number
+          backfill_upper_bound_match_id: number | null
           consecutive_failures: number
           created_at: string
           dota_account_id: number
@@ -20,6 +21,8 @@ export type Database = {
           last_error_code: string | null
           last_error_message: string | null
           last_success_at: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
           newest_match_id: number | null
           next_retry_at: string | null
           oldest_match_id: number | null
@@ -29,6 +32,7 @@ export type Database = {
         Insert: {
           backfill_complete?: boolean
           backfill_offset?: number
+          backfill_upper_bound_match_id?: number | null
           consecutive_failures?: number
           created_at?: string
           dota_account_id: number
@@ -36,6 +40,8 @@ export type Database = {
           last_error_code?: string | null
           last_error_message?: string | null
           last_success_at?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
           newest_match_id?: number | null
           next_retry_at?: string | null
           oldest_match_id?: number | null
@@ -45,6 +51,7 @@ export type Database = {
         Update: {
           backfill_complete?: boolean
           backfill_offset?: number
+          backfill_upper_bound_match_id?: number | null
           consecutive_failures?: number
           created_at?: string
           dota_account_id?: number
@@ -52,6 +59,8 @@ export type Database = {
           last_error_code?: string | null
           last_error_message?: string | null
           last_success_at?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
           newest_match_id?: number | null
           next_retry_at?: string | null
           oldest_match_id?: number | null
@@ -332,6 +341,50 @@ export type Database = {
     }
     Functions: {
       app_healthcheck: { Args: never; Returns: Json }
+      apply_match_sync_page: {
+        Args: {
+          p_actor_user_id: string
+          p_backfill_complete: boolean
+          p_dota_account_id: number
+          p_lease_token: string
+          p_matches: Json
+          p_next_offset: number
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
+      apply_match_sync_page_with_boundary: {
+        Args: {
+          p_actor_user_id: string
+          p_backfill_complete: boolean
+          p_backfill_upper_bound_match_id: number
+          p_dota_account_id: number
+          p_lease_token: string
+          p_matches: Json
+          p_next_offset: number
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
+      claim_match_sync: {
+        Args: {
+          p_actor_user_id: string
+          p_lease_seconds?: number
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
+      record_match_sync_failure: {
+        Args: {
+          p_actor_user_id: string
+          p_dota_account_id: number
+          p_error_code: string
+          p_error_message: string
+          p_lease_token: string
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -464,3 +517,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

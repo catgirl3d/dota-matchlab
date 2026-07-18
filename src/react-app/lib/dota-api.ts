@@ -1,4 +1,5 @@
 import type { DotaPlayerProfile, RecentMatchesResponse } from '../../shared/dota';
+import type { MatchSyncResult } from '../../shared/match-archive';
 
 type ApiErrorPayload = {
   error?: unknown;
@@ -22,6 +23,17 @@ export async function fetchRecentMatches(
   return requestJson<RecentMatchesResponse>(
     `/api/dota/players/${accountId}/recent-matches`,
     token,
+  );
+}
+
+export async function syncTrackedAccount(
+  token: string,
+  trackedAccountId: string,
+): Promise<MatchSyncResult> {
+  return requestJson<MatchSyncResult>(
+    `/api/dota/tracked-accounts/${encodeURIComponent(trackedAccountId)}/matches/sync`,
+    token,
+    { method: 'POST' },
   );
 }
 

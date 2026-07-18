@@ -2,8 +2,14 @@ import { useAuth, useSession } from '@clerk/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import type { RecentDotaMatch } from '../../shared/dota';
-import { fetchRecentMatches, resolveSteamProfile } from '../lib/dota-api';
-import type { Tables } from '../lib/database.types';
+import type { MatchSyncResult } from '../../shared/match-archive';
+import {
+  fetchRecentMatches,
+  resolveSteamProfile,
+  syncTrackedAccount,
+} from '../lib/dota-api';
+import { ArchiveSyncPanel } from './ArchiveSyncPanel';
+import type { Tables } from '../../shared/database.types';
 import { calculateMatchSummary } from '../lib/match-summary';
 import { createUserSupabaseClient } from '../lib/supabase';
 
@@ -108,6 +114,32 @@ export function MatchWorkspace() {
     accounts.find((account) => account.dota_account_id === activeAccountId) ??
     null;
 
+  const archiveSync = useMutation({
+    mutationFn: async (trackedAccountId: string) => {
+      if (!session) {
+        throw new Error('Clerk session is not ready');
+      }
+
+      const token = await session.getToken();
+      if (!token) {
+        throw new Error('Не удалось получить Clerk JWT');
+      }
+
+      return syncTrackedAccount(token, trackedAccountId);
+    },
+  });
+
+  function handleSelectAccount(accountId: number) {
+    setSelectedAccountId(accountId);
+    archiveSync.reset();
+  }
+
+  const isArchiveSyncForActiveAccount =
+    archiveSync.variables === activeAccount?.id;
+  const archiveSyncResult: MatchSyncResult | undefined =
+    isArchiveSyncForActiveAccount ? archiveSync.data : undefined;
+  const archiveSyncError = isArchiveSyncForActiveAccount ? archiveSync.error : null;
+
   const matchesQuery = useQuery({
     queryKey: ['recent-matches', activeAccountId],
     enabled: Boolean(session && activeAccountId !== null),
@@ -181,7 +213,7 @@ export function MatchWorkspace() {
           <AccountRail
             accounts={accounts}
             activeAccountId={activeAccountId}
-            onSelect={setSelectedAccountId}
+            onSelect={handleSelectAccount}
           />
           <MatchAnalysis
             account={activeAccount}
@@ -190,6 +222,14 @@ export function MatchWorkspace() {
             error={matchesQuery.error}
             onRefresh={() => matchesQuery.refetch()}
             isRefreshing={matchesQuery.isFetching}
+            onSyncArchive={() => {
+              if (activeAccount) {
+                archiveSync.mutate(activeAccount.id);
+              }
+            }}
+            archiveSyncResult={archiveSyncResult}
+            archiveSyncError={archiveSyncError}
+            isArchiveSyncing={archiveSync.isPending}
           />
         </>
       )}
@@ -245,6 +285,10 @@ type MatchAnalysisProps = {
   isRefreshing: boolean;
   error: Error | null;
   onRefresh: () => void;
+  onSyncArchive: () => void;
+  archiveSyncResult?: MatchSyncResult;
+  archiveSyncError: Error | null;
+  isArchiveSyncing: boolean;
 };
 
 function MatchAnalysis({
@@ -254,6 +298,10 @@ function MatchAnalysis({
   isRefreshing,
   error,
   onRefresh,
+  onSyncArchive,
+  archiveSyncResult,
+  archiveSyncError,
+  isArchiveSyncing,
 }: MatchAnalysisProps) {
   if (isLoading) {
     return <WorkspaceMessage text="OpenDota собирает последние матчи…" />;
@@ -306,8 +354,15 @@ function MatchAnalysis({
             <dt>AVG GPM</dt>
             <dd>{summary.averageGpm}</dd>
           </div>
-        </dl>
-      </aside>
+          </dl>
+          <ArchiveSyncPanel
+            accountName={account?.persona_name ?? 'Dota player'}
+            result={archiveSyncResult}
+            isPending={isArchiveSyncing}
+            error={archiveSyncError}
+            onSync={onSyncArchive}
+          />
+        </aside>
 
       <div className="match-list" role="list" aria-label="Последние матчи">
         {matches.map((match) => (

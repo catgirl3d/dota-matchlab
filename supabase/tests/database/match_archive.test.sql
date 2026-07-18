@@ -143,12 +143,16 @@ delete from public.tracked_accounts
 where id = '00000000-0000-0000-0000-000000000101';
 
 select is(
-  (select count(*) from public.tracked_account_matches),
+  (select count(*)
+   from public.tracked_account_matches
+   where tracked_account_id = '00000000-0000-0000-0000-000000000101'),
   0::bigint,
   'deleting a tracked account removes its archive links'
 );
 select is(
-  (select count(*) from public.dota_matches),
+  (select count(*)
+   from public.dota_matches
+   where match_id in (9000000001, 9000000002)),
   2::bigint,
   'deleting a tracked account preserves deduplicated matches'
 );

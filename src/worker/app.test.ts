@@ -6,6 +6,7 @@ const testEnv: Env = {
     'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk',
   CLERK_SECRET_KEY: 'sk_test_example',
   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_example',
+  SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_example',
   SUPABASE_URL: 'https://example.supabase.co',
   OPENDOTA_BASE_URL: 'https://api.opendota.com/api',
 };
@@ -89,5 +90,19 @@ describe('protected Dota routes', () => {
 
     expect(response.status).toBe(401);
     expect(resolveDotaPlayer).not.toHaveBeenCalled();
+  });
+
+  it('rejects anonymous archive sync before calling the archive service', async () => {
+    const syncTrackedAccount = vi.fn();
+    const app = createApp({ syncTrackedAccount });
+
+    const response = await app.request(
+      'https://example.com/api/dota/tracked-accounts/00000000-0000-0000-0000-000000000202/matches/sync',
+      { method: 'POST' },
+      testEnv,
+    );
+
+    expect(response.status).toBe(401);
+    expect(syncTrackedAccount).not.toHaveBeenCalled();
   });
 });

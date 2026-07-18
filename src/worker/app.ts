@@ -4,6 +4,10 @@ import type { SystemHealth } from '../shared/health';
 import { checkSupabaseHealth } from './services/supabase-health';
 import { loadRecentMatches, OpenDotaError, resolveDotaPlayer } from './services/opendota';
 import {
+  MatchArchiveError,
+  syncTrackedAccount,
+} from './services/match-archive';
+import {
   resolveSteamProfileInput,
   SteamCommunityError,
 } from './services/steam-community';
@@ -12,6 +16,7 @@ import { InvalidSteamIdError, parseDotaAccountId } from './services/steam-id';
 type AppDependencies = {
   checkSupabase: typeof checkSupabaseHealth;
   loadRecentMatches: typeof loadRecentMatches;
+  syncTrackedAccount: typeof syncTrackedAccount;
   resolveDotaPlayer: typeof resolveDotaPlayer;
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
 };
@@ -19,6 +24,7 @@ type AppDependencies = {
 const defaultDependencies: AppDependencies = {
   checkSupabase: checkSupabaseHealth,
   loadRecentMatches,
+  syncTrackedAccount,
   resolveDotaPlayer,
   resolveSteamProfileInput,
 };
@@ -112,12 +118,38 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     return context.json(matches);
   });
 
+  app.post(
+    '/api/dota/tracked-accounts/:trackedAccountId/matches/sync',
+    async (context) => {
+      const auth = getAuth(context);
+      if (!auth.userId) {
+        return context.json({ error: 'Unauthorized' }, 401);
+      }
+
+      const trackedAccountId = context.req.param('trackedAccountId');
+      if (!isUuid(trackedAccountId)) {
+        return context.json({ error: 'Некорректный tracked account id' }, 400);
+      }
+
+      const result = await dependencies.syncTrackedAccount(
+        context.env,
+        auth.userId,
+        trackedAccountId,
+      );
+
+      return context.json(result);
+    },
+  );
+
   app.notFound((context) => context.json({ error: 'Not found' }, 404));
   app.onError((error, context) => {
     if (error instanceof InvalidSteamIdError) {
       return context.json({ error: error.message }, 400);
     }
     if (error instanceof OpenDotaError) {
+      return context.json({ error: error.message }, error.statusCode);
+    }
+    if (error instanceof MatchArchiveError) {
       return context.json({ error: error.message }, error.statusCode);
     }
     if (error instanceof SteamCommunityError) {
@@ -136,4 +168,10 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
   });
 
   return app;
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }

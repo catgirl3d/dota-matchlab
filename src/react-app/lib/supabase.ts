@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ClientConfig } from './config';
 import { clientConfig } from './config';
-import type { Database } from './database.types';
+import type { Database } from '../../shared/database.types';
 
 export type AccessTokenProvider = () => Promise<string | null>;
 
