@@ -9,6 +9,224 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_match_sync_state: {
+        Row: {
+          backfill_complete: boolean
+          backfill_offset: number
+          consecutive_failures: number
+          created_at: string
+          dota_account_id: number
+          last_attempt_at: string | null
+          last_error_code: string | null
+          last_error_message: string | null
+          last_success_at: string | null
+          newest_match_id: number | null
+          next_retry_at: string | null
+          oldest_match_id: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          backfill_complete?: boolean
+          backfill_offset?: number
+          consecutive_failures?: number
+          created_at?: string
+          dota_account_id: number
+          last_attempt_at?: string | null
+          last_error_code?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
+          newest_match_id?: number | null
+          next_retry_at?: string | null
+          oldest_match_id?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          backfill_complete?: boolean
+          backfill_offset?: number
+          consecutive_failures?: number
+          created_at?: string
+          dota_account_id?: number
+          last_attempt_at?: string | null
+          last_error_code?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
+          newest_match_id?: number | null
+          next_retry_at?: string | null
+          oldest_match_id?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dota_matches: {
+        Row: {
+          average_rank: number | null
+          cluster: number | null
+          created_at: string
+          detail_fetched_at: string | null
+          detail_status: string
+          dire_score: number | null
+          dire_team_id: number | null
+          duration: number | null
+          game_mode: number | null
+          league_id: number | null
+          lobby_type: number | null
+          match_id: number
+          radiant_score: number | null
+          radiant_team_id: number | null
+          radiant_win: boolean | null
+          series_id: number | null
+          series_type: number | null
+          source: string
+          source_fetched_at: string
+          start_time: number | null
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          average_rank?: number | null
+          cluster?: number | null
+          created_at?: string
+          detail_fetched_at?: string | null
+          detail_status?: string
+          dire_score?: number | null
+          dire_team_id?: number | null
+          duration?: number | null
+          game_mode?: number | null
+          league_id?: number | null
+          lobby_type?: number | null
+          match_id: number
+          radiant_score?: number | null
+          radiant_team_id?: number | null
+          radiant_win?: boolean | null
+          series_id?: number | null
+          series_type?: number | null
+          source?: string
+          source_fetched_at?: string
+          start_time?: number | null
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          average_rank?: number | null
+          cluster?: number | null
+          created_at?: string
+          detail_fetched_at?: string | null
+          detail_status?: string
+          dire_score?: number | null
+          dire_team_id?: number | null
+          duration?: number | null
+          game_mode?: number | null
+          league_id?: number | null
+          lobby_type?: number | null
+          match_id?: number
+          radiant_score?: number | null
+          radiant_team_id?: number | null
+          radiant_win?: boolean | null
+          series_id?: number | null
+          series_type?: number | null
+          source?: string
+          source_fetched_at?: string
+          start_time?: number | null
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
+      player_match_stats: {
+        Row: {
+          account_id: number
+          assists: number | null
+          created_at: string
+          deaths: number | null
+          denies: number | null
+          gold_per_min: number | null
+          hero_damage: number | null
+          hero_healing: number | null
+          hero_id: number | null
+          hero_variant: number | null
+          is_roaming: boolean | null
+          kills: number | null
+          lane: number | null
+          lane_role: number | null
+          last_hits: number | null
+          leaver_status: number | null
+          level: number | null
+          match_id: number
+          net_worth: number | null
+          party_size: number | null
+          player_slot: number | null
+          source_fetched_at: string
+          tower_damage: number | null
+          updated_at: string
+          xp_per_min: number | null
+        }
+        Insert: {
+          account_id: number
+          assists?: number | null
+          created_at?: string
+          deaths?: number | null
+          denies?: number | null
+          gold_per_min?: number | null
+          hero_damage?: number | null
+          hero_healing?: number | null
+          hero_id?: number | null
+          hero_variant?: number | null
+          is_roaming?: boolean | null
+          kills?: number | null
+          lane?: number | null
+          lane_role?: number | null
+          last_hits?: number | null
+          leaver_status?: number | null
+          level?: number | null
+          match_id: number
+          net_worth?: number | null
+          party_size?: number | null
+          player_slot?: number | null
+          source_fetched_at?: string
+          tower_damage?: number | null
+          updated_at?: string
+          xp_per_min?: number | null
+        }
+        Update: {
+          account_id?: number
+          assists?: number | null
+          created_at?: string
+          deaths?: number | null
+          denies?: number | null
+          gold_per_min?: number | null
+          hero_damage?: number | null
+          hero_healing?: number | null
+          hero_id?: number | null
+          hero_variant?: number | null
+          is_roaming?: boolean | null
+          kills?: number | null
+          lane?: number | null
+          lane_role?: number | null
+          last_hits?: number | null
+          leaver_status?: number | null
+          level?: number | null
+          match_id?: number
+          net_worth?: number | null
+          party_size?: number | null
+          player_slot?: number | null
+          source_fetched_at?: string
+          tower_damage?: number | null
+          updated_at?: string
+          xp_per_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_match_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "dota_matches"
+            referencedColumns: ["match_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -32,6 +250,39 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      tracked_account_matches: {
+        Row: {
+          discovered_at: string
+          match_id: number
+          tracked_account_id: string
+        }
+        Insert: {
+          discovered_at?: string
+          match_id: number
+          tracked_account_id: string
+        }
+        Update: {
+          discovered_at?: string
+          match_id?: number
+          tracked_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracked_account_matches_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "dota_matches"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "tracked_account_matches_tracked_account_id_fkey"
+            columns: ["tracked_account_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracked_accounts: {
         Row: {
