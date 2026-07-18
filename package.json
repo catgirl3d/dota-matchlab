@@ -1,0 +1,58 @@
+{
+  "name": "dota-matchlab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "test": "pnpm test:worker && pnpm test:frontend",
+    "test:worker": "vitest run --config vitest.config.ts",
+    "test:frontend": "vitest run --config vitest.frontend.config.ts",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && wrangler deploy --dry-run",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "db:push": "supabase db push --linked"
+  },
+  "dependencies": {
+    "@clerk/hono": "^0.1.53",
+    "@clerk/react": "^6.12.5",
+    "@supabase/supabase-js": "^2.110.7",
+    "@tanstack/react-query": "^5.101.2",
+    "hono": "^4.12.30",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.45.1",
+    "@cloudflare/vitest-pool-workers": "^0.18.6",
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "jsdom": "^29.1.1",
+    "supabase": "^2.109.1",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.64.0",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.112.0"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  }
+}

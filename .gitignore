@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+!.env.example
+coverage/
+worker-configuration.d.ts
+*.cpuprofile
+api-dota-2-*.json
+.history/*
+.kilo/agent-manager.json
