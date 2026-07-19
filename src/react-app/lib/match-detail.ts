@@ -345,7 +345,10 @@ function buildPlayer(
   const accountId = readInteger(raw.steamAccountId) ?? normalized?.account_id ?? null;
   const steamAccount = readObject(raw.steamAccount);
   const playbackData = readObject(playerPlayback?.playbackData) ?? playerPlayback;
-  const abilityNames = readAbilityNames(raw.abilities);
+  const abilityNames = mergeAbilityNames(
+    readAbilityNames(raw.abilities),
+    readAbilityNames(playerPlayback?.abilities),
+  );
   const playbackAbilities = readAbilityEvents(playbackData?.abilityLearnEvents, abilityNames);
   const fallbackAbilityBuild = readAbilityEvents(raw.abilities);
   const playbackPurchases = readPurchaseEvents(playbackData?.purchaseEvents);
@@ -465,6 +468,13 @@ function readAbilityNames(value: unknown): Map<number, string> {
     if (abilityId !== null && name !== null) names.set(abilityId, name);
   }
   return names;
+}
+
+function mergeAbilityNames(
+  detailNames: Map<number, string>,
+  playbackNames: Map<number, string>,
+): Map<number, string> {
+  return new Map([...playbackNames, ...detailNames]);
 }
 
 function buildRosterPlayers(

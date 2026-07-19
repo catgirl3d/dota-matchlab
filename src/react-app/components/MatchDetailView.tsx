@@ -4,8 +4,10 @@ import type {
   MatchDetailPlayer,
   MatchDetailSnapshot,
 } from '../lib/match-detail';
-import { getHeroIcon } from '../lib/hero-icons';
+import { getAbilityIcon } from '../lib/ability-icons';
 import { getItemIcon } from '../lib/item-icons';
+import { HeroMark } from './HeroMark';
+import { HeroPortrait } from './HeroPortrait';
 
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
@@ -176,16 +178,20 @@ export function MatchDetailView({
           <p className="detail-empty">Draft data is not available for this match.</p>
         ) : (
           <div className="detail-draft__sequence">
-            {detail.pickBans.map((entry, index) => (
-              <article
-                className={`detail-draft__entry ${entry.isPick ? 'is-pick' : 'is-ban'}`}
-                key={`${entry.order ?? index}-${entry.heroId}`}
-              >
-                <span>{entry.order ?? index + 1}</span>
-                <strong>{heroNames[entry.heroId] ?? `Hero #${entry.heroId}`}</strong>
-                <small>{entry.isPick ? 'PICK' : 'BAN'} · {entry.isRadiant === true ? 'R' : entry.isRadiant === false ? 'D' : '?'}</small>
-              </article>
-            ))}
+            {detail.pickBans.map((entry, index) => {
+              const label = heroNames[entry.heroId] ?? `Hero #${entry.heroId}`;
+              return (
+                <article
+                  className={`detail-draft__entry ${entry.isPick ? 'is-pick' : 'is-ban'}`}
+                  key={`${entry.order ?? index}-${entry.heroId}`}
+                >
+                  <span>{entry.order ?? index + 1}</span>
+                  <HeroMark heroId={entry.heroId} label={label} fallback={label.slice(0, 2).toUpperCase()} className="detail-draft__hero-mark" />
+                  <strong>{label}</strong>
+                  <small>{entry.isPick ? 'PICK' : 'BAN'} · {entry.isRadiant === true ? 'R' : entry.isRadiant === false ? 'D' : '?'}</small>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
@@ -284,7 +290,7 @@ function ChatMessage({
   return (
     <article className={`chat-message ${message.isRadiant === true ? 'is-radiant' : message.isRadiant === false ? 'is-dire' : ''}`}>
       <time>{formatEventTime(message.time)}</time>
-      <HeroMark heroId={message.heroId} heroNames={heroNames} />
+      <MatchDetailHeroMark heroId={message.heroId} heroNames={heroNames} />
       <div>
         <strong>{message.playerName ?? formatAccount(message.accountId)}</strong>
         <span>{heroLabel(message.heroId, heroNames)}</span>
@@ -338,7 +344,7 @@ function TeamRoster({
           className={`scoreboard-player${player.accountId === currentAccountId ? ' is-current' : ''}`}
           key={player.key}
         >
-          <HeroMark heroId={player.heroId} heroNames={heroNames} />
+          <MatchDetailHeroMark heroId={player.heroId} heroNames={heroNames} />
           <div className="scoreboard-player__identity">
             <strong>{player.name ?? formatAccount(player.accountId)}</strong>
             <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
@@ -439,9 +445,9 @@ function PlayerBuild({
       className={`player-build${highlighted ? ' is-current' : ''}`}
       aria-current={highlighted ? 'true' : undefined}
       aria-label={`Build for ${player.name ?? formatAccount(player.accountId)}`}
-    >
+      >
       <div className="player-build__header">
-        <HeroMark heroId={player.heroId} heroNames={heroNames} />
+        <TeamBuildHeroPortrait heroId={player.heroId} heroNames={heroNames} />
         <div>
           <strong>{player.name ?? formatAccount(player.accountId)}</strong>
           <span>{heroLabel(player.heroId, heroNames)} · {player.level} lvl</span>
@@ -459,12 +465,7 @@ function PlayerBuild({
       </div>
       <div className="player-build__progression">
           <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={abilityEvents} total={player.abilityBuild.length}>
-            {(ability, index) => (
-              <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : ''}`} key={`${ability.time}-${ability.abilityId}-${index}`} title={formatAbilityName(ability.name, ability.abilityId)}>
-                <strong>{ability.isTalent ? 'TALENT' : formatAbilityName(ability.name, ability.abilityId)}</strong>
-                <small>{formatEventTime(ability.time)} · L{ability.level + 1}</small>
-              </span>
-            )}
+            {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
           </BuildTimeline>
           <BuildTimeline label="PURCHASES" emptyLabel="No purchase events" unavailableLabel="Purchase progression unavailable." available={player.hasPurchaseEventsData} events={purchaseEvents} total={player.purchaseEvents.length}>
             {(purchase, index) => (
@@ -566,13 +567,25 @@ function ItemToken({ itemId, tone }: { itemId: number; tone?: 'backpack' | 'neut
   );
 }
 
-function HeroMark({ heroId, heroNames }: { heroId: number | null; heroNames: Record<number, string> }) {
+function MatchDetailHeroMark({ heroId, heroNames }: { heroId: number | null; heroNames: Record<number, string> }) {
   const label = heroLabel(heroId, heroNames);
-  const hero = heroId === null ? null : getHeroIcon(heroId, label);
+  return <HeroMark heroId={heroId} label={label} fallback={heroMark(heroId, heroNames)} className="scoreboard-player__hero" />;
+}
+
+function TeamBuildHeroPortrait({ heroId, heroNames }: { heroId: number | null; heroNames: Record<number, string> }) {
+  const label = heroLabel(heroId, heroNames);
+  return <HeroPortrait heroId={heroId} label={label} fallback={heroMark(heroId, heroNames)} className="player-build__portrait" />;
+}
+
+function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][number] }) {
+  const abilityIcon = ability.isTalent ? null : getAbilityIcon(ability.name);
+  const label = ability.isTalent ? 'Talent' : abilityIcon ? formatAbilityName(ability.name, ability.abilityId) : `Ability #${ability.abilityId}`;
+  const timing = `${formatEventTime(ability.time)} · level ${ability.level + 1}`;
 
   return (
-    <span className="scoreboard-player__hero" aria-hidden="true">
-      {hero ? <img className="scoreboard-player__hero-image" src={hero.src} alt="" title={hero.label} /> : heroMark(heroId, heroNames)}
+    <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : abilityIcon ? ' build-timeline__token--ability' : ''}`} role="img" aria-label={`${label}, ${timing}`} title={label}>
+      {ability.isTalent ? <strong>TALENT</strong> : abilityIcon ? <img className="build-timeline__ability-icon" src={abilityIcon.src} alt="" /> : <strong>{label}</strong>}
+      <small>{formatEventTime(ability.time)} · L{ability.level + 1}</small>
     </span>
   );
 }

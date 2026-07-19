@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import type { Tables } from '../../shared/database.types';
 import type { ArchiveSnapshot } from '../lib/archive';
+import { HeroMark } from './HeroMark';
 import type { MatchSyncProgress } from '../lib/dota-api';
 import {
   calculateArchiveAnalytics,
@@ -453,9 +454,12 @@ function HeroPool({
       {heroes.length === 0 ? <span className="breakdown-list__empty">No hero data</span> : null}
       {heroes.map((hero) => (
         <div className="hero-pool__row" key={hero.heroId}>
-          <span className="hero-pool__portrait" aria-hidden="true">
-            {hero.label.slice(0, 2).toUpperCase()}
-          </span>
+          <HeroMark
+            heroId={hero.heroId}
+            label={hero.label}
+            fallback={hero.label.slice(0, 2).toUpperCase()}
+            className="hero-pool__portrait"
+          />
           <div className="hero-pool__copy">
             <strong>{hero.label}</strong>
             <span>{hero.matches} games · {hero.averageKda.toFixed(1)} KDA</span>
@@ -482,6 +486,8 @@ function ArchiveMatchRow({
 }) {
   const result = match.won === true ? 'WIN' : match.won === false ? 'LOSS' : '—';
   const resultClass = match.won === true ? 'is-win' : match.won === false ? 'is-loss' : 'is-unknown';
+  const heroLabel = match.heroId === null ? 'Unknown hero' : heroNames[match.heroId] ?? `Hero #${match.heroId}`;
+  const heroFallback = match.heroId === null ? '?' : heroLabel.slice(0, 2).toUpperCase();
   return (
     <button
       className={`archive-match-row ${resultClass}`}
@@ -491,11 +497,9 @@ function ArchiveMatchRow({
       aria-label={`Открыть матч ${match.matchId}`}
     >
       <span className="archive-match-row__result">{result}</span>
-      <span className="archive-match-row__hero-mark" aria-hidden="true">
-        {match.heroId === null ? '?' : (heroNames[match.heroId] ?? `#${match.heroId}`).slice(0, 2).toUpperCase()}
-      </span>
+      <HeroMark heroId={match.heroId} label={heroLabel} fallback={heroFallback} className="archive-match-row__hero-mark" />
       <div className="archive-match-row__identity">
-        <strong>{match.heroId === null ? 'Unknown hero' : heroNames[match.heroId] ?? `Hero #${match.heroId}`}</strong>
+        <strong>{heroLabel}</strong>
         <span>{formatMatchDate(match.startTime)} · {formatMode(match.gameMode)}</span>
       </div>
       <strong className="archive-match-row__kda">

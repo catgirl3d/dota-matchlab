@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Tables } from '../../shared/database.types';
 import type { ArchiveSnapshot } from '../lib/archive';
@@ -125,6 +125,8 @@ describe('PlayerDashboard', () => {
     expect(screen.getByRole('heading', { name: /fish\.bone/ })).toBeVisible();
     expect(screen.getByText('50%')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
+    const knownHeroRow = screen.getByRole('listitem', { name: /Открыть матч 2/i });
+    expect(knownHeroRow.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getByText('PARTIAL')).toBeVisible();
 
     fireEvent.change(screen.getByLabelText('Result'), { target: { value: 'wins' } });
@@ -134,5 +136,35 @@ describe('PlayerDashboard', () => {
 
     fireEvent.click(screen.getByRole('listitem', { name: /Открыть матч 2/i }));
     expect(onSelectMatch).toHaveBeenCalledWith(2);
+  });
+
+  it('keeps the textual hero mark when an archive hero has no local icon', () => {
+    const unknownHeroSnapshot: ArchiveSnapshot = {
+      ...snapshot,
+      matches: [{ ...snapshot.matches[0], heroId: 999_999 }],
+    };
+
+    render(
+      <PlayerDashboard
+        account={account}
+        snapshot={unknownHeroSnapshot}
+        heroNames={{}}
+        isLoading={false}
+        isRefreshing={false}
+        error={null}
+        onRefresh={vi.fn()}
+        onSelectMatch={vi.fn()}
+        onSyncArchive={vi.fn()}
+        onSyncAllArchive={vi.fn()}
+        archiveSyncError={null}
+        isArchiveSyncing={false}
+        isArchiveSyncingAll={false}
+        archiveSyncProgress={null}
+      />,
+    );
+
+    const unknownHeroRow = screen.getByRole('listitem', { name: /Открыть матч 2/i });
+    expect(within(unknownHeroRow).getByText('HE')).toBeVisible();
+    expect(unknownHeroRow.querySelector('img')).not.toBeInTheDocument();
   });
 });

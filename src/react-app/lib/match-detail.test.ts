@@ -239,6 +239,28 @@ describe('match detail read model', () => {
     ]);
   });
 
+  it('enriches playback-only ability events from same-account outer player abilities', () => {
+    const snapshot = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_009),
+      [],
+      [
+        {
+          payload_kind: 'history', payload_section: 'match', fetched_at: '2026-07-19T00:00:00.000Z',
+          payload: { players: [{ steamAccountId: 909, playerSlot: 0, heroId: 35 }] },
+        },
+        detailPayload('player_playback', { players: [{
+          steamAccountId: 909,
+          abilities: [{ abilityId: 5_154, abilityType: { name: 'sniper_shrapnel' } }],
+          playbackData: { abilityLearnEvents: [{ time: 108, abilityId: 5_154, levelObtained: 2 }] },
+        }] }),
+      ],
+    );
+
+    expect(snapshot.players[0].abilityBuild).toEqual([
+      { abilityId: 5_154, time: 108, level: 2, name: 'sniper_shrapnel', isTalent: false },
+    ]);
+  });
+
   it('uses players and stats fallbacks when player playback is absent', () => {
     const snapshot = buildMatchDetailSnapshot(
       {
@@ -319,8 +341,8 @@ describe('match detail read model', () => {
           { steamAccountId: 702, playerSlot: 128, abilities: [{ abilityId: 22, abilityType: { name: 'beta' } }] },
         ] }),
         detailPayload('player_playback', { players: [
-          { steamAccountId: 702, playbackData: { abilityLearnEvents: [{ time: 20, abilityId: 22, levelObtained: 2, isTalent: true }], purchaseEvents: [{ time: 20, itemId: 50 }] } },
-          { steamAccountId: 701, playbackData: { abilityLearnEvents: [{ time: 10, abilityId: 11, levelObtained: 1, isTalent: false }], purchaseEvents: [{ time: 10, itemId: 29 }] } },
+          { steamAccountId: 702, abilities: [{ abilityId: 22, abilityType: { name: 'playback_beta' } }], playbackData: { abilityLearnEvents: [{ time: 20, abilityId: 22, levelObtained: 2, isTalent: true }], purchaseEvents: [{ time: 20, itemId: 50 }] } },
+          { steamAccountId: 701, abilities: [{ abilityId: 11, abilityType: { name: 'playback_alpha' } }], playbackData: { abilityLearnEvents: [{ time: 10, abilityId: 11, levelObtained: 1, isTalent: false }], purchaseEvents: [{ time: 10, itemId: 29 }] } },
         ] }),
       ],
     );

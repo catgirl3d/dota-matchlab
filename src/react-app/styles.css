@@ -1386,6 +1386,14 @@
   .archive-match-row__hero-mark {
     width: 38px;
     height: 38px;
+    overflow: hidden;
+  }
+
+  .hero-mark__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .archive-match-row__identity {
@@ -1528,6 +1536,7 @@
   .hero-pool__portrait {
     width: 34px;
     height: 34px;
+    overflow: hidden;
   }
 
   .hero-pool__copy {
@@ -1860,13 +1869,6 @@
     overflow: hidden;
   }
 
-  .scoreboard-player__hero-image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
   .scoreboard-player__identity {
     display: grid;
     min-width: 0;
@@ -2054,10 +2056,13 @@
     display: grid;
     min-width: 124px;
     min-height: 90px;
-    align-content: space-between;
+    align-items: center;
     padding: 12px;
     border: 1px solid var(--line-strong);
     background: var(--ink-soft);
+    column-gap: 8px;
+    grid-template-columns: 14px 34px minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
   }
 
   .detail-draft__entry.is-pick {
@@ -2076,8 +2081,31 @@
     font-size: 0.44rem;
   }
 
+  .detail-draft__entry > span:first-child {
+    align-self: start;
+  }
+
+  .detail-draft__hero-mark {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    background: var(--ink-soft);
+    grid-column: 2;
+    grid-row: 1 / -1;
+    place-items: center;
+  }
+
   .detail-draft__entry strong {
+    overflow: hidden;
     font-size: 0.65rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .detail-draft__entry small {
+    grid-column: 1 / -1;
   }
 
   .detail-builds__grid {
@@ -2417,7 +2445,28 @@
     display: grid;
     align-items: center;
     gap: 12px;
-    grid-template-columns: 38px 1fr auto;
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+  }
+
+  .player-build__portrait {
+    display: grid;
+    width: 96px;
+    height: 54px;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    background: var(--ink-soft);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    font-weight: 700;
+    place-items: center;
+  }
+
+  .hero-portrait__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .player-build__header > div {
@@ -2524,6 +2573,22 @@
     padding: 0;
     grid-template-rows: 28px auto;
     justify-items: center;
+  }
+
+  .build-timeline__token--ability {
+    flex-basis: 46px;
+    width: 46px;
+    min-height: 47px;
+    padding: 0;
+    grid-template-rows: 32px auto;
+    justify-items: center;
+  }
+
+  .build-timeline__ability-icon {
+    display: block;
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
   }
 
   .build-timeline__item-icon {
@@ -3025,6 +3090,15 @@
 
     .detail-builds__grid {
       grid-template-columns: 1fr;
+    }
+
+    .player-build__header {
+      grid-template-columns: 76px minmax(0, 1fr) auto;
+    }
+
+    .player-build__portrait {
+      width: 76px;
+      height: 43px;
     }
 
     .build-team + .build-team {

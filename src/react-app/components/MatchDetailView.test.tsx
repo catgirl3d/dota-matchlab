@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MatchDetailSnapshot } from '../lib/match-detail';
 import { MatchDetailView } from './MatchDetailView';
@@ -59,6 +59,13 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('46')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
     expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
+    const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
+    expect(currentBuild.querySelector('img[src*="antimage_horz_gMtz"]')).toBeInTheDocument();
+    expect(currentBuild.querySelector('.player-build__portrait img[src*="_icon_"]')).not.toBeInTheDocument();
+    const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
+    expect(scoreboardPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
+    const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
+    expect(draftPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getByText('Базовый разбор')).toBeVisible();
     expect(screen.getByText('2/10 players captured')).toBeVisible();
     expect(screen.getAllByText('N/A')).toHaveLength(4);
@@ -153,7 +160,9 @@ describe('MatchDetailView', () => {
     expect(screen.getByRole('heading', { name: 'Sniper performance tape' })).toBeVisible();
     expect(screen.getByText('+19')).toBeVisible();
     expect(screen.getByText('Top support')).toBeVisible();
-    expect(screen.getByText('Shrapnel')).toBeVisible();
+    const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
+    expect(within(currentBuild).getByRole('img', { name: 'Shrapnel, 1:48 · level 2' })).toBeVisible();
+    expect(currentBuild.querySelector('img[src*="sniper_shrapnel"]')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Boots' })).toBeVisible();
     expect(screen.queryByText('Базовый разбор')).not.toBeInTheDocument();
 
@@ -163,17 +172,26 @@ describe('MatchDetailView', () => {
     expect(screen.queryByText('Chat wheel #71')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Всё' }));
     expect(screen.getByText('Chat wheel #71')).toBeVisible();
+    const chatTranscript = screen.getByRole('log', { name: 'Чат матча' });
+    expect(chatTranscript.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
     expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
   });
 
   it('groups compact builds by team, highlights the current account, and discloses long timelines', () => {
     const longPurchases = Array.from({ length: 14 }, (_, index) => ({ time: index * 30, itemId: index === 13 ? 99_999 : 29 }));
+    const longAbilities = [
+      { abilityId: 999, time: 10, level: 1, name: null, isTalent: true },
+      { abilityId: 1_000, time: 20, level: 2, name: null, isTalent: false },
+      { abilityId: 1_001, time: 30, level: 3, name: 'missing_ability', isTalent: false },
+      ...Array.from({ length: 9 }, (_, index) => ({ abilityId: 2_000 + index, time: 40 + index * 10, level: 3, name: 'missing_ability', isTalent: false })),
+      { abilityId: 5_154, time: 130, level: 2, name: 'sniper_shrapnel', isTalent: false },
+    ];
     const buildsDetail: MatchDetailSnapshot = {
       ...detail,
       detailStatus: 'available',
       availableSections: ['players', 'player_stats', 'player_playback'],
       players: [
-        createPlayer({ key: '111', accountId: 111, name: 'Current', playerSlot: 4, heroId: 1, abilityBuild: [{ abilityId: 999, time: 10, level: 1, name: null, isTalent: true }], purchaseEvents: longPurchases, hasAbilityBuildData: true, hasPurchaseEventsData: true }),
+        createPlayer({ key: '111', accountId: 111, name: 'Current', playerSlot: 4, heroId: 1, abilityBuild: longAbilities, purchaseEvents: longPurchases, hasAbilityBuildData: true, hasPurchaseEventsData: true }),
         createPlayer({ key: '222', accountId: 222, name: 'Opponent', playerSlot: 130, isRadiant: false, heroId: 2, abilityBuild: [], purchaseEvents: [], hasAbilityBuildData: true, hasPurchaseEventsData: true }),
       ],
     };
@@ -185,11 +203,15 @@ describe('MatchDetailView', () => {
     const direColumn = screen.getByRole('heading', { name: 'Dire builds' }).closest('section');
     expect(radiantColumn).toContainElement(screen.getByRole('article', { name: 'Build for Current' }));
     expect(direColumn).toContainElement(screen.getByRole('article', { name: 'Build for Opponent' }));
-    expect(screen.getByRole('article', { name: 'Build for Current' })).toHaveAttribute('aria-current', 'true');
-    expect(screen.getByText('TALENT')).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Show 2 more events' }));
-    expect(screen.getAllByText('6:30').length).toBeGreaterThan(0);
-    expect(screen.getByText('#99999')).toBeVisible();
+    const currentBuild = screen.getByRole('article', { name: 'Build for Current' });
+    expect(currentBuild).toHaveAttribute('aria-current', 'true');
+    expect(within(currentBuild).getByText('TALENT')).toBeVisible();
+    expect(within(currentBuild).getByText('Ability #1000')).toBeVisible();
+    expect(within(currentBuild).getByText('Ability #1001')).toBeVisible();
+    expect(within(currentBuild).queryByRole('img', { name: 'Shrapnel, 2:10 · level 3' })).not.toBeInTheDocument();
+    fireEvent.click(within(currentBuild).getByRole('button', { name: 'Show 3 more events' }));
+    expect(within(currentBuild).getByRole('img', { name: 'Shrapnel, 2:10 · level 3' })).toBeVisible();
+    expect(within(currentBuild).getByText('#99999')).toBeVisible();
   });
 
   it('keeps final loadout but labels progression unavailable for basic and partial data', () => {
@@ -248,12 +270,17 @@ describe('MatchDetailView', () => {
     const unknownHeroDetail: MatchDetailSnapshot = {
       ...detail,
       players: [createPlayer({ key: 'unknown', accountId: 111, heroId: 999_999 })],
+      pickBans: [{ heroId: 999_999, isPick: false, isRadiant: false, order: 0 }],
     };
 
     render(<MatchDetailView detail={unknownHeroDetail} heroNames={{ 999_999: 'Unknown hero' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
-    expect(screen.getAllByText('UN')).toHaveLength(2);
+    expect(screen.getAllByText('UN')).toHaveLength(3);
     expect(document.querySelector('img[src*="999999"]')).not.toBeInTheDocument();
+    expect(document.querySelector('.player-build__portrait img')).not.toBeInTheDocument();
+    const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
+    expect(draftPanel).toHaveTextContent('UN');
+    expect(draftPanel?.querySelector('img')).not.toBeInTheDocument();
   });
 });
 

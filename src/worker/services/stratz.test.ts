@@ -207,8 +207,8 @@ describe('STRATZ match provider', () => {
     ]);
     expect(requestBodies[2].query).toContain('inventoryReport');
     expect(requestBodies[3].query).toContain('playerUpdatePositionEvents');
-    expect(requestBodies[3].query).toContain('players { steamAccountId playbackData');
-    expect(PLAYER_PLAYBACK_SELECTION).toMatch(/^steamAccountId playbackData/);
+    expect(requestBodies[3].query).toContain('players { steamAccountId abilities { abilityId abilityType { name } } playbackData');
+    expect(PLAYER_PLAYBACK_SELECTION).toMatch(/^steamAccountId abilities \{ abilityId abilityType \{ name \} \} playbackData/);
   });
 
   it('returns earlier successful sections when a later section fails', async () => {
