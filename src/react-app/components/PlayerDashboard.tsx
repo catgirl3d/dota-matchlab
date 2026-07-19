@@ -26,6 +26,7 @@ type PlayerDashboardProps = {
   isRefreshing: boolean;
   error: Error | null;
   onRefresh: () => void;
+  onSelectMatch: (matchId: number) => void;
   onSyncArchive: () => void;
   onSyncAllArchive: () => void;
   archiveSyncResult?: MatchSyncResult;
@@ -45,6 +46,7 @@ export function PlayerDashboard({
   isRefreshing,
   error,
   onRefresh,
+  onSelectMatch,
   onSyncArchive,
   onSyncAllArchive,
   archiveSyncResult,
@@ -237,7 +239,12 @@ export function PlayerDashboard({
             ) : (
               <div className="archive-match-table" role="list" aria-label="Архив матчей">
                 {filteredMatches.slice(0, 100).map((match) => (
-                  <ArchiveMatchRow key={match.matchId} match={match} heroNames={heroNames} />
+                  <ArchiveMatchRow
+                    key={match.matchId}
+                    match={match}
+                    heroNames={heroNames}
+                    onSelect={onSelectMatch}
+                  />
                 ))}
               </div>
             )}
@@ -467,14 +474,22 @@ function HeroPool({
 function ArchiveMatchRow({
   match,
   heroNames,
+  onSelect,
 }: {
   match: ArchiveSnapshot['matches'][number];
   heroNames: Record<number, string>;
+  onSelect: (matchId: number) => void;
 }) {
   const result = match.won === true ? 'WIN' : match.won === false ? 'LOSS' : '—';
   const resultClass = match.won === true ? 'is-win' : match.won === false ? 'is-loss' : 'is-unknown';
   return (
-    <article className={`archive-match-row ${resultClass}`} role="listitem">
+    <button
+      className={`archive-match-row ${resultClass}`}
+      type="button"
+      role="listitem"
+      onClick={() => onSelect(match.matchId)}
+      aria-label={`Открыть матч ${match.matchId}`}
+    >
       <span className="archive-match-row__result">{result}</span>
       <span className="archive-match-row__hero-mark" aria-hidden="true">
         {match.heroId === null ? '?' : (heroNames[match.heroId] ?? `#${match.heroId}`).slice(0, 2).toUpperCase()}
@@ -491,7 +506,7 @@ function ArchiveMatchRow({
         <span>{match.xpPerMinute ?? 0} <small>XPM</small></span>
       </div>
       <span className="archive-match-row__duration">{formatDuration(match.durationSeconds)}</span>
-    </article>
+    </button>
   );
 }
 

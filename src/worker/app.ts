@@ -12,7 +12,10 @@ import {
   MatchArchiveError,
   syncTrackedAccount,
 } from './services/match-archive';
-import { syncTrackedAccountDetails } from './services/match-detail-archive';
+import {
+  syncTrackedAccountDetails,
+  syncTrackedMatchDetail,
+} from './services/match-detail-archive';
 import { StratzError } from './services/stratz';
 import {
   resolveSteamProfileInput,
@@ -26,6 +29,7 @@ type AppDependencies = {
   loadHeroConstants: typeof loadHeroConstants;
   syncTrackedAccount: typeof syncTrackedAccount;
   syncTrackedAccountDetails: typeof syncTrackedAccountDetails;
+  syncTrackedMatchDetail: typeof syncTrackedMatchDetail;
   resolveDotaPlayer: typeof resolveDotaPlayer;
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
 };
@@ -36,6 +40,7 @@ const defaultDependencies: AppDependencies = {
   loadHeroConstants,
   syncTrackedAccount,
   syncTrackedAccountDetails,
+  syncTrackedMatchDetail,
   resolveDotaPlayer,
   resolveSteamProfileInput,
 };
@@ -180,6 +185,28 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     },
   );
 
+  app.post(
+    '/api/dota/tracked-accounts/:trackedAccountId/matches/:matchId/details/sync',
+    async (context) => {
+      const auth = getAuth(context);
+      if (!auth.userId) return context.json({ error: 'Unauthorized' }, 401);
+      const trackedAccountId = context.req.param('trackedAccountId');
+      if (!isUuid(trackedAccountId)) {
+        return context.json({ error: 'Некорректный tracked account id' }, 400);
+      }
+      const matchId = parseMatchId(context.req.param('matchId'));
+      if (matchId === null) {
+        return context.json({ error: 'Некорректный match id' }, 400);
+      }
+      return context.json(await dependencies.syncTrackedMatchDetail(
+        context.env,
+        auth.userId,
+        trackedAccountId,
+        matchId,
+      ));
+    },
+  );
+
   app.notFound((context) => context.json({ error: 'Not found' }, 404));
   app.onError((error, context) => {
     if (error instanceof InvalidSteamIdError) {
@@ -216,4 +243,10 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+function parseMatchId(value: string): number | null {
+  if (!/^\d{1,16}$/.test(value)) return null;
+  const matchId = Number(value);
+  return Number.isSafeInteger(matchId) && matchId > 0 ? matchId : null;
 }

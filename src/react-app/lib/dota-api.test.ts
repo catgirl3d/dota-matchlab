@@ -3,6 +3,7 @@ import {
   fetchHeroNames,
   resolveSteamProfile,
   syncAllTrackedAccount,
+  syncTrackedMatchDetail,
   syncTrackedAccount,
 } from './dota-api';
 
@@ -161,5 +162,28 @@ describe('Dota API client', () => {
       fetchedMatches: 1_073,
       nextOffset: 0,
     });
+  });
+
+  it('requests detail parsing for one selected match', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      Response.json({
+        accountId: 154_783_030,
+        processedMatches: 1,
+        availableMatches: 1,
+        failedMatches: 0,
+        backfillComplete: false,
+      }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+
+    await syncTrackedMatchDetail('clerk-token', 'tracked-id', 8_749_050_591);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/dota/tracked-accounts/tracked-id/matches/8749050591/details/sync',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer clerk-token' }),
+      }),
+    );
   });
 });

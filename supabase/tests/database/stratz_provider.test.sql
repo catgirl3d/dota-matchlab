@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(19);
 
 insert into public.tracked_accounts (id, user_id, steam_id64)
 values (
@@ -221,6 +221,25 @@ select is(
   (select backfill_complete from public.account_match_sync_state where dota_account_id = 223344556),
   false,
   'detail processing does not mutate the history cursor completion state'
+);
+
+create temp table specific_detail_claim as
+select public.claim_specific_match_detail(
+  'sync-user-stratz',
+  '00000000-0000-0000-0000-000000000203',
+  9000000203,
+  300
+) as value;
+
+select is(
+  (select value ->> 'claimed' from specific_detail_claim),
+  'false',
+  'specific detail claim does not refetch an available match'
+);
+select is(
+  (select value ->> 'status' from specific_detail_claim),
+  'available',
+  'specific detail claim reports the existing detail status'
 );
 
 reset role;

@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { syncTrackedAccountDetails } from './match-detail-archive';
+import {
+  syncTrackedAccountDetails,
+  syncTrackedMatchDetail,
+} from './match-detail-archive';
 import { StratzError } from './stratz';
 
 const env: Env = {
@@ -44,5 +47,52 @@ describe('STRATZ detail archive', () => {
         expect.objectContaining({ match_id: 9000, status: 'failed', error_code: 'STRATZ_429' }),
       ],
     }));
+  });
+
+  it('claims and parses one explicitly selected match', async () => {
+    const client = {
+      claimMatchDetailBatch: vi.fn(),
+      claimSpecificMatchDetail: vi.fn().mockResolvedValue({
+        data: {
+          owned: true,
+          claimed: true,
+          dotaAccountId: 123,
+          leaseToken: 'specific-lease',
+          matchIds: [9_001],
+          backfillComplete: false,
+        },
+        error: null,
+      }),
+      applyMatchDetailBatch: vi.fn().mockResolvedValue({
+        data: { processedMatches: 1, backfillComplete: false },
+        error: null,
+      }),
+    };
+    const loadDetail = vi.fn().mockResolvedValue({
+      unavailable: false,
+      error: null,
+      payloads: [{ section: 'players', response: { data: { match: { id: 9_001 } } } }],
+    });
+
+    await expect(
+      syncTrackedMatchDetail(
+        env,
+        'user-a',
+        '00000000-0000-0000-0000-000000000202',
+        9_001,
+        { createClient: () => client, loadDetail },
+      ),
+    ).resolves.toEqual({
+      accountId: 123,
+      processedMatches: 1,
+      availableMatches: 1,
+      failedMatches: 0,
+      backfillComplete: false,
+    });
+
+    expect(client.claimSpecificMatchDetail).toHaveBeenCalledWith(
+      expect.objectContaining({ p_match_id: 9_001 }),
+    );
+    expect(loadDetail).toHaveBeenCalledWith('stratz-token', 9_001);
   });
 });

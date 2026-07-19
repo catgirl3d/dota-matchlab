@@ -4,14 +4,17 @@ import { useState, type FormEvent } from 'react';
 import type { Tables } from '../../shared/database.types';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import { fetchArchiveSnapshot } from '../lib/archive';
+import { fetchMatchDetail } from '../lib/match-detail';
 import {
   fetchHeroNames,
   resolveSteamProfile,
   syncAllTrackedAccount,
+  syncTrackedMatchDetail,
   syncTrackedAccount,
   type MatchSyncProgress,
 } from '../lib/dota-api';
 import { createUserSupabaseClient } from '../lib/supabase';
+import { MatchDetailView } from './MatchDetailView';
 import { PlayerDashboard } from './PlayerDashboard';
 
 type TrackedAccount = Pick<
@@ -33,6 +36,7 @@ export function MatchWorkspace() {
   const queryClient = useQueryClient();
   const [steamProfile, setSteamProfile] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [archiveSyncProgress, setArchiveSyncProgress] =
     useState<MatchSyncProgress | null>(null);
   const [archiveSyncMode, setArchiveSyncMode] = useState<'page' | 'all' | null>(null);
@@ -153,6 +157,23 @@ export function MatchWorkspace() {
     },
   });
 
+  const matchDetailQuery = useQuery({
+    queryKey: ['match-detail', selectedMatchId],
+    enabled: Boolean(session && selectedMatchId),
+    staleTime: 300_000,
+    queryFn: async () => {
+      if (!session || selectedMatchId === null) {
+        throw new Error('Матч не выбран');
+      }
+      const token = await session.getToken();
+      if (!token) {
+        throw new Error('Не удалось получить Clerk JWT');
+      }
+      const supabase = createUserSupabaseClient(async () => token);
+      return fetchMatchDetail(supabase, selectedMatchId);
+    },
+  });
+
   const archiveSync = useMutation({
     mutationFn: async (trackedAccountId: string) => {
       if (!session) {
@@ -200,13 +221,43 @@ export function MatchWorkspace() {
       void queryClient.invalidateQueries({
         queryKey: ['match-archive', trackedAccountId],
       });
+      void queryClient.invalidateQueries({ queryKey: ['match-detail'] });
+    },
+  });
+
+  const matchDetailSync = useMutation({
+    mutationFn: async ({
+      trackedAccountId,
+      matchId,
+    }: {
+      trackedAccountId: string;
+      matchId: number;
+    }) => {
+      if (!session) {
+        throw new Error('Clerk session is not ready');
+      }
+      const token = await session.getToken();
+      if (!token) {
+        throw new Error('Не удалось получить Clerk JWT');
+      }
+      return syncTrackedMatchDetail(token, trackedAccountId, matchId);
+    },
+    onSuccess: (_result, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['match-detail', variables.matchId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['match-archive', variables.trackedAccountId],
+      });
     },
   });
 
   function handleSelectAccount(accountId: number) {
     setSelectedAccountId(accountId);
+    setSelectedMatchId(null);
     archiveSync.reset();
     archiveSyncAll.reset();
+    matchDetailSync.reset();
     setArchiveSyncProgress(null);
     setArchiveSyncMode(null);
   }
@@ -279,30 +330,58 @@ export function MatchWorkspace() {
             activeAccountId={activeAccountId}
             onSelect={handleSelectAccount}
           />
-          <PlayerDashboard
-            account={activeAccount}
-            snapshot={archiveQuery.data}
-            heroNames={heroNamesQuery.data ?? {}}
-            isLoading={archiveQuery.isPending}
-            error={archiveQuery.error}
-            onRefresh={() => archiveQuery.refetch()}
-            isRefreshing={archiveQuery.isFetching}
-            onSyncArchive={() => {
-              if (activeAccount) {
-                archiveSync.mutate(activeAccount.id);
+          {selectedMatchId !== null && activeAccount ? (
+            <MatchDetailView
+              detail={matchDetailQuery.data}
+              heroNames={heroNamesQuery.data ?? {}}
+              currentAccountId={activeAccount.dota_account_id}
+              isLoading={matchDetailQuery.isPending}
+              error={matchDetailQuery.error}
+              parseError={
+                matchDetailSync.variables?.matchId === selectedMatchId
+                  ? matchDetailSync.error
+                  : null
               }
-            }}
-            onSyncAllArchive={() => {
-              if (activeAccount) {
-                archiveSyncAll.mutate(activeAccount.id);
+              isParsing={
+                matchDetailSync.isPending &&
+                matchDetailSync.variables?.matchId === selectedMatchId
               }
-            }}
-            archiveSyncResult={archiveSyncResult}
-            archiveSyncError={archiveSyncError}
-            isArchiveSyncing={archiveSync.isPending}
-            isArchiveSyncingAll={archiveSyncAll.isPending}
-            archiveSyncProgress={archiveSyncProgress}
-          />
+              onBack={() => setSelectedMatchId(null)}
+              onRefresh={() => matchDetailQuery.refetch()}
+              onParse={() => {
+                matchDetailSync.mutate({
+                  trackedAccountId: activeAccount.id,
+                  matchId: selectedMatchId,
+                });
+              }}
+            />
+          ) : (
+            <PlayerDashboard
+              account={activeAccount}
+              snapshot={archiveQuery.data}
+              heroNames={heroNamesQuery.data ?? {}}
+              isLoading={archiveQuery.isPending}
+              error={archiveQuery.error}
+              onRefresh={() => archiveQuery.refetch()}
+              onSelectMatch={setSelectedMatchId}
+              isRefreshing={archiveQuery.isFetching}
+              onSyncArchive={() => {
+                if (activeAccount) {
+                  archiveSync.mutate(activeAccount.id);
+                }
+              }}
+              onSyncAllArchive={() => {
+                if (activeAccount) {
+                  archiveSyncAll.mutate(activeAccount.id);
+                }
+              }}
+              archiveSyncResult={archiveSyncResult}
+              archiveSyncError={archiveSyncError}
+              isArchiveSyncing={archiveSync.isPending}
+              isArchiveSyncingAll={archiveSyncAll.isPending}
+              archiveSyncProgress={archiveSyncProgress}
+            />
+          )}
         </>
       )}
     </section>

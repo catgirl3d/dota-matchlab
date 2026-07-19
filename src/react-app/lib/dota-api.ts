@@ -67,6 +67,18 @@ export async function syncTrackedAccountDetails(
   );
 }
 
+export async function syncTrackedMatchDetail(
+  token: string,
+  trackedAccountId: string,
+  matchId: number,
+): Promise<MatchDetailSyncResult> {
+  return requestJson<MatchDetailSyncResult>(
+    `/api/dota/tracked-accounts/${encodeURIComponent(trackedAccountId)}/matches/${matchId}/details/sync`,
+    token,
+    { method: 'POST' },
+  );
+}
+
 export async function syncAllTrackedAccount(
   token: string,
   trackedAccountId: string,

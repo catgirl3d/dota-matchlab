@@ -102,6 +102,7 @@ const snapshot: ArchiveSnapshot = {
 
 describe('PlayerDashboard', () => {
   it('renders archive metrics and filters the match log by result', () => {
+    const onSelectMatch = vi.fn();
     render(
       <PlayerDashboard
         account={account}
@@ -111,6 +112,7 @@ describe('PlayerDashboard', () => {
         isRefreshing={false}
         error={null}
         onRefresh={vi.fn()}
+        onSelectMatch={onSelectMatch}
         onSyncArchive={vi.fn()}
         onSyncAllArchive={vi.fn()}
         archiveSyncError={null}
@@ -129,5 +131,8 @@ describe('PlayerDashboard', () => {
 
     expect(screen.getByText('1 matches in view')).toBeVisible();
     expect(screen.queryByText('LOSS')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('listitem', { name: /Открыть матч 2/i }));
+    expect(onSelectMatch).toHaveBeenCalledWith(2);
   });
 });

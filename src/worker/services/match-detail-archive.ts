@@ -12,6 +12,12 @@ type DetailRpcClient = {
     p_lease_seconds: number;
     p_batch_size: number;
   }): PromiseLike<RpcResponse>;
+  claimSpecificMatchDetail?(args: {
+    p_actor_user_id: string;
+    p_tracked_account_id: string;
+    p_match_id: number;
+    p_lease_seconds: number;
+  }): PromiseLike<RpcResponse>;
   applyMatchDetailBatch(args: {
     p_actor_user_id: string;
     p_tracked_account_id: string;
@@ -33,6 +39,7 @@ const defaultDependencies: Dependencies = {
     });
     return {
       claimMatchDetailBatch: (args) => client.rpc('claim_match_detail_batch', args),
+      claimSpecificMatchDetail: (args) => client.rpc('claim_specific_match_detail', args),
       applyMatchDetailBatch: (args) => client.rpc('apply_match_detail_batch', args),
     };
   },
@@ -55,13 +62,56 @@ export async function syncTrackedAccountDetails(
     p_lease_seconds: 300,
     p_batch_size: 2,
   }), 'Не удалось получить очередь detail матчей');
-  if (claim.owned !== true) throw new StratzError('Отслеживаемый аккаунт не найден', 404);
+  return processDetailClaim(env, actorUserId, trackedAccountId, claim, client, dependencies);
+}
+
+export async function syncTrackedMatchDetail(
+  env: Env,
+  actorUserId: string,
+  trackedAccountId: string,
+  matchId: number,
+  dependencies: Dependencies = defaultDependencies,
+): Promise<MatchDetailSyncResult> {
+  if (!Number.isSafeInteger(matchId) || matchId <= 0) {
+    throw new StratzError('Некорректный match ID', 400);
+  }
+  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.STRATZ_API_TOKEN.trim()) {
+    throw new StratzError('STRATZ detail sync is not configured', 403);
+  }
+  const client = dependencies.createClient(env);
+  if (!client.claimSpecificMatchDetail) {
+    throw new StratzError('Specific STRATZ detail sync is not configured', 502);
+  }
+  const claim = readObject(await client.claimSpecificMatchDetail({
+    p_actor_user_id: actorUserId,
+    p_tracked_account_id: trackedAccountId,
+    p_match_id: matchId,
+    p_lease_seconds: 300,
+  }), 'Не удалось получить выбранный detail матч');
+  return processDetailClaim(env, actorUserId, trackedAccountId, claim, client, dependencies);
+}
+
+async function processDetailClaim(
+  env: Env,
+  actorUserId: string,
+  trackedAccountId: string,
+  claim: Record<string, Json | undefined>,
+  client: DetailRpcClient,
+  dependencies: Dependencies,
+): Promise<MatchDetailSyncResult> {
+  if (claim.owned !== true) throw new StratzError('Отслеживаемый матч не найден', 404);
 
   const accountId = readInteger(claim.dotaAccountId, 'dotaAccountId');
   const matchIds = readMatchIds(claim.matchIds);
   const backfillComplete = claim.backfillComplete === true;
   if (matchIds.length === 0) {
-    return { accountId, processedMatches: 0, availableMatches: 0, failedMatches: 0, backfillComplete };
+    return {
+      accountId,
+      processedMatches: 0,
+      availableMatches: claim.status === 'available' ? 1 : 0,
+      failedMatches: 0,
+      backfillComplete,
+    };
   }
   const leaseToken = readString(claim.leaseToken, 'leaseToken');
   const results: Json[] = [];

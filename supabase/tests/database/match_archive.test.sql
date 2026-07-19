@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(33);
+select plan(36);
 
 select has_table('public', 'dota_matches', 'dota_matches exists');
 select has_table('public', 'player_match_stats', 'player_match_stats exists');
@@ -36,6 +36,10 @@ select ok(
 select ok(
   has_table_privilege('authenticated', 'public.dota_matches', 'select'),
   'authenticated can read archived matches'
+);
+select ok(
+  has_table_privilege('authenticated', 'public.match_provider_payloads', 'select'),
+  'authenticated can read provider payloads'
 );
 select ok(
   not has_table_privilege('authenticated', 'public.dota_matches', 'insert'),
@@ -83,6 +87,11 @@ values
 insert into public.tracked_account_matches (tracked_account_id, match_id)
 values ('00000000-0000-0000-0000-000000000101', 9000000001);
 
+insert into public.match_provider_payloads (match_id, provider, payload_kind, payload)
+values
+  (9000000001, 'stratz', 'history', '{"id":9000000001}'::jsonb),
+  (9000000002, 'stratz', 'history', '{"id":9000000002}'::jsonb);
+
 insert into public.account_match_sync_state (dota_account_id, status)
 values
   (123456789, 'ready'),
@@ -111,6 +120,11 @@ select is(
   1::bigint,
   'a user can read sync state for their tracked account'
 );
+select is(
+  (select count(*) from public.match_provider_payloads),
+  1::bigint,
+  'a user can read payloads only for linked matches'
+);
 
 reset role;
 select set_config('request.jwt.claims', '{"sub":"archive-user-b"}', true);
@@ -135,6 +149,11 @@ select is(
   (select count(*) from public.account_match_sync_state),
   0::bigint,
   'another user cannot read sync state'
+);
+select is(
+  (select count(*) from public.match_provider_payloads),
+  0::bigint,
+  'another user cannot read provider payloads'
 );
 
 reset role;
