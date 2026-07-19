@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveSteamProfile, syncTrackedAccount } from './dota-api';
+import {
+  fetchHeroNames,
+  resolveSteamProfile,
+  syncAllTrackedAccount,
+  syncTrackedAccount,
+} from './dota-api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -70,5 +75,78 @@ describe('Dota API client', () => {
         }),
       }),
     );
+  });
+
+  it('loads hero names through the cached constants route', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      Response.json({ heroes: { '1': 'Anti-Mage', '2': 'Axe' } }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+
+    await expect(fetchHeroNames('clerk-token')).resolves.toEqual({
+      1: 'Anti-Mage',
+      2: 'Axe',
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/dota/constants/heroes',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer clerk-token' }),
+      }),
+    );
+  });
+
+  it('syncs all archive batches until the provider reaches ready', async () => {
+    const trackedAccountId = '00000000-0000-0000-0000-000000000202';
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          trackedAccountId,
+          accountId: 154_783_030,
+          fetchedMatches: 500,
+          archivedMatches: 500,
+          status: 'partial',
+          backfillComplete: false,
+          nextOffset: 500,
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          trackedAccountId,
+          accountId: 154_783_030,
+          fetchedMatches: 500,
+          archivedMatches: 500,
+          status: 'partial',
+          backfillComplete: false,
+          nextOffset: 1_000,
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          trackedAccountId,
+          accountId: 154_783_030,
+          fetchedMatches: 73,
+          archivedMatches: 73,
+          status: 'ready',
+          backfillComplete: true,
+          nextOffset: 0,
+        }),
+      );
+    vi.stubGlobal('fetch', fetcher);
+    const progress = vi.fn();
+
+    await expect(
+      syncAllTrackedAccount('clerk-token', trackedAccountId, {
+        delayMs: 0,
+        onProgress: progress,
+      }),
+    ).resolves.toMatchObject({ status: 'ready', fetchedMatches: 73 });
+
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(progress).toHaveBeenLastCalledWith({
+      completedBatches: 3,
+      fetchedMatches: 1_073,
+      nextOffset: 0,
+    });
   });
 });

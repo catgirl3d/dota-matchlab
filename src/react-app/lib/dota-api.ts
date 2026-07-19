@@ -1,9 +1,28 @@
-import type { DotaPlayerProfile, RecentMatchesResponse } from '../../shared/dota';
+import type {
+  DotaPlayerProfile,
+  HeroNamesResponse,
+  RecentMatchesResponse,
+} from '../../shared/dota';
 import type { MatchSyncResult } from '../../shared/match-archive';
 
 type ApiErrorPayload = {
   error?: unknown;
 };
+
+export type MatchSyncProgress = {
+  completedBatches: number;
+  fetchedMatches: number;
+  nextOffset: number;
+};
+
+type SyncAllOptions = {
+  delayMs?: number;
+  maxBatches?: number;
+  onProgress?: (progress: MatchSyncProgress) => void;
+};
+
+const FULL_SYNC_DELAY_MS = 250;
+const FULL_SYNC_MAX_BATCHES = 100;
 
 export async function resolveSteamProfile(
   token: string,
@@ -37,6 +56,53 @@ export async function syncTrackedAccount(
   );
 }
 
+export async function syncAllTrackedAccount(
+  token: string,
+  trackedAccountId: string,
+  options: SyncAllOptions = {},
+): Promise<MatchSyncResult> {
+  const delayMs = options.delayMs ?? FULL_SYNC_DELAY_MS;
+  const maxBatches = options.maxBatches ?? FULL_SYNC_MAX_BATCHES;
+  let fetchedMatches = 0;
+
+  for (let completedBatches = 1; completedBatches <= maxBatches; completedBatches += 1) {
+    const result = await syncTrackedAccount(token, trackedAccountId);
+    fetchedMatches += result.fetchedMatches;
+    options.onProgress?.({
+      completedBatches,
+      fetchedMatches,
+      nextOffset: result.nextOffset,
+    });
+
+    if (result.status === 'ready' || result.backfillComplete) {
+      return result;
+    }
+    if (delayMs > 0) {
+      await wait(delayMs);
+    }
+  }
+
+  throw new Error(`Полная синхронизация превысила лимит ${maxBatches} пакетов`);
+}
+
+export async function fetchHeroNames(token: string): Promise<Record<number, string>> {
+  const response = await requestJson<HeroNamesResponse>(
+    '/api/dota/constants/heroes',
+    token,
+  );
+
+  return Object.entries(response.heroes).reduce<Record<number, string>>(
+    (names, [heroId, name]) => {
+      const numericHeroId = Number(heroId);
+      if (Number.isSafeInteger(numericHeroId) && name.trim()) {
+        names[numericHeroId] = name;
+      }
+      return names;
+    },
+    {},
+  );
+}
+
 async function requestJson<T>(
   url: string,
   token: string,
@@ -62,4 +128,8 @@ async function requestJson<T>(
   }
 
   return payload as T;
+}
+
+function wait(delayMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
 }

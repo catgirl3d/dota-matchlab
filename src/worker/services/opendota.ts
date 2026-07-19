@@ -4,11 +4,23 @@ import type {
   RecentMatchesResponse,
 } from '../../shared/dota';
 import { steamId64ToAccountId } from './steam-id';
+import type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
+
+export type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
 
 const REQUEST_TIMEOUT_MS = 8_000;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const RECENT_MATCH_LIMIT = 20;
 export const HISTORY_PAGE_SIZE = 100;
+const HERO_CACHE_TTL_MS = 86_400_000;
+
+type HeroNamesCache = {
+  baseUrl: string;
+  expiresAt: number;
+  names: Record<string, string>;
+};
+
+let heroNamesCache: HeroNamesCache | null = null;
 
 const HISTORY_PROJECT_FIELDS = [
   'match_id',
@@ -156,53 +168,43 @@ export async function loadRecentMatches(
   return { accountId, matches };
 }
 
-export type ArchivedPlayerMatch = {
-  matchId: string;
-  startTime: number | null;
-  durationSeconds: number | null;
-  radiantWin: boolean;
-  gameMode: number | null;
-  lobbyType: number | null;
-  averageRank: number | null;
-  cluster: number | null;
-  version: number | null;
-  radiantTeamId: number | null;
-  direTeamId: number | null;
-  leagueId: number | null;
-  seriesId: number | null;
-  seriesType: number | null;
-  radiantScore: number | null;
-  direScore: number | null;
-  playerSlot: number;
-  heroId: number;
-  heroVariant: number | null;
-  kills: number | null;
-  deaths: number | null;
-  assists: number | null;
-  goldPerMinute: number | null;
-  xpPerMinute: number | null;
-  lastHits: number | null;
-  denies: number | null;
-  heroDamage: number | null;
-  towerDamage: number | null;
-  heroHealing: number | null;
-  level: number | null;
-  netWorth: number | null;
-  leaverStatus: number | null;
-  partySize: number | null;
-  lane: number | null;
-  laneRole: number | null;
-  isRoaming: boolean | null;
-};
+export async function loadHeroConstants(
+  baseUrl: string,
+  fetcher: typeof fetch = fetch,
+): Promise<Record<string, string>> {
+  const cacheKey = baseUrl.replace(/\/$/, '');
+  if (fetcher === fetch && heroNamesCache?.baseUrl === cacheKey && heroNamesCache.expiresAt > Date.now()) {
+    return heroNamesCache.names;
+  }
 
-export type PlayerMatchesPage = {
-  accountId: number;
-  offset: number;
-  limit: number;
-  matches: ArchivedPlayerMatch[];
-  nextOffset: number;
-  hasMore: boolean;
-};
+  const payload = await fetchOpenDotaJson(baseUrl, '/constants/heroes', fetcher);
+  if (!isObject(payload)) {
+    throw new OpenDotaError('OpenDota вернула неожиданный формат героев', 502);
+  }
+
+  const names = Object.entries(payload).reduce<Record<string, string>>(
+    (result, [heroId, value]) => {
+      if (isObject(value)) {
+        const localizedName = readString(value.localized_name);
+        if (localizedName) {
+          result[heroId] = localizedName;
+        }
+      }
+      return result;
+    },
+    {},
+  );
+
+  if (fetcher === fetch) {
+    heroNamesCache = {
+      baseUrl: cacheKey,
+      expiresAt: Date.now() + HERO_CACHE_TTL_MS,
+      names,
+    };
+  }
+
+  return names;
+}
 
 export async function loadPlayerMatchesPage(
   baseUrl: string,

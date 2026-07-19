@@ -3,3 +3,4 @@ CLERK_PUBLISHABLE_KEY=pk_test_replace_me
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_replace_me
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_replace_me
+STRATZ_API_TOKEN=replace_with_stratz_bearer_token

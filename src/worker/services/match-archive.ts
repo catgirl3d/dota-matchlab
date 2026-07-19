@@ -4,9 +4,17 @@ import type { MatchSyncResult } from '../../shared/match-archive';
 import {
   HISTORY_PAGE_SIZE,
   loadPlayerMatchesPage,
-  type ArchivedPlayerMatch,
   OpenDotaError,
 } from './opendota';
+import {
+  loadStratzPlayerMatchesBatch,
+  StratzError,
+} from './stratz';
+import type {
+  ArchivedPlayerMatch,
+  MatchHistoryProvider,
+  PlayerMatchesPage,
+} from './match-provider';
 
 type RpcResponse = {
   data: Json | null;
@@ -17,6 +25,7 @@ type ClaimMatchSyncArgs = {
   p_actor_user_id: string;
   p_tracked_account_id: string;
   p_lease_seconds: number;
+  p_history_provider: MatchHistoryProvider;
 };
 
 type ApplyMatchSyncPageArgs = {
@@ -28,6 +37,7 @@ type ApplyMatchSyncPageArgs = {
   p_next_offset: number;
   p_backfill_complete: boolean;
   p_backfill_upper_bound_match_id: number;
+  p_source: MatchHistoryProvider;
 };
 
 type RecordMatchSyncFailureArgs = {
@@ -40,8 +50,8 @@ type RecordMatchSyncFailureArgs = {
 };
 
 type ArchiveRpcClient = {
-  claimMatchSync(args: ClaimMatchSyncArgs): Promise<RpcResponse>;
-  applyMatchSyncPageWithBoundary(
+  claimMatchSyncForProvider(args: ClaimMatchSyncArgs): Promise<RpcResponse>;
+  applyMatchSyncPageWithBoundaryAndSource(
     args: ApplyMatchSyncPageArgs,
   ): Promise<RpcResponse>;
   recordMatchSyncFailure(args: RecordMatchSyncFailureArgs): Promise<RpcResponse>;
@@ -49,7 +59,8 @@ type ArchiveRpcClient = {
 
 type MatchArchiveDependencies = {
   createClient: (env: Env) => ArchiveRpcClient;
-  loadPlayerMatchesPage: typeof loadPlayerMatchesPage;
+  loadOpenDotaPlayerMatchesPage: typeof loadPlayerMatchesPage;
+  loadStratzPlayerMatchesBatch?: typeof loadStratzPlayerMatchesBatch;
 };
 
 export class MatchArchiveError extends Error {
@@ -64,7 +75,8 @@ export class MatchArchiveError extends Error {
 
 const defaultDependencies: MatchArchiveDependencies = {
   createClient: createArchiveRpcClient,
-  loadPlayerMatchesPage,
+  loadOpenDotaPlayerMatchesPage: loadPlayerMatchesPage,
+  loadStratzPlayerMatchesBatch,
 };
 
 export async function syncTrackedAccount(
@@ -78,10 +90,14 @@ export async function syncTrackedAccount(
   }
 
   const archiveClient = dependencies.createClient(env);
-  const claimResponse = await archiveClient.claimMatchSync({
+  const preferredProvider: MatchHistoryProvider = env.STRATZ_API_TOKEN.trim()
+    ? 'stratz'
+    : 'opendota';
+  const claimResponse = await archiveClient.claimMatchSyncForProvider({
     p_actor_user_id: actorUserId,
     p_tracked_account_id: trackedAccountId,
     p_lease_seconds: 300,
+    p_history_provider: preferredProvider,
   });
   const claim = readRpcData(claimResponse, 'Не удалось начать синхронизацию архива');
 
@@ -92,7 +108,7 @@ export async function syncTrackedAccount(
     const status = readString(claim.status);
     if (status === 'failed') {
       throw new MatchArchiveError(
-        'Синхронизация временно приостановлена из-за ошибки OpenDota',
+        'Синхронизация временно приостановлена из-за ошибки провайдера',
         409,
       );
     }
@@ -105,17 +121,19 @@ export async function syncTrackedAccount(
   const accountId = readRequiredInteger(claim.dotaAccountId, 'accountId');
   const offset = readRequiredInteger(claim.offset, 'offset');
   const leaseToken = readRequiredString(claim.leaseToken, 'leaseToken');
+  const provider = readProvider(claim.historyProvider, preferredProvider);
   const claimedUpperBound = readNullableInteger(
     claim.backfillUpperBoundMatchId,
     'backfillUpperBoundMatchId',
   );
 
   try {
-    const page = await dependencies.loadPlayerMatchesPage(
-      env.OPENDOTA_BASE_URL,
+    const page = await loadProviderPage(
+      env,
+      provider,
       accountId,
       offset,
-      HISTORY_PAGE_SIZE,
+      dependencies,
     );
     const upperBound = claimedUpperBound ?? getPageUpperBound(page);
     const boundedMatches = upperBound === null
@@ -123,17 +141,18 @@ export async function syncTrackedAccount(
       : page.matches.filter((match) => Number(match.matchId) <= upperBound);
     const backfillComplete = !page.hasMore;
     const nextOffset = backfillComplete ? 0 : page.nextOffset;
-    const applyResponse = await archiveClient.applyMatchSyncPageWithBoundary({
+    const applyResponse = await archiveClient.applyMatchSyncPageWithBoundaryAndSource({
       p_actor_user_id: actorUserId,
       p_tracked_account_id: trackedAccountId,
       p_dota_account_id: accountId,
       p_lease_token: leaseToken,
-      p_matches: boundedMatches.map(toArchiveRpcMatch),
+      p_matches: boundedMatches.map((match) => toArchiveRpcMatch(match, provider)),
       p_next_offset: nextOffset,
       p_backfill_complete: backfillComplete,
       // Supabase's generated RPC types do not represent nullable arguments.
       // Zero is outside the valid match ID range and is translated to NULL in SQL.
       p_backfill_upper_bound_match_id: upperBound ?? 0,
+      p_source: provider,
     });
     const applied = readRpcData(
       applyResponse,
@@ -162,7 +181,11 @@ export async function syncTrackedAccount(
       error,
     );
 
-    if (error instanceof MatchArchiveError || error instanceof OpenDotaError) {
+    if (
+      error instanceof MatchArchiveError ||
+      error instanceof OpenDotaError ||
+      error instanceof StratzError
+    ) {
       throw error;
     }
 
@@ -184,9 +207,10 @@ function createArchiveRpcClient(env: Env): ArchiveRpcClient {
   );
 
   return {
-    claimMatchSync: async (args) => client.rpc('claim_match_sync', args),
-    applyMatchSyncPageWithBoundary: async (args) =>
-      client.rpc('apply_match_sync_page_with_boundary', args),
+    claimMatchSyncForProvider: async (args) =>
+      client.rpc('claim_match_sync_for_provider', args),
+    applyMatchSyncPageWithBoundaryAndSource: async (args) =>
+      client.rpc('apply_match_sync_page_with_boundary_and_source', args),
     recordMatchSyncFailure: async (args) =>
       client.rpc('record_match_sync_failure', args),
   };
@@ -235,7 +259,10 @@ async function recordSyncFailure(
   }
 }
 
-function toArchiveRpcMatch(match: ArchivedPlayerMatch): Json {
+function toArchiveRpcMatch(
+  match: ArchivedPlayerMatch,
+  source: MatchHistoryProvider,
+): Json {
   return {
     match_id: Number(match.matchId),
     start_time: match.startTime,
@@ -273,6 +300,7 @@ function toArchiveRpcMatch(match: ArchivedPlayerMatch): Json {
     lane: match.lane,
     lane_role: match.laneRole,
     is_roaming: match.isRoaming,
+    source,
   };
 }
 
@@ -346,6 +374,9 @@ function getSyncErrorCode(error: unknown): string {
   if (error instanceof OpenDotaError) {
     return `OPEN_DOTA_${error.statusCode}`;
   }
+  if (error instanceof StratzError) {
+    return `STRATZ_${error.statusCode}`;
+  }
   if (error instanceof MatchArchiveError) {
     return 'ARCHIVE_ERROR';
   }
@@ -353,10 +384,47 @@ function getSyncErrorCode(error: unknown): string {
 }
 
 function getSyncErrorMessage(error: unknown): string {
-  if (error instanceof OpenDotaError || error instanceof MatchArchiveError) {
+  if (
+    error instanceof OpenDotaError ||
+    error instanceof StratzError ||
+    error instanceof MatchArchiveError
+  ) {
     return error.message;
   }
   return 'Неизвестная ошибка синхронизации';
+}
+
+async function loadProviderPage(
+  env: Env,
+  provider: MatchHistoryProvider,
+  accountId: number,
+  offset: number,
+  dependencies: MatchArchiveDependencies,
+): Promise<PlayerMatchesPage> {
+  if (provider === 'stratz') {
+    if (!dependencies.loadStratzPlayerMatchesBatch) {
+      throw new MatchArchiveError('STRATZ provider is not configured on the Worker', 502);
+    }
+    return dependencies.loadStratzPlayerMatchesBatch(
+      env.STRATZ_API_TOKEN,
+      accountId,
+      offset,
+    );
+  }
+
+  return dependencies.loadOpenDotaPlayerMatchesPage(
+    env.OPENDOTA_BASE_URL,
+    accountId,
+    offset,
+    HISTORY_PAGE_SIZE,
+  );
+}
+
+function readProvider(
+  value: Json | undefined,
+  fallback: MatchHistoryProvider,
+): MatchHistoryProvider {
+  return value === 'stratz' || value === 'opendota' ? value : fallback;
 }
 
 function getPageUpperBound(page: { matches: ArchivedPlayerMatch[] }): number | null {

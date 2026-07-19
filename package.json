@@ -12,7 +12,7 @@
     "test:worker": "vitest run --config vitest.config.ts",
     "test:frontend": "vitest run --config vitest.frontend.config.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && wrangler deploy --dry-run",
-    "deploy": "wrangler deploy",
+    "deploy": "pnpm build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "db:push": "supabase db push --linked"
   },

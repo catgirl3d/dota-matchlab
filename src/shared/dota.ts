@@ -25,3 +25,7 @@ export type RecentMatchesResponse = {
   accountId: number;
   matches: RecentDotaMatch[];
 };
+
+export type HeroNamesResponse = {
+  heroes: Record<string, string>;
+};

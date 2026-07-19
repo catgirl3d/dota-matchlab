@@ -1,17 +1,18 @@
 import { useAuth, useSession } from '@clerk/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import type { RecentDotaMatch } from '../../shared/dota';
-import type { MatchSyncResult } from '../../shared/match-archive';
-import {
-  fetchRecentMatches,
-  resolveSteamProfile,
-  syncTrackedAccount,
-} from '../lib/dota-api';
-import { ArchiveSyncPanel } from './ArchiveSyncPanel';
 import type { Tables } from '../../shared/database.types';
-import { calculateMatchSummary } from '../lib/match-summary';
+import type { MatchSyncResult } from '../../shared/match-archive';
+import { fetchArchiveSnapshot } from '../lib/archive';
+import {
+  fetchHeroNames,
+  resolveSteamProfile,
+  syncAllTrackedAccount,
+  syncTrackedAccount,
+  type MatchSyncProgress,
+} from '../lib/dota-api';
 import { createUserSupabaseClient } from '../lib/supabase';
+import { PlayerDashboard } from './PlayerDashboard';
 
 type TrackedAccount = Pick<
   Tables<'tracked_accounts'>,
@@ -32,6 +33,9 @@ export function MatchWorkspace() {
   const queryClient = useQueryClient();
   const [steamProfile, setSteamProfile] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+  const [archiveSyncProgress, setArchiveSyncProgress] =
+    useState<MatchSyncProgress | null>(null);
+  const [archiveSyncMode, setArchiveSyncMode] = useState<'page' | 'all' | null>(null);
 
   const accountsQuery = useQuery({
     queryKey: ['tracked-accounts', userId],
@@ -95,12 +99,9 @@ export function MatchWorkspace() {
         throw new Error('Supabase не рассчитала Dota account ID');
       }
 
-      return {
-        account: { ...data, dota_account_id: data.dota_account_id },
-        profile,
-      };
+      return { ...data, dota_account_id: data.dota_account_id };
     },
-    onSuccess: ({ account }) => {
+    onSuccess: (account) => {
       setSteamProfile('');
       setSelectedAccountId(account.dota_account_id);
       void queryClient.invalidateQueries({ queryKey: ['tracked-accounts', userId] });
@@ -108,11 +109,49 @@ export function MatchWorkspace() {
   });
 
   const accounts = accountsQuery.data ?? [];
-  const activeAccountId =
-    selectedAccountId ?? accounts[0]?.dota_account_id ?? null;
+  const activeAccountId = selectedAccountId ?? accounts[0]?.dota_account_id ?? null;
   const activeAccount =
-    accounts.find((account) => account.dota_account_id === activeAccountId) ??
-    null;
+    accounts.find((account) => account.dota_account_id === activeAccountId) ?? null;
+
+  const archiveQuery = useQuery({
+    queryKey: ['match-archive', activeAccount?.id, activeAccountId],
+    enabled: Boolean(session && activeAccount),
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!session || !activeAccount) {
+        throw new Error('Профиль не выбран');
+      }
+
+      const token = await session.getToken();
+      if (!token) {
+        throw new Error('Не удалось получить Clerk JWT');
+      }
+
+      const supabase = createUserSupabaseClient(async () => token);
+      return fetchArchiveSnapshot(
+        supabase,
+        activeAccount.id,
+        activeAccount.dota_account_id,
+      );
+    },
+  });
+
+  const heroNamesQuery = useQuery({
+    queryKey: ['dota-hero-names'],
+    enabled: Boolean(session && activeAccount),
+    staleTime: 86_400_000,
+    gcTime: 86_400_000,
+    queryFn: async () => {
+      if (!session) {
+        throw new Error('Clerk session is not ready');
+      }
+      const token = await session.getToken();
+      if (!token) {
+        throw new Error('Не удалось получить Clerk JWT');
+      }
+      return fetchHeroNames(token);
+    },
+  });
 
   const archiveSync = useMutation({
     mutationFn: async (trackedAccountId: string) => {
@@ -127,27 +166,21 @@ export function MatchWorkspace() {
 
       return syncTrackedAccount(token, trackedAccountId);
     },
+    onMutate: () => {
+      setArchiveSyncMode('page');
+      setArchiveSyncProgress(null);
+    },
+    onSuccess: (_result, trackedAccountId) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['match-archive', trackedAccountId],
+      });
+    },
   });
 
-  function handleSelectAccount(accountId: number) {
-    setSelectedAccountId(accountId);
-    archiveSync.reset();
-  }
-
-  const isArchiveSyncForActiveAccount =
-    archiveSync.variables === activeAccount?.id;
-  const archiveSyncResult: MatchSyncResult | undefined =
-    isArchiveSyncForActiveAccount ? archiveSync.data : undefined;
-  const archiveSyncError = isArchiveSyncForActiveAccount ? archiveSync.error : null;
-
-  const matchesQuery = useQuery({
-    queryKey: ['recent-matches', activeAccountId],
-    enabled: Boolean(session && activeAccountId !== null),
-    staleTime: 5 * 60_000,
-    retry: false,
-    queryFn: async () => {
-      if (!session || activeAccountId === null) {
-        throw new Error('Профиль не выбран');
+  const archiveSyncAll = useMutation({
+    mutationFn: async (trackedAccountId: string) => {
+      if (!session) {
+        throw new Error('Clerk session is not ready');
       }
 
       const token = await session.getToken();
@@ -155,9 +188,28 @@ export function MatchWorkspace() {
         throw new Error('Не удалось получить Clerk JWT');
       }
 
-      return fetchRecentMatches(token, activeAccountId);
+      return syncAllTrackedAccount(token, trackedAccountId, {
+        onProgress: setArchiveSyncProgress,
+      });
+    },
+    onMutate: () => {
+      setArchiveSyncMode('all');
+      setArchiveSyncProgress(null);
+    },
+    onSettled: (_result, _error, trackedAccountId) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['match-archive', trackedAccountId],
+      });
     },
   });
+
+  function handleSelectAccount(accountId: number) {
+    setSelectedAccountId(accountId);
+    archiveSync.reset();
+    archiveSyncAll.reset();
+    setArchiveSyncProgress(null);
+    setArchiveSyncMode(null);
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -167,12 +219,27 @@ export function MatchWorkspace() {
     }
   }
 
+  const isArchiveSyncForActiveAccount = archiveSync.variables === activeAccount?.id;
+  const isArchiveSyncAllForActiveAccount =
+    archiveSyncAll.variables === activeAccount?.id;
+  const archiveSyncResult: MatchSyncResult | undefined =
+    archiveSyncMode === 'all' && isArchiveSyncAllForActiveAccount
+    ? archiveSyncAll.data
+    : archiveSyncMode === 'page' && isArchiveSyncForActiveAccount
+      ? archiveSync.data
+      : undefined;
+  const archiveSyncError = archiveSyncMode === 'all' && isArchiveSyncAllForActiveAccount
+    ? archiveSyncAll.error
+    : archiveSyncMode === 'page' && isArchiveSyncForActiveAccount
+      ? archiveSync.error
+      : null;
+
   return (
     <section className="match-workspace" aria-labelledby="workspace-title">
       <div className="workspace-header">
         <div>
-          <p className="eyebrow">WORKSPACE / 02</p>
-          <h2 id="workspace-title">Последние матчи</h2>
+          <p className="eyebrow">WORKSPACE / PLAYER</p>
+          <h2 id="workspace-title">Профиль игрока</h2>
         </div>
         <form className="steam-form" onSubmit={handleSubmit}>
           <label htmlFor="steam-id">Steam-профиль</label>
@@ -186,10 +253,7 @@ export function MatchWorkspace() {
               onChange={(event) => setSteamProfile(event.target.value)}
               aria-describedby="steam-id-hint"
             />
-            <button
-              type="submit"
-              disabled={!steamProfile.trim() || addAccount.isPending}
-            >
+            <button type="submit" disabled={!steamProfile.trim() || addAccount.isPending}>
               {addAccount.isPending ? 'Проверяем…' : 'Добавить профиль'}
             </button>
           </div>
@@ -207,7 +271,7 @@ export function MatchWorkspace() {
       ) : accountsQuery.isError ? (
         <WorkspaceMessage text={accountsQuery.error.message} tone="error" />
       ) : accounts.length === 0 ? (
-        <WorkspaceMessage text="Добавьте ссылку Steam-профиля, чтобы получить первые матчи." />
+        <WorkspaceMessage text="Добавьте ссылку Steam-профиля, чтобы собрать личный архив." />
       ) : (
         <>
           <AccountRail
@@ -215,21 +279,29 @@ export function MatchWorkspace() {
             activeAccountId={activeAccountId}
             onSelect={handleSelectAccount}
           />
-          <MatchAnalysis
+          <PlayerDashboard
             account={activeAccount}
-            matches={matchesQuery.data?.matches}
-            isLoading={matchesQuery.isPending}
-            error={matchesQuery.error}
-            onRefresh={() => matchesQuery.refetch()}
-            isRefreshing={matchesQuery.isFetching}
+            snapshot={archiveQuery.data}
+            heroNames={heroNamesQuery.data ?? {}}
+            isLoading={archiveQuery.isPending}
+            error={archiveQuery.error}
+            onRefresh={() => archiveQuery.refetch()}
+            isRefreshing={archiveQuery.isFetching}
             onSyncArchive={() => {
               if (activeAccount) {
                 archiveSync.mutate(activeAccount.id);
               }
             }}
+            onSyncAllArchive={() => {
+              if (activeAccount) {
+                archiveSyncAll.mutate(activeAccount.id);
+              }
+            }}
             archiveSyncResult={archiveSyncResult}
             archiveSyncError={archiveSyncError}
             isArchiveSyncing={archiveSync.isPending}
+            isArchiveSyncingAll={archiveSyncAll.isPending}
+            archiveSyncProgress={archiveSyncProgress}
           />
         </>
       )}
@@ -237,13 +309,15 @@ export function MatchWorkspace() {
   );
 }
 
-type AccountRailProps = {
+function AccountRail({
+  accounts,
+  activeAccountId,
+  onSelect,
+}: {
   accounts: TrackedAccount[];
   activeAccountId: number | null;
   onSelect: (accountId: number) => void;
-};
-
-function AccountRail({ accounts, activeAccountId, onSelect }: AccountRailProps) {
+}) {
   return (
     <div className="account-rail" aria-label="Отслеживаемые профили">
       {accounts.map((account) => (
@@ -278,127 +352,6 @@ function AccountRail({ accounts, activeAccountId, onSelect }: AccountRailProps) 
   );
 }
 
-type MatchAnalysisProps = {
-  account: TrackedAccount | null;
-  matches?: RecentDotaMatch[];
-  isLoading: boolean;
-  isRefreshing: boolean;
-  error: Error | null;
-  onRefresh: () => void;
-  onSyncArchive: () => void;
-  archiveSyncResult?: MatchSyncResult;
-  archiveSyncError: Error | null;
-  isArchiveSyncing: boolean;
-};
-
-function MatchAnalysis({
-  account,
-  matches,
-  isLoading,
-  isRefreshing,
-  error,
-  onRefresh,
-  onSyncArchive,
-  archiveSyncResult,
-  archiveSyncError,
-  isArchiveSyncing,
-}: MatchAnalysisProps) {
-  if (isLoading) {
-    return <WorkspaceMessage text="OpenDota собирает последние матчи…" />;
-  }
-  if (error) {
-    return <WorkspaceMessage text={error.message} tone="error" />;
-  }
-  if (!matches || matches.length === 0) {
-    return (
-      <WorkspaceMessage text="Матчи не найдены. Проверьте настройку Expose Public Match Data в Dota 2." />
-    );
-  }
-
-  const summary = calculateMatchSummary(matches);
-
-  return (
-    <div className="analysis-grid">
-      <aside className="summary-panel">
-        <div className="summary-panel__heading">
-          <div>
-            <span className="micro-label">ACTIVE PLAYER</span>
-            <h3>{account?.persona_name ?? 'Dota player'}</h3>
-          </div>
-          <button type="button" onClick={onRefresh} disabled={isRefreshing}>
-            {isRefreshing ? '…' : '↻'}
-            <span className="sr-only">Обновить матчи</span>
-          </button>
-        </div>
-
-        <div className="win-rate">
-          <strong>{summary.winRate}%</strong>
-          <span>побед за {summary.matches} матчей</span>
-        </div>
-
-        <dl className="summary-stats">
-          <div>
-            <dt>W / L</dt>
-            <dd>
-              {summary.wins} / {summary.losses}
-            </dd>
-          </div>
-          <div>
-            <dt>K / D / A</dt>
-            <dd>
-              {summary.averageKills} / {summary.averageDeaths} /{' '}
-              {summary.averageAssists}
-            </dd>
-          </div>
-          <div>
-            <dt>AVG GPM</dt>
-            <dd>{summary.averageGpm}</dd>
-          </div>
-          </dl>
-          <ArchiveSyncPanel
-            accountName={account?.persona_name ?? 'Dota player'}
-            result={archiveSyncResult}
-            isPending={isArchiveSyncing}
-            error={archiveSyncError}
-            onSync={onSyncArchive}
-          />
-        </aside>
-
-      <div className="match-list" role="list" aria-label="Последние матчи">
-        {matches.map((match) => (
-          <article
-            key={match.matchId}
-            className={match.won ? 'match-row match-row--won' : 'match-row'}
-            role="listitem"
-          >
-            <span className="match-row__result">
-              {match.won ? 'WIN' : 'LOSS'}
-            </span>
-            <div className="match-row__hero">
-              <strong>{match.heroName}</strong>
-              <span>{formatMatchDate(match.startTime)}</span>
-            </div>
-            <div className="match-row__kda">
-              <strong>
-                {match.kills} / {match.deaths} / {match.assists}
-              </strong>
-              <span>K / D / A</span>
-            </div>
-            <div className="match-row__metric">
-              <strong>{match.goldPerMinute}</strong>
-              <span>GPM</span>
-            </div>
-            <div className="match-row__metric">
-              <strong>{formatDuration(match.durationSeconds)}</strong>
-              <span>DURATION</span>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function WorkspaceMessage({
   text,
   tone = 'neutral',
@@ -412,19 +365,4 @@ function WorkspaceMessage({
       <p>{text}</p>
     </div>
   );
-}
-
-function formatMatchDate(timestamp: number): string {
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(timestamp * 1_000));
-}
-
-function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }

@@ -2,11 +2,17 @@ import { clerkMiddleware, getAuth } from '@clerk/hono';
 import { Hono } from 'hono';
 import type { SystemHealth } from '../shared/health';
 import { checkSupabaseHealth } from './services/supabase-health';
-import { loadRecentMatches, OpenDotaError, resolveDotaPlayer } from './services/opendota';
+import {
+  loadHeroConstants,
+  loadRecentMatches,
+  OpenDotaError,
+  resolveDotaPlayer,
+} from './services/opendota';
 import {
   MatchArchiveError,
   syncTrackedAccount,
 } from './services/match-archive';
+import { StratzError } from './services/stratz';
 import {
   resolveSteamProfileInput,
   SteamCommunityError,
@@ -16,6 +22,7 @@ import { InvalidSteamIdError, parseDotaAccountId } from './services/steam-id';
 type AppDependencies = {
   checkSupabase: typeof checkSupabaseHealth;
   loadRecentMatches: typeof loadRecentMatches;
+  loadHeroConstants: typeof loadHeroConstants;
   syncTrackedAccount: typeof syncTrackedAccount;
   resolveDotaPlayer: typeof resolveDotaPlayer;
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
@@ -24,6 +31,7 @@ type AppDependencies = {
 const defaultDependencies: AppDependencies = {
   checkSupabase: checkSupabaseHealth,
   loadRecentMatches,
+  loadHeroConstants,
   syncTrackedAccount,
   resolveDotaPlayer,
   resolveSteamProfileInput,
@@ -118,6 +126,17 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     return context.json(matches);
   });
 
+  app.get('/api/dota/constants/heroes', async (context) => {
+    const auth = getAuth(context);
+    if (!auth.userId) {
+      return context.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const heroes = await dependencies.loadHeroConstants(context.env.OPENDOTA_BASE_URL);
+    context.header('Cache-Control', 'private, max-age=86400');
+    return context.json({ heroes });
+  });
+
   app.post(
     '/api/dota/tracked-accounts/:trackedAccountId/matches/sync',
     async (context) => {
@@ -150,6 +169,9 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
       return context.json({ error: error.message }, error.statusCode);
     }
     if (error instanceof MatchArchiveError) {
+      return context.json({ error: error.message }, error.statusCode);
+    }
+    if (error instanceof StratzError) {
       return context.json({ error: error.message }, error.statusCode);
     }
     if (error instanceof SteamCommunityError) {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  loadHeroConstants,
   loadPlayerMatchesPage,
   loadRecentMatches,
   resolveDotaPlayer,
@@ -145,5 +146,19 @@ describe('OpenDota adapter', () => {
     expect(requestUrl).toContain('offset=100');
     expect(requestUrl).toContain('project=match_id');
     expect(requestUrl).toContain('project=hero_damage');
+  });
+
+  it('normalizes hero constants for archive presentation', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        '1': { localized_name: 'Anti-Mage' },
+        '2': { localized_name: 'Axe' },
+        '3': { localized_name: null },
+      }),
+    );
+
+    await expect(
+      loadHeroConstants('https://api.opendota.com/api', fetcher),
+    ).resolves.toEqual({ '1': 'Anti-Mage', '2': 'Axe' });
   });
 });

@@ -20,8 +20,9 @@ export type Database = {
           last_attempt_at: string | null
           last_error_code: string | null
           last_error_message: string | null
-          last_success_at: string | null
-          lease_expires_at: string | null
+           last_success_at: string | null
+           history_provider: string
+           lease_expires_at: string | null
           lease_token: string | null
           newest_match_id: number | null
           next_retry_at: string | null
@@ -39,8 +40,9 @@ export type Database = {
           last_attempt_at?: string | null
           last_error_code?: string | null
           last_error_message?: string | null
-          last_success_at?: string | null
-          lease_expires_at?: string | null
+           last_success_at?: string | null
+           history_provider?: string
+           lease_expires_at?: string | null
           lease_token?: string | null
           newest_match_id?: number | null
           next_retry_at?: string | null
@@ -58,8 +60,9 @@ export type Database = {
           last_attempt_at?: string | null
           last_error_code?: string | null
           last_error_message?: string | null
-          last_success_at?: string | null
-          lease_expires_at?: string | null
+           last_success_at?: string | null
+           history_provider?: string
+           lease_expires_at?: string | null
           lease_token?: string | null
           newest_match_id?: number | null
           next_retry_at?: string | null
@@ -366,9 +369,45 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_match_sync_page_with_boundary_and_source: {
+        Args: {
+          p_actor_user_id: string
+          p_backfill_complete: boolean
+          p_backfill_upper_bound_match_id: number
+          p_dota_account_id: number
+          p_lease_token: string
+          p_matches: Json
+          p_next_offset: number
+          p_source: string
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
+      apply_match_sync_page_with_source: {
+        Args: {
+          p_actor_user_id: string
+          p_backfill_complete: boolean
+          p_dota_account_id: number
+          p_lease_token: string
+          p_matches: Json
+          p_next_offset: number
+          p_source: string
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
       claim_match_sync: {
         Args: {
           p_actor_user_id: string
+          p_lease_seconds?: number
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
+      claim_match_sync_for_provider: {
+        Args: {
+          p_actor_user_id: string
+          p_history_provider?: string
           p_lease_seconds?: number
           p_tracked_account_id: string
         }
@@ -517,4 +556,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

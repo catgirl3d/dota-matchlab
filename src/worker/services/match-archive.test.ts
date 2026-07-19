@@ -10,11 +10,62 @@ const testEnv: Env = {
   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_example',
   SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_example',
   SUPABASE_URL: 'https://example.supabase.co',
+  STRATZ_API_TOKEN: '',
 };
 
 const trackedAccountId = '00000000-0000-0000-0000-000000000202';
 
 describe('match archive sync', () => {
+  it('uses STRATZ as the primary provider when its secret is configured', async () => {
+    const archiveClient = createArchiveClient({
+      claim: {
+        owned: true,
+        claimed: true,
+        dotaAccountId: 123456789,
+        offset: 0,
+        backfillComplete: false,
+        historyProvider: 'stratz',
+        leaseToken: 'lease-token',
+      },
+      apply: {
+        archivedMatches: 1,
+        status: 'ready',
+        backfillComplete: true,
+        nextOffset: 0,
+      },
+    });
+    const stratzPage = {
+      accountId: 123456789,
+      offset: 0,
+      limit: 100,
+      nextOffset: 1,
+      hasMore: false,
+      matches: [createArchivedMatch('9000000201')],
+    } satisfies PlayerMatchesPage;
+    const loadStratzPlayerMatchesBatch = vi.fn().mockResolvedValue(stratzPage);
+    const loadOpenDotaPlayerMatchesPage = vi.fn();
+    const env = { ...testEnv, STRATZ_API_TOKEN: 'stratz_token_example' };
+
+    await syncTrackedAccount(env, 'sync-user-a', trackedAccountId, {
+      createClient: () => archiveClient,
+      loadOpenDotaPlayerMatchesPage,
+      loadStratzPlayerMatchesBatch,
+    });
+
+    expect(loadStratzPlayerMatchesBatch).toHaveBeenCalledWith(
+      'stratz_token_example',
+      123456789,
+      0,
+    );
+    expect(loadOpenDotaPlayerMatchesPage).not.toHaveBeenCalled();
+    expect(archiveClient.claimMatchSyncForProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ p_history_provider: 'stratz' }),
+    );
+    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
+      expect.objectContaining({ p_source: 'stratz' }),
+    );
+  });
+
   it('claims, loads, and atomically applies one complete page', async () => {
     const archiveClient = createArchiveClient({
       claim: {
@@ -79,7 +130,7 @@ describe('match archive sync', () => {
         },
       ],
     };
-    const loadPlayerMatchesPage = vi.fn().mockResolvedValue(page);
+    const loadOpenDotaPlayerMatchesPage = vi.fn().mockResolvedValue(page);
 
     await expect(
       syncTrackedAccount(
@@ -88,7 +139,7 @@ describe('match archive sync', () => {
         trackedAccountId,
         {
           createClient: () => archiveClient,
-          loadPlayerMatchesPage,
+          loadOpenDotaPlayerMatchesPage,
         },
       ),
     ).resolves.toEqual({
@@ -101,13 +152,13 @@ describe('match archive sync', () => {
       nextOffset: 0,
     });
 
-    expect(loadPlayerMatchesPage).toHaveBeenCalledWith(
+    expect(loadOpenDotaPlayerMatchesPage).toHaveBeenCalledWith(
       testEnv.OPENDOTA_BASE_URL,
       123456789,
       0,
       100,
     );
-    expect(archiveClient.applyMatchSyncPageWithBoundary).toHaveBeenCalledWith(
+    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
       expect.objectContaining({
         p_actor_user_id: 'sync-user-a',
         p_tracked_account_id: trackedAccountId,
@@ -126,7 +177,7 @@ describe('match archive sync', () => {
     const archiveClient = createArchiveClient({
       claim: { owned: false, claimed: false },
     });
-    const loadPlayerMatchesPage = vi.fn();
+    const loadOpenDotaPlayerMatchesPage = vi.fn();
 
     await expect(
       syncTrackedAccount(
@@ -135,13 +186,13 @@ describe('match archive sync', () => {
         trackedAccountId,
         {
           createClient: () => archiveClient,
-          loadPlayerMatchesPage,
+          loadOpenDotaPlayerMatchesPage,
         },
       ),
     ).rejects.toMatchObject({ statusCode: 404 });
 
-    expect(loadPlayerMatchesPage).not.toHaveBeenCalled();
-    expect(archiveClient.applyMatchSyncPageWithBoundary).not.toHaveBeenCalled();
+    expect(loadOpenDotaPlayerMatchesPage).not.toHaveBeenCalled();
+    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).not.toHaveBeenCalled();
   });
 
   it('returns conflict when another sync owns the lease', async () => {
@@ -152,7 +203,7 @@ describe('match archive sync', () => {
         status: 'syncing',
       },
     });
-    const loadPlayerMatchesPage = vi.fn();
+    const loadOpenDotaPlayerMatchesPage = vi.fn();
 
     await expect(
       syncTrackedAccount(
@@ -161,12 +212,12 @@ describe('match archive sync', () => {
         trackedAccountId,
         {
           createClient: () => archiveClient,
-          loadPlayerMatchesPage,
+          loadOpenDotaPlayerMatchesPage,
         },
       ),
     ).rejects.toMatchObject({ statusCode: 409 });
 
-    expect(loadPlayerMatchesPage).not.toHaveBeenCalled();
+    expect(loadOpenDotaPlayerMatchesPage).not.toHaveBeenCalled();
   });
 
   it('filters newly inserted matches above the backfill high-water mark', async () => {
@@ -187,7 +238,7 @@ describe('match archive sync', () => {
         nextOffset: 200,
       },
     });
-    const loadPlayerMatchesPage = vi.fn().mockResolvedValue({
+    const loadOpenDotaPlayerMatchesPage = vi.fn().mockResolvedValue({
       accountId: 123456789,
       offset: 100,
       limit: 100,
@@ -202,11 +253,11 @@ describe('match archive sync', () => {
       trackedAccountId,
       {
         createClient: () => archiveClient,
-        loadPlayerMatchesPage,
+        loadOpenDotaPlayerMatchesPage,
       },
     );
 
-    expect(archiveClient.applyMatchSyncPageWithBoundary).toHaveBeenCalledWith(
+    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
       expect.objectContaining({
         p_backfill_upper_bound_match_id: 9000000200,
         p_next_offset: 200,
@@ -234,7 +285,7 @@ describe('match archive sync', () => {
         nextOffset: 100,
       },
     });
-    const loadPlayerMatchesPage = vi.fn().mockResolvedValue({
+    const loadOpenDotaPlayerMatchesPage = vi.fn().mockResolvedValue({
       accountId: 123456789,
       offset: 0,
       limit: 100,
@@ -249,11 +300,11 @@ describe('match archive sync', () => {
       trackedAccountId,
       {
         createClient: () => archiveClient,
-        loadPlayerMatchesPage,
+        loadOpenDotaPlayerMatchesPage,
       },
     );
 
-    expect(archiveClient.applyMatchSyncPageWithBoundary).toHaveBeenCalledWith(
+    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
       expect.objectContaining({
         p_backfill_upper_bound_match_id: 9000000300,
         p_next_offset: 100,
@@ -274,7 +325,7 @@ describe('match archive sync', () => {
       },
     });
     const providerError = new OpenDotaError('Лимит OpenDota исчерпан', 429);
-    const loadPlayerMatchesPage = vi.fn().mockRejectedValue(providerError);
+    const loadOpenDotaPlayerMatchesPage = vi.fn().mockRejectedValue(providerError);
 
     await expect(
       syncTrackedAccount(
@@ -283,7 +334,7 @@ describe('match archive sync', () => {
         trackedAccountId,
         {
           createClient: () => archiveClient,
-          loadPlayerMatchesPage,
+          loadOpenDotaPlayerMatchesPage,
         },
       ),
     ).rejects.toBe(providerError);
@@ -304,14 +355,15 @@ function createArchiveClient(options: {
   apply?: Record<string, unknown>;
 }) {
   return {
-    claimMatchSync: vi.fn().mockResolvedValue({
+    claimMatchSyncForProvider: vi.fn().mockResolvedValue({
       data: options.claim,
       error: null,
     }),
-    applyMatchSyncPageWithBoundary: vi.fn().mockResolvedValue({
+    applyMatchSyncPageWithBoundaryAndSource: vi.fn().mockResolvedValue({
       data: options.apply ?? {},
       error: null,
     }),
+    loadStratzPlayerMatchesBatch: vi.fn(),
     recordMatchSyncFailure: vi.fn().mockResolvedValue({
       data: { recorded: true },
       error: null,

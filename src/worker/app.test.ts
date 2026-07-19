@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from './app';
+import { StratzError } from './services/stratz';
 
 const testEnv: Env = {
   CLERK_PUBLISHABLE_KEY:
@@ -8,10 +9,30 @@ const testEnv: Env = {
   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_example',
   SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_example',
   SUPABASE_URL: 'https://example.supabase.co',
+  STRATZ_API_TOKEN: 'stratz_token_example',
   OPENDOTA_BASE_URL: 'https://api.opendota.com/api',
 };
 
 describe('API health routes', () => {
+  it('preserves STRATZ status instead of returning a generic 500', async () => {
+    const app = createApp({
+      checkSupabase: async () => {
+        throw new StratzError('STRATZ отклонил запрос', 403);
+      },
+    });
+
+    const response = await app.request(
+      'https://example.com/api/health',
+      undefined,
+      testEnv,
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: 'STRATZ отклонил запрос',
+    });
+  });
+
   it('reports a healthy vertical slice', async () => {
     const app = createApp({
       checkSupabase: async () => ({ status: 'ok', latencyMs: 7 }),

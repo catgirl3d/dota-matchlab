@@ -109,7 +109,7 @@ export default function App({ clerkEnabled }: AppProps) {
 
       <footer className="footer">
         <span>INDEPENDENT ANALYSIS TOOL</span>
-        <span>DATA PROVIDER: OPENDOTA · PLANNED</span>
+        <span>DATA PROVIDER: STRATZ PRIMARY · OPENDOTA FALLBACK</span>
       </footer>
     </div>
   );
