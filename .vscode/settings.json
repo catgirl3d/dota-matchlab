@@ -20,7 +20,7 @@
         "color": "#ffb74d",
         "singleInstance": true,
         "cwd": "${workspaceFolder}",
-        "command": "pnpm deploy"
+        "command": "pnpm run deploy"
       }
     ],
     "defaultColor": "white",

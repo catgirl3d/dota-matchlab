@@ -75,7 +75,7 @@
     {
       "label": "Dota Matchlab: Deploy to Cloudflare",
       "type": "shell",
-      "command": "pnpm deploy",
+      "command": "pnpm run deploy",
       "options": {
         "cwd": "${workspaceFolder}"
       },
