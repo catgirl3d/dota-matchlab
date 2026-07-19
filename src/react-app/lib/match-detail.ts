@@ -33,7 +33,9 @@ export type MatchDetailPlayer = {
     name: string | null;
     isTalent: boolean;
   }>;
+  hasAbilityBuildData: boolean;
   purchaseEvents: Array<{ time: number; itemId: number }>;
+  hasPurchaseEventsData: boolean;
   minuteSeries: {
     gold: number[];
     experience: number[];
@@ -102,6 +104,7 @@ export type MatchDetailSnapshot = {
   };
   chatMessages: MatchChatMessage[];
   availableSections: string[];
+  rosterStatus: 'complete' | 'incomplete';
 };
 
 type DotaMatchRow = Pick<
@@ -173,6 +176,7 @@ export async function fetchMatchDetail(
         'metadata',
         'players',
         'player_stats',
+        'player_playback',
         'match_playback',
       ]),
   ]);
@@ -204,34 +208,22 @@ export function buildMatchDetailSnapshot(
   );
   const history = payloadBySection.get('match') ?? null;
   const metadata = payloadBySection.get('metadata') ?? history;
-  const playersPayload = payloadBySection.get('players') ?? history;
+  const detailPlayersPayload = payloadBySection.get('players');
   const statsPayload = payloadBySection.get('player_stats');
+  const playerPlaybackPayload = payloadBySection.get('player_playback');
   const playbackPayload = payloadBySection.get('match_playback');
-  const rawPlayers = readObjectArray(playersPayload?.players);
+  const historyPlayers = readObjectArray(history?.players);
+  const detailPlayers = readObjectArray(detailPlayersPayload?.players);
+  const rawPlayers = mergeRoster(detailPlayers, historyPlayers);
   const rawPlayersByAccount = new Map(
     rawPlayers.flatMap((player): Array<[number, Record<string, unknown>]> => {
       const accountId = readInteger(player.steamAccountId);
       return accountId === null ? [] : [[accountId, player]];
     }),
   );
-  const normalizedByAccount = new Map(
-    normalizedPlayers.map((player) => [player.account_id, player]),
-  );
   const playerStatsByAccount = mapNestedPlayerData(statsPayload, 'stats');
-  const players = rawPlayers.map((rawPlayer, index) =>
-    buildPlayer(
-      rawPlayer,
-      normalizedByAccount.get(readInteger(rawPlayer.steamAccountId) ?? -1),
-      playerStatsByAccount.get(readInteger(rawPlayer.steamAccountId) ?? -1),
-      index,
-    ),
-  );
-
-  if (players.length === 0) {
-    for (const [index, player] of normalizedPlayers.entries()) {
-      players.push(buildPlayer({}, player, undefined, index));
-    }
-  }
+  const playerPlaybackByAccount = mapPlayerPlaybackData(playerPlaybackPayload);
+  const players = buildRosterPlayers(rawPlayers, normalizedPlayers, playerStatsByAccount, playerPlaybackByAccount);
 
   const radiantScore =
     match.radiant_score ??
@@ -287,6 +279,7 @@ export function buildMatchDetailSnapshot(
       .filter((row) => row.payload_kind === 'detail')
       .map((row) => row.payload_section)
       .sort(),
+    rosterStatus: players.length >= 10 ? 'complete' : 'incomplete',
   };
 }
 
@@ -345,28 +338,22 @@ function buildPlayer(
   raw: Record<string, unknown>,
   normalized: PlayerStatsRow | undefined,
   detailStats: Record<string, unknown> | undefined,
+  playerPlayback: Record<string, unknown> | undefined,
   index: number,
 ): MatchDetailPlayer {
   const playerSlot = readInteger(raw.playerSlot) ?? normalized?.player_slot ?? index;
   const accountId = readInteger(raw.steamAccountId) ?? normalized?.account_id ?? null;
   const steamAccount = readObject(raw.steamAccount);
-  const abilityBuild = readObjectArray(raw.abilities).flatMap((ability) => {
-    const abilityId = readInteger(ability.abilityId);
-    if (abilityId === null) return [];
-    const abilityType = readObject(ability.abilityType);
-    return [{
-      abilityId,
-      time: readInteger(ability.time) ?? 0,
-      level: readInteger(ability.level) ?? 0,
-      name: readString(abilityType?.name),
-      isTalent: ability.isTalent === true,
-    }];
-  });
-  const purchases = readObjectArray(detailStats?.itemPurchases).flatMap((purchase) => {
-    const time = readInteger(purchase.time);
-    const itemId = readInteger(purchase.itemId);
-    return time === null || itemId === null ? [] : [{ time, itemId }];
-  });
+  const playbackData = readObject(playerPlayback?.playbackData) ?? playerPlayback;
+  const abilityNames = readAbilityNames(raw.abilities);
+  const playbackAbilities = readAbilityEvents(playbackData?.abilityLearnEvents, abilityNames);
+  const fallbackAbilityBuild = readAbilityEvents(raw.abilities);
+  const playbackPurchases = readPurchaseEvents(playbackData?.purchaseEvents);
+  const fallbackPurchases = readPurchaseEvents(detailStats?.itemPurchases);
+  const hasPlaybackAbilities = Array.isArray(playbackData?.abilityLearnEvents);
+  const hasFallbackAbilities = Array.isArray(raw.abilities);
+  const hasPlaybackPurchases = Array.isArray(playbackData?.purchaseEvents);
+  const hasFallbackPurchases = Array.isArray(detailStats?.itemPurchases);
   const dotaPlus = readObject(raw.dotaPlus);
 
   return {
@@ -394,8 +381,10 @@ function buildPlayer(
     itemIds: readItemIds(raw, ['item0Id', 'item1Id', 'item2Id', 'item3Id', 'item4Id', 'item5Id']),
     backpackItemIds: readItemIds(raw, ['backpack0Id', 'backpack1Id', 'backpack2Id']),
     neutralItemId: readInteger(raw.neutral0Id),
-    abilityBuild,
-    purchaseEvents: purchases,
+    abilityBuild: hasPlaybackAbilities ? playbackAbilities : fallbackAbilityBuild,
+    hasAbilityBuildData: hasPlaybackAbilities || hasFallbackAbilities,
+    purchaseEvents: hasPlaybackPurchases ? playbackPurchases : fallbackPurchases,
+    hasPurchaseEventsData: hasPlaybackPurchases || hasFallbackPurchases,
     minuteSeries: {
       gold: readNumberArray(detailStats?.goldPerMinute),
       experience: readNumberArray(detailStats?.experiencePerMinute),
@@ -432,6 +421,116 @@ function mapNestedPlayerData(
     }
   }
   return result;
+}
+
+function mapPlayerPlaybackData(
+  payload: Record<string, unknown> | null | undefined,
+): Map<number, Record<string, unknown>> {
+  const playbackPlayers = readObjectArray(payload?.players);
+  const result = new Map<number, Record<string, unknown>>();
+
+  for (const player of playbackPlayers) {
+    const playbackData = readObject(player.playbackData);
+    const accountId = readInteger(player.steamAccountId);
+    if (accountId !== null && playbackData) result.set(accountId, player);
+  }
+
+  return result;
+}
+
+function readAbilityEvents(
+  value: unknown,
+  abilityNames: Map<number, string> = new Map(),
+): MatchDetailPlayer['abilityBuild'] {
+  return readObjectArray(value)
+    .flatMap((ability) => {
+      const abilityId = readInteger(ability.abilityId);
+      if (abilityId === null) return [];
+      return [{
+        abilityId,
+        time: readInteger(ability.time) ?? 0,
+        level: readInteger(ability.levelObtained) ?? readInteger(ability.level) ?? 0,
+        name: readString(readObject(ability.abilityType)?.name) ?? abilityNames.get(abilityId) ?? null,
+        isTalent: ability.isTalent === true,
+      }];
+    })
+    .sort((left, right) => left.time - right.time || left.abilityId - right.abilityId || left.level - right.level);
+}
+
+function readAbilityNames(value: unknown): Map<number, string> {
+  const names = new Map<number, string>();
+  for (const ability of readObjectArray(value)) {
+    const abilityId = readInteger(ability.abilityId);
+    const name = readString(readObject(ability.abilityType)?.name);
+    if (abilityId !== null && name !== null) names.set(abilityId, name);
+  }
+  return names;
+}
+
+function buildRosterPlayers(
+  rawPlayers: Array<Record<string, unknown>>,
+  normalizedPlayers: PlayerStatsRow[],
+  playerStatsByAccount: Map<number, Record<string, unknown>>,
+  playerPlaybackByAccount: Map<number, Record<string, unknown>>,
+): MatchDetailPlayer[] {
+  const usedNormalized = new Set<PlayerStatsRow>();
+  const players = rawPlayers.map((rawPlayer, index) => {
+    const accountId = readInteger(rawPlayer.steamAccountId);
+    const playerSlot = readInteger(rawPlayer.playerSlot);
+    const normalized = accountId === null
+      ? normalizedPlayers.find((player) => !usedNormalized.has(player) && playerSlot !== null && player.player_slot === playerSlot)
+      : normalizedPlayers.find((player) => !usedNormalized.has(player) && player.account_id === accountId);
+    if (normalized) usedNormalized.add(normalized);
+    const resolvedAccountId = accountId ?? normalized?.account_id;
+    return buildPlayer(
+      rawPlayer,
+      normalized,
+      resolvedAccountId === null ? undefined : playerStatsByAccount.get(resolvedAccountId),
+      resolvedAccountId === null ? undefined : playerPlaybackByAccount.get(resolvedAccountId),
+      index,
+    );
+  });
+
+  for (const [index, normalized] of normalizedPlayers.entries()) {
+    if (usedNormalized.has(normalized)) continue;
+    players.push(buildPlayer({}, normalized, playerStatsByAccount.get(normalized.account_id), playerPlaybackByAccount.get(normalized.account_id), rawPlayers.length + index));
+  }
+  return players;
+}
+
+function mergeRoster(
+  detailPlayers: Array<Record<string, unknown>>,
+  historyPlayers: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> {
+  const merged = [...historyPlayers];
+  for (const detailPlayer of detailPlayers) {
+    const detailAccountId = readInteger(detailPlayer.steamAccountId);
+    const detailSlot = readInteger(detailPlayer.playerSlot);
+    const index = merged.findIndex((historyPlayer) => {
+      const historyAccountId = readInteger(historyPlayer.steamAccountId);
+      if (detailAccountId !== null && historyAccountId !== null) return detailAccountId === historyAccountId;
+      if (detailAccountId !== null || historyAccountId !== null) {
+        return detailSlot !== null && detailSlot === readInteger(historyPlayer.playerSlot);
+      }
+      return detailSlot !== null && detailSlot === readInteger(historyPlayer.playerSlot);
+    });
+    if (index === -1) {
+      merged.push(detailPlayer);
+    } else {
+      merged[index] = { ...merged[index], ...detailPlayer };
+    }
+  }
+  return merged;
+}
+
+function readPurchaseEvents(value: unknown): MatchDetailPlayer['purchaseEvents'] {
+  return readObjectArray(value)
+    .flatMap((purchase) => {
+      const time = readInteger(purchase.time);
+      const itemId = readInteger(purchase.itemId);
+      return time === null || itemId === null ? [] : [{ time, itemId }];
+    })
+    .sort((left, right) => left.time - right.time || left.itemId - right.itemId);
 }
 
 function unwrapMatch(payload: Json): Record<string, unknown> | null {

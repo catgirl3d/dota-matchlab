@@ -4,6 +4,7 @@ import {
   loadStratzMatchDetail,
   loadStratzPlayerMatchesPage,
 } from './stratz';
+import { PLAYER_PLAYBACK_SELECTION } from './stratz-detail-selections';
 
 describe('STRATZ match provider', () => {
   it('loads and normalizes the player row from a GraphQL match page', async () => {
@@ -206,6 +207,8 @@ describe('STRATZ match provider', () => {
     ]);
     expect(requestBodies[2].query).toContain('inventoryReport');
     expect(requestBodies[3].query).toContain('playerUpdatePositionEvents');
+    expect(requestBodies[3].query).toContain('players { steamAccountId playbackData');
+    expect(PLAYER_PLAYBACK_SELECTION).toMatch(/^steamAccountId playbackData/);
   });
 
   it('returns earlier successful sections when a later section fails', async () => {

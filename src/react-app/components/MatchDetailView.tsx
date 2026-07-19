@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type {
   MatchChatMessage,
   MatchDetailPlayer,
   MatchDetailSnapshot,
 } from '../lib/match-detail';
+import { getItemIcon } from '../lib/item-icons';
 
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
@@ -45,11 +46,23 @@ export function MatchDetailView({
   const focusedPlayer =
     detail.players.find((player) => player.accountId === currentAccountId) ?? detail.players[0];
   const hasPlayerStats = detail.availableSections.includes('player_stats');
+  const hasDetailSections = detail.availableSections.length > 0;
+  const detailNotice = detail.detailStatus === 'available'
+    ? null
+    : hasDetailSections
+      ? {
+          title: 'Частичный разбор',
+          message: 'Сохранённые данные уже показаны. Недостающие разделы можно дозагрузить или повторить загрузку полного разбора.',
+        }
+      : {
+          title: 'Базовый разбор',
+          message: 'Основная статистика уже доступна. Загрузите расширенный разбор для playback, abilities и подробных событий.',
+        };
   const radiantLabel = detail.radiantWin === true ? 'WON' : detail.radiantWin === false ? 'LOST' : '—';
   const direLabel = detail.radiantWin === false ? 'WON' : detail.radiantWin === true ? 'LOST' : '—';
 
   return (
-    <section className="match-detail" aria-labelledby="match-detail-title">
+    <section className="match-detail" aria-label="Match detail">
       <div className="match-detail__toolbar">
         <button className="match-detail__back" type="button" onClick={onBack}>
           <span aria-hidden="true">←</span>
@@ -86,13 +99,11 @@ export function MatchDetailView({
         />
       </header>
 
-      {detail.detailStatus !== 'available' ? (
+      {detailNotice ? (
         <div className="match-detail__notice">
           <div>
-            <strong>Базовый разбор</strong>
-            <span>
-              Основная статистика уже доступна. Загрузите расширенный разбор для playback, abilities и подробных событий.
-            </span>
+            <strong>{detailNotice.title}</strong>
+            <span>{detailNotice.message}</span>
           </div>
           <button type="button" onClick={onParse} disabled={isParsing}>
             {isParsing ? 'Загружаем детали…' : 'Загрузить полный разбор'}
@@ -179,16 +190,23 @@ export function MatchDetailView({
       </section>
 
       <section className="detail-panel detail-builds" aria-labelledby="builds-title">
-        <DetailHeading eyebrow="LOADOUT / BUILDS" title="Items and abilities" id="builds-title" />
+        <DetailHeading eyebrow="LOADOUT / BUILDS" title="Team builds" id="builds-title" />
+        {detail.rosterStatus === 'incomplete' ? (
+          <p className="detail-builds__roster-status">{detail.players.length}/10 players captured</p>
+        ) : null}
         <div className="detail-builds__grid">
-          {detail.players.map((player) => (
-            <PlayerBuild
-              key={player.key}
-              player={player}
-              heroNames={heroNames}
-              highlighted={player.accountId === currentAccountId}
-            />
-          ))}
+          <BuildTeamColumn
+            side="radiant"
+            players={radiantPlayers}
+            heroNames={heroNames}
+            currentAccountId={currentAccountId}
+          />
+          <BuildTeamColumn
+            side="dire"
+            players={direPlayers}
+            heroNames={heroNames}
+            currentAccountId={currentAccountId}
+          />
         </div>
       </section>
     </section>
@@ -372,6 +390,38 @@ function AdvantageChart({ networth, experience }: { networth: number[]; experien
   );
 }
 
+function BuildTeamColumn({
+  side,
+  players,
+  heroNames,
+  currentAccountId,
+}: {
+  side: 'radiant' | 'dire';
+  players: MatchDetailPlayer[];
+  heroNames: Record<number, string>;
+  currentAccountId: number;
+}) {
+  const orderedPlayers = [...players].sort((left, right) => left.playerSlot - right.playerSlot);
+  return (
+    <section className={`build-team build-team--${side}`} aria-labelledby={`build-team-${side}`}>
+      <header className="build-team__header">
+        <span className="micro-label">{side.toUpperCase()} / {orderedPlayers.length} PLAYERS</span>
+        <h4 id={`build-team-${side}`}>{side === 'radiant' ? 'Radiant builds' : 'Dire builds'}</h4>
+      </header>
+      {orderedPlayers.length === 0 ? (
+        <p className="build-team__empty">Roster is incomplete. No {side} player data was stored.</p>
+      ) : orderedPlayers.map((player) => (
+        <PlayerBuild
+          key={player.key}
+          player={player}
+          heroNames={heroNames}
+          highlighted={player.accountId === currentAccountId}
+        />
+      ))}
+    </section>
+  );
+}
+
 function PlayerBuild({
   player,
   heroNames,
@@ -381,8 +431,18 @@ function PlayerBuild({
   heroNames: Record<number, string>;
   highlighted: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const visibleLimit = 12;
+  const abilityEvents = isExpanded ? player.abilityBuild : player.abilityBuild.slice(0, visibleLimit);
+  const purchaseEvents = isExpanded ? player.purchaseEvents : player.purchaseEvents.slice(0, visibleLimit);
+  const hiddenEvents = Math.max(0, player.abilityBuild.length - abilityEvents.length) + Math.max(0, player.purchaseEvents.length - purchaseEvents.length);
+
   return (
-    <article className={`player-build${highlighted ? ' is-current' : ''}`}>
+    <article
+      className={`player-build${highlighted ? ' is-current' : ''}`}
+      aria-current={highlighted ? 'true' : undefined}
+      aria-label={`Build for ${player.name ?? formatAccount(player.accountId)}`}
+    >
       <div className="player-build__header">
         <span className="scoreboard-player__hero" aria-hidden="true">{heroMark(player.heroId, heroNames)}</span>
         <div>
@@ -391,11 +451,38 @@ function PlayerBuild({
         </div>
         <small>{player.imp === null ? '—' : `${player.imp > 0 ? '+' : ''}${player.imp} IMP`}</small>
       </div>
-      <div className="player-build__items">
+      <div className="player-build__loadout" aria-label={`Final loadout for ${player.name ?? formatAccount(player.accountId)}`}>
+        <span className="player-build__label">FINAL</span>
+        <div className="player-build__items">
         {player.itemIds.length === 0 ? <span className="item-token is-empty">NO ITEMS</span> : null}
-        {player.itemIds.map((itemId, index) => <span className="item-token" key={`${itemId}-${index}`}>#{itemId}</span>)}
-        {player.backpackItemIds.map((itemId, index) => <span className="item-token is-backpack" key={`b-${itemId}-${index}`}>#{itemId}</span>)}
-        {player.neutralItemId ? <span className="item-token is-neutral">N{player.neutralItemId}</span> : null}
+        {player.itemIds.map((itemId, index) => <ItemToken itemId={itemId} key={`${itemId}-${index}`} />)}
+        {player.backpackItemIds.map((itemId, index) => <ItemToken itemId={itemId} tone="backpack" key={`b-${itemId}-${index}`} />)}
+        {player.neutralItemId ? <ItemToken itemId={player.neutralItemId} tone="neutral" /> : null}
+        </div>
+      </div>
+      <div className="player-build__progression">
+          <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={abilityEvents} total={player.abilityBuild.length}>
+            {(ability, index) => (
+              <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : ''}`} key={`${ability.time}-${ability.abilityId}-${index}`} title={formatAbilityName(ability.name, ability.abilityId)}>
+                <strong>{ability.isTalent ? 'TALENT' : formatAbilityName(ability.name, ability.abilityId)}</strong>
+                <small>{formatEventTime(ability.time)} · L{ability.level + 1}</small>
+              </span>
+            )}
+          </BuildTimeline>
+          <BuildTimeline label="PURCHASES" emptyLabel="No purchase events" unavailableLabel="Purchase progression unavailable." available={player.hasPurchaseEventsData} events={purchaseEvents} total={player.purchaseEvents.length}>
+            {(purchase, index) => (
+              <span className="build-timeline__token build-timeline__token--item" key={`${purchase.time}-${purchase.itemId}-${index}`} title={`Item #${purchase.itemId} at ${formatEventTime(purchase.time)}`}>
+                <ItemIcon itemId={purchase.itemId} className="build-timeline__item-icon" />
+                {getItemIcon(purchase.itemId) === null ? <strong>#{purchase.itemId}</strong> : null}
+                <small>{formatEventTime(purchase.time)}</small>
+              </span>
+            )}
+          </BuildTimeline>
+          {hiddenEvents > 0 ? (
+            <button className="player-build__expand" type="button" onClick={() => setIsExpanded((value) => !value)} aria-expanded={isExpanded}>
+              {isExpanded ? 'Collapse timelines' : `Show ${hiddenEvents} more events`}
+            </button>
+          ) : null}
       </div>
       <div className="player-build__footer">
         <span>{formatCompact(player.heroDamage)} hero dmg</span>
@@ -404,6 +491,31 @@ function PlayerBuild({
         <span>{player.abilityBuild.length} abilities</span>
       </div>
     </article>
+  );
+}
+
+function BuildTimeline<T extends { time: number }>({
+  label,
+  emptyLabel,
+  unavailableLabel,
+  available,
+  events,
+  total,
+  children,
+}: {
+  label: string;
+  emptyLabel: string;
+  unavailableLabel: string;
+  available: boolean;
+  events: T[];
+  total: number;
+  children: (event: T, index: number) => ReactNode;
+}) {
+  return (
+    <div className="build-timeline">
+      <span className="player-build__label">{label} / {total}</span>
+      {!available ? <span className="build-timeline__empty">{unavailableLabel}</span> : events.length === 0 ? <span className="build-timeline__empty">{emptyLabel}</span> : <div className="build-timeline__strip">{events.map(children)}</div>}
+    </div>
   );
 }
 
@@ -444,34 +556,22 @@ function FullPlayerAnalysis({
           </div>
         </div>
       </div>
-      <div className="full-analysis__progression">
-        <div>
-          <span className="micro-label">PURCHASE TIMELINE / {player.purchaseEvents.length}</span>
-          <div className="progression-strip">
-            {player.purchaseEvents.slice(0, 28).map((purchase, index) => (
-              <span className="progression-token" key={`${purchase.time}-${purchase.itemId}-${index}`}>
-                <strong>#{purchase.itemId}</strong>
-                <small>{formatEventTime(purchase.time)}</small>
-              </span>
-            ))}
-            {player.purchaseEvents.length === 0 ? <span className="detail-empty-inline">No purchase data</span> : null}
-          </div>
-        </div>
-        <div>
-          <span className="micro-label">ABILITY BUILD / {player.abilityBuild.length}</span>
-          <div className="progression-strip">
-            {player.abilityBuild.slice(0, 28).map((ability, index) => (
-              <span className={`progression-token${ability.isTalent ? ' is-talent' : ''}`} key={`${ability.time}-${ability.abilityId}-${index}`}>
-                <strong>{formatAbilityName(ability.name, ability.abilityId)}</strong>
-                <small>{formatEventTime(ability.time)} · L{ability.level + 1}</small>
-              </span>
-            ))}
-            {player.abilityBuild.length === 0 ? <span className="detail-empty-inline">No ability data</span> : null}
-          </div>
-        </div>
-      </div>
     </section>
   );
+}
+
+function ItemToken({ itemId, tone }: { itemId: number; tone?: 'backpack' | 'neutral' }) {
+  return (
+    <span className={`item-token${tone ? ` is-${tone}` : ''}`}>
+      <ItemIcon itemId={itemId} className="item-token__icon" />
+      {getItemIcon(itemId) === null ? `#${itemId}` : null}
+    </span>
+  );
+}
+
+function ItemIcon({ itemId, className }: { itemId: number; className: string }) {
+  const item = getItemIcon(itemId);
+  return item ? <img className={className} src={item.src} alt={item.label} title={item.label} /> : null;
 }
 
 function AnalysisMetric({ label, value }: { label: string; value: string }) {

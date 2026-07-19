@@ -33,6 +33,7 @@ const detail: MatchDetailSnapshot = {
   eventCounts: { chat: 4, towers: 3, runes: null, wards: null, buildings: null, roshan: null },
   chatMessages: [],
   availableSections: [],
+  rosterStatus: 'incomplete',
 };
 
 describe('MatchDetailView', () => {
@@ -58,7 +59,11 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('46')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
     expect(screen.getByText('Базовый разбор')).toBeVisible();
+    expect(screen.getByText('2/10 players captured')).toBeVisible();
     expect(screen.getAllByText('N/A')).toHaveLength(4);
+    expect(screen.getAllByRole('img', { name: 'Phase Boots' })).toHaveLength(2);
+    expect(screen.getAllByRole('img', { name: 'Power Treads' })).toHaveLength(2);
+    expect(screen.getAllByRole('img', { name: 'Keen Optic' })).toHaveLength(2);
 
     fireEvent.click(screen.getByRole('button', { name: /Назад к архиву/i }));
     expect(onBack).toHaveBeenCalledOnce();
@@ -82,6 +87,8 @@ describe('MatchDetailView', () => {
             { abilityId: 5_154, time: 108, level: 1, name: 'sniper_shrapnel', isTalent: false },
           ],
           purchaseEvents: [{ time: 103, itemId: 29 }],
+          hasAbilityBuildData: true,
+          hasPurchaseEventsData: true,
           minuteSeries: {
             gold: [0, 400, 700],
             experience: [0, 500, 800],
@@ -146,6 +153,7 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('+19')).toBeVisible();
     expect(screen.getByText('Top support')).toBeVisible();
     expect(screen.getByText('Shrapnel')).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Boots' })).toBeVisible();
     expect(screen.queryByText('Базовый разбор')).not.toBeInTheDocument();
 
     expect(screen.queryByText('gg')).not.toBeInTheDocument();
@@ -154,6 +162,84 @@ describe('MatchDetailView', () => {
     expect(screen.queryByText('Chat wheel #71')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Всё' }));
     expect(screen.getByText('Chat wheel #71')).toBeVisible();
+  });
+
+  it('groups compact builds by team, highlights the current account, and discloses long timelines', () => {
+    const longPurchases = Array.from({ length: 14 }, (_, index) => ({ time: index * 30, itemId: index === 13 ? 99_999 : 29 }));
+    const buildsDetail: MatchDetailSnapshot = {
+      ...detail,
+      detailStatus: 'available',
+      availableSections: ['players', 'player_stats', 'player_playback'],
+      players: [
+        createPlayer({ key: '111', accountId: 111, name: 'Current', playerSlot: 4, heroId: 1, abilityBuild: [{ abilityId: 999, time: 10, level: 1, name: null, isTalent: true }], purchaseEvents: longPurchases, hasAbilityBuildData: true, hasPurchaseEventsData: true }),
+        createPlayer({ key: '222', accountId: 222, name: 'Opponent', playerSlot: 130, isRadiant: false, heroId: 2, abilityBuild: [], purchaseEvents: [], hasAbilityBuildData: true, hasPurchaseEventsData: true }),
+      ],
+    };
+    render(<MatchDetailView detail={buildsDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { name: 'Radiant builds' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Dire builds' })).toBeVisible();
+    const radiantColumn = screen.getByRole('heading', { name: 'Radiant builds' }).closest('section');
+    const direColumn = screen.getByRole('heading', { name: 'Dire builds' }).closest('section');
+    expect(radiantColumn).toContainElement(screen.getByRole('article', { name: 'Build for Current' }));
+    expect(direColumn).toContainElement(screen.getByRole('article', { name: 'Build for Opponent' }));
+    expect(screen.getByRole('article', { name: 'Build for Current' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByText('TALENT')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Show 2 more events' }));
+    expect(screen.getAllByText('6:30').length).toBeGreaterThan(0);
+    expect(screen.getByText('#99999')).toBeVisible();
+  });
+
+  it('keeps final loadout but labels progression unavailable for basic and partial data', () => {
+    render(<MatchDetailView detail={detail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    expect(screen.getAllByText(/progression unavailable\./)).toHaveLength(4);
+    expect(screen.getAllByRole('img', { name: 'Phase Boots' }).length).toBeGreaterThan(0);
+  });
+
+  it('keeps player progression visible after an overall detail failure and distinguishes empty data from unavailable data', () => {
+    const partialDetail: MatchDetailSnapshot = {
+      ...detail,
+      detailStatus: 'failed',
+      availableSections: ['players', 'player_stats'],
+      players: [
+        createPlayer({
+          key: '111', accountId: 111, name: 'Radiant', playerSlot: 0, heroId: 1,
+          abilityBuild: [], purchaseEvents: [], hasAbilityBuildData: true, hasPurchaseEventsData: true,
+        }),
+        createPlayer({
+          key: '222', accountId: 222, name: 'Dire', playerSlot: 128, isRadiant: false, heroId: 2,
+          hasAbilityBuildData: false, hasPurchaseEventsData: false,
+        }),
+      ],
+    };
+    render(<MatchDetailView detail={partialDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    expect(screen.getByText('Частичный разбор')).toBeVisible();
+    expect(screen.queryByText('Базовый разбор')).not.toBeInTheDocument();
+    expect(screen.getByText('No ability events')).toBeVisible();
+    expect(screen.getByText('No purchase events')).toBeVisible();
+    expect(screen.getByText('Ability progression unavailable.')).toBeVisible();
+    expect(screen.getByText('Purchase progression unavailable.')).toBeVisible();
+  });
+
+  it('does not show a roster warning for a complete ten-player roster', () => {
+    const completeRosterDetail: MatchDetailSnapshot = {
+      ...detail,
+      detailStatus: 'available',
+      rosterStatus: 'complete',
+      players: Array.from({ length: 10 }, (_, index) => createPlayer({
+        key: String(index),
+        accountId: index + 1,
+        playerSlot: index < 5 ? index : 123 + index,
+        isRadiant: index < 5,
+        heroId: index + 1,
+      })),
+    };
+
+    render(<MatchDetailView detail={completeRosterDetail} heroNames={{}} currentAccountId={1} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    expect(screen.queryByText('10/10 players captured')).not.toBeInTheDocument();
   });
 });
 
@@ -186,7 +272,9 @@ function createPlayer(
     backpackItemIds: [],
     neutralItemId: 287,
     abilityBuild: [],
+    hasAbilityBuildData: false,
     purchaseEvents: [],
+    hasPurchaseEventsData: false,
     minuteSeries: {
       gold: [],
       experience: [],

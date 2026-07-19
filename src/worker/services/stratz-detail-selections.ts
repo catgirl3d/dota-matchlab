@@ -142,7 +142,7 @@ export const STATS_SELECTION = [
 ].join(' ');
 
 export const PLAYER_PLAYBACK_SELECTION = [
-  "playbackData { abilityLearnEvents { time abilityId levelObtained level isUltimate isTalent isMaxLevel }",
+  "steamAccountId playbackData { abilityLearnEvents { time abilityId levelObtained level isUltimate isTalent isMaxLevel }",
   "abilityUsedEvents { time abilityId attacker target } abilityActiveLists { time ability0 ability1 ability2",
   "ability3 ability4 ability5 ability6 ability7 } itemUsedEvents { time itemId attacker target }",
   "playerUpdatePositionEvents { time x y } playerUpdateGoldEvents { time gold unreliableGold networth",
