@@ -21,6 +21,13 @@
         "singleInstance": true,
         "cwd": "${workspaceFolder}",
         "command": "pnpm run deploy"
+      },
+      {
+        "name": "DIFF",
+        "color": "white",
+        "singleInstance": true,
+        "cwd": "${workspaceFolder}",
+        "command": "git diff --staged > staged_diff_output.txt"
       }
     ],
     "defaultColor": "white",
