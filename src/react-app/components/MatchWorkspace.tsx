@@ -170,19 +170,9 @@ export function MatchWorkspace() {
 
   const heroNamesQuery = useQuery({
     queryKey: ['dota-hero-names'],
-    enabled: Boolean(session),
     staleTime: 86_400_000,
     gcTime: 86_400_000,
-    queryFn: async () => {
-      if (!session) {
-        throw new Error('Clerk session is not ready');
-      }
-      const token = await session.getToken();
-      if (!token) {
-        throw new Error('Не удалось получить Clerk JWT');
-      }
-      return fetchHeroNames(token);
-    },
+    queryFn: () => fetchHeroNames(),
   });
 
   const archiveSync = useMutation({

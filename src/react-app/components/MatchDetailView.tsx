@@ -17,6 +17,8 @@ type MatchDetailViewProps = {
   error: Error | null;
   parseError: Error | null;
   isParsing: boolean;
+  parseDisabledReason?: string | null;
+  backLabel?: string;
   onBack: () => void;
   onRefresh: () => void;
   onParse: () => void;
@@ -30,18 +32,20 @@ export function MatchDetailView({
   error,
   parseError,
   isParsing,
+  parseDisabledReason = null,
+  backLabel = 'Назад к архиву',
   onBack,
   onRefresh,
   onParse,
 }: MatchDetailViewProps) {
   if (isLoading) {
-    return <DetailMessage text="Собираем разбор матча из архива…" onBack={onBack} />;
+    return <DetailMessage text="Собираем разбор матча…" backLabel={backLabel} onBack={onBack} />;
   }
   if (error) {
-    return <DetailMessage text={error.message} tone="error" onBack={onBack} />;
+    return <DetailMessage text={error.message} tone="error" backLabel={backLabel} onBack={onBack} />;
   }
   if (!detail) {
-    return <DetailMessage text="Матч не найден в доступном архиве." onBack={onBack} />;
+    return <DetailMessage text="Матч не найден." backLabel={backLabel} onBack={onBack} />;
   }
 
   const radiantPlayers = detail.players.filter((player) => player.isRadiant);
@@ -70,7 +74,7 @@ export function MatchDetailView({
       <div className="match-detail__toolbar">
         <button className="match-detail__back" type="button" onClick={onBack}>
           <span aria-hidden="true">←</span>
-          Назад к архиву
+          {backLabel}
         </button>
         <div className="match-detail__signals">
           <span>Источник: {detail.source.toUpperCase()}</span>
@@ -109,9 +113,13 @@ export function MatchDetailView({
             <strong>{detailNotice.title}</strong>
             <span>{detailNotice.message}</span>
           </div>
-          <button type="button" onClick={onParse} disabled={isParsing}>
-            {isParsing ? 'Загружаем детали…' : 'Загрузить полный разбор'}
-          </button>
+          {parseDisabledReason ? (
+            <span className="match-detail__parse-restriction">{parseDisabledReason}</span>
+          ) : (
+            <button type="button" onClick={onParse} disabled={isParsing}>
+              {isParsing ? 'Загружаем детали…' : 'Загрузить полный разбор'}
+            </button>
+          )}
           {parseError ? <span className="match-detail__parse-error">{parseError.message}</span> : null}
         </div>
       ) : null}
@@ -647,15 +655,17 @@ function DetailHeading({ eyebrow, title, id }: { eyebrow: string; title: string;
 function DetailMessage({
   text,
   tone = 'neutral',
+  backLabel,
   onBack,
 }: {
   text: string;
   tone?: 'neutral' | 'error';
+  backLabel: string;
   onBack: () => void;
 }) {
   return (
     <div className={`detail-message detail-message--${tone}`}>
-      <button type="button" onClick={onBack}>← Назад к архиву</button>
+      <button type="button" onClick={onBack}>← {backLabel}</button>
       <p>{text}</p>
     </div>
   );

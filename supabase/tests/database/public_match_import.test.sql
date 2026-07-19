@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(13);
 
 select has_function(
   'public',
@@ -43,6 +43,14 @@ select throws_ok(
   'Invalid public match import',
   'mismatched match ID is rejected'
 );
+select ok(
+  not has_table_privilege('anon', 'public.tracked_account_matches', 'select'),
+  'anonymous users cannot read private archive membership'
+);
+select ok(
+  not has_function_privilege('anon', 'public.apply_public_match_import(bigint, jsonb)', 'execute'),
+  'anonymous users cannot execute public match import writes'
+);
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"public-match-reader"}', true);
@@ -50,6 +58,24 @@ select is(
   (select count(*) from public.dota_matches where match_id = 8749050700),
   1::bigint,
   'authenticated users can read public match data'
+);
+reset role;
+
+set local role anon;
+select is(
+  (select count(*) from public.dota_matches where match_id = 8749050700),
+  1::bigint,
+  'anonymous users can read public match metadata'
+);
+select is(
+  (select count(*) from public.player_match_stats where match_id = 8749050700),
+  1::bigint,
+  'anonymous users can read public match stats'
+);
+select is(
+  (select count(*) from public.match_provider_payloads where match_id = 8749050700),
+  1::bigint,
+  'anonymous users can read public match detail payloads'
 );
 reset role;
 

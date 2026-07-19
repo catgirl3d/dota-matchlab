@@ -68,6 +68,12 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     return context.json(response, status === 'ok' ? 200 : 503);
   });
 
+  app.get('/api/dota/constants/heroes', async (context) => {
+    const heroes = await dependencies.loadHeroConstants(context.env.OPENDOTA_BASE_URL);
+    context.header('Cache-Control', 'public, max-age=86400');
+    return context.json({ heroes });
+  });
+
   app.use('/api/session', clerkMiddleware());
   app.get('/api/session', (context) => {
     const auth = getAuth(context);
@@ -132,17 +138,6 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
 
     context.header('Cache-Control', 'private, max-age=60');
     return context.json(matches);
-  });
-
-  app.get('/api/dota/constants/heroes', async (context) => {
-    const auth = getAuth(context);
-    if (!auth.userId) {
-      return context.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const heroes = await dependencies.loadHeroConstants(context.env.OPENDOTA_BASE_URL);
-    context.header('Cache-Control', 'private, max-age=86400');
-    return context.json({ heroes });
   });
 
   app.post(

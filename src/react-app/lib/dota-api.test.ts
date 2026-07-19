@@ -85,14 +85,14 @@ describe('Dota API client', () => {
     );
     vi.stubGlobal('fetch', fetcher);
 
-    await expect(fetchHeroNames('clerk-token')).resolves.toEqual({
+    await expect(fetchHeroNames()).resolves.toEqual({
       1: 'Anti-Mage',
       2: 'Axe',
     });
     expect(fetcher).toHaveBeenCalledWith(
       '/api/dota/constants/heroes',
       expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer clerk-token' }),
+        headers: expect.not.objectContaining({ Authorization: expect.anything() }),
       }),
     );
   });

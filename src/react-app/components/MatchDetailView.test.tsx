@@ -221,6 +221,16 @@ describe('MatchDetailView', () => {
     expect(screen.getAllByRole('img', { name: 'Phase Boots' }).length).toBeGreaterThan(0);
   });
 
+  it('shows a read-only notice instead of the detail import action', () => {
+    const onParse = vi.fn();
+    render(<MatchDetailView detail={detail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} parseDisabledReason="Войдите, чтобы загрузить недостающие данные." backLabel="На главную" onBack={vi.fn()} onRefresh={vi.fn()} onParse={onParse} />);
+
+    expect(screen.getByText('Войдите, чтобы загрузить недостающие данные.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Загрузить полный разбор' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /На главную/ })).toBeVisible();
+    expect(onParse).not.toHaveBeenCalled();
+  });
+
   it('keeps player progression visible after an overall detail failure and distinguishes empty data from unavailable data', () => {
     const partialDetail: MatchDetailSnapshot = {
       ...detail,

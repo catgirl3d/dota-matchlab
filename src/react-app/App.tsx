@@ -1,113 +1,34 @@
-import { Show } from '@clerk/react';
-import { useQuery } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes } from 'react-router';
-import { AccessPanel } from './components/AccessPanel';
+import { Show, SignInButton, UserButton } from '@clerk/react';
+import { BrowserRouter, Link, Route, Routes } from 'react-router';
+import { LandingPage } from './components/LandingPage';
 import { MatchDetailRoute, MatchRouteLayout, RouteError } from './components/MatchRoute';
 import { MatchWorkspace } from './components/MatchWorkspace';
-import { SystemStatus } from './components/SystemStatus';
-import { fetchSystemHealth } from './lib/api';
 
 type AppProps = {
   clerkEnabled: boolean;
 };
 
-const workflow = [
-  {
-    number: '01',
-    title: 'Профиль',
-    text: 'Привязать Steam ID или добавить публичный профиль для наблюдения.',
-  },
-  {
-    number: '02',
-    title: 'Синхронизация',
-    text: 'Забрать свежие матчи, не превышая квоты источника данных.',
-  },
-  {
-    number: '03',
-    title: 'Разбор',
-    text: 'Сравнить темп, решения и повторяющиеся ошибки на дистанции.',
-  },
-] as const;
-
 export default function App({ clerkEnabled }: AppProps) {
-  const healthQuery = useQuery({
-    queryKey: ['system-health'],
-    queryFn: fetchSystemHealth,
-    retry: false,
-    staleTime: 30_000,
-  });
-
   return <BrowserRouter><div className="app-shell">
       <header className="topbar">
-        <a className="wordmark" href="/" aria-label="Dota MatchLab, главная">
+        <Link className="wordmark" to="/" aria-label="Dota MatchLab, главная">
           <span className="wordmark__mark" aria-hidden="true">
             M/L
           </span>
           <span>DOTA MATCHLAB</span>
-        </a>
-        <div className="release-tag">
-          <span className="release-tag__pulse" aria-hidden="true" />
-          PRIVATE ALPHA · 0.1
-        </div>
+        </Link>
+        <HeaderActions clerkEnabled={clerkEnabled} />
       </header>
 
       <main>
-        <section className="hero" aria-labelledby="hero-title">
-          <div className="hero__copy">
-            <p className="eyebrow">MATCH INTELLIGENCE / EU</p>
-            <h1 id="hero-title">
-              Разберите матч
-              <span>до последнего тайминга.</span>
-            </h1>
-            <p className="hero__lede">
-              Личный архив, сравнительная аналитика и честный взгляд на серии
-              матчей — без шума публичных рейтингов.
-            </p>
-          </div>
-
-          <div className="hero__instrument" aria-hidden="true">
-            <div className="instrument__axis instrument__axis--vertical" />
-            <div className="instrument__axis instrument__axis--horizontal" />
-            <span className="instrument__time">00:00</span>
-            <span className="instrument__label">ANALYSIS WINDOW</span>
-            <span className="instrument__coordinate">54.6872 / 25.2797</span>
-          </div>
-        </section>
-
-        <section className="control-grid" aria-label="Диагностика MVP">
-          <SystemStatus
-            health={healthQuery.data}
-            isLoading={healthQuery.isPending}
-            isRefreshing={healthQuery.isFetching}
-            hasError={healthQuery.isError}
-            onRefresh={() => healthQuery.refetch()}
-          />
-          <AccessPanel clerkEnabled={clerkEnabled} />
-        </section>
-
-        {clerkEnabled ? <Routes>
-          <Route path="/" element={<SignedInArchive />} />
-          <Route path="/matches/:matchId" element={<SignedInMatchLayout />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/archive" element={<ArchiveRoute clerkEnabled={clerkEnabled} />} />
+          <Route path="/matches/:matchId" element={<MatchRouteLayout authEnabled={clerkEnabled} />}>
             <Route index element={<MatchDetailRoute />} />
           </Route>
           <Route path="*" element={<RouteError text="Страница не найдена." />} />
-        </Routes> : null}
-
-        <section className="workflow" aria-labelledby="workflow-title">
-          <div className="workflow__intro">
-            <p className="eyebrow">PIPELINE / NEXT</p>
-            <h2 id="workflow-title">От аккаунта до вывода</h2>
-          </div>
-          <ol className="workflow__steps">
-            {workflow.map((step) => (
-              <li key={step.number} className="workflow-step">
-                <span className="workflow-step__number">{step.number}</span>
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+        </Routes>
       </main>
 
       <footer className="footer">
@@ -117,10 +38,50 @@ export default function App({ clerkEnabled }: AppProps) {
     </div></BrowserRouter>;
 }
 
-function SignedInArchive() {
-  return <Show when="signed-in"><MatchWorkspace /></Show>;
+function HeaderActions({ clerkEnabled }: AppProps) {
+  return (
+    <div className="topbar__actions">
+      <div className="release-tag">
+        <span className="release-tag__pulse" aria-hidden="true" />
+        PUBLIC BETA · 0.2
+      </div>
+      {clerkEnabled ? (
+        <>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="topbar__auth-button" type="button">Войти</button>
+            </SignInButton>
+          </Show>
+          <Show when="signed-in">
+            <Link className="topbar__archive-link" to="/archive">Мой архив</Link>
+            <UserButton />
+          </Show>
+        </>
+      ) : (
+        <span className="topbar__config-state">AUTH OFF</span>
+      )}
+    </div>
+  );
 }
 
-function SignedInMatchLayout() {
-  return <Show when="signed-in"><MatchRouteLayout /></Show>;
+function ArchiveRoute({ clerkEnabled }: AppProps) {
+  if (!clerkEnabled) {
+    return <RouteError text="Вход не настроен для этого окружения." />;
+  }
+
+  return (
+    <>
+      <Show when="signed-in"><MatchWorkspace /></Show>
+      <Show when="signed-out">
+        <section className="archive-gate" aria-labelledby="archive-gate-title">
+          <p className="eyebrow">PRIVATE ARCHIVE / AUTH REQUIRED</p>
+          <h1 id="archive-gate-title">Ваш архив защищён входом</h1>
+          <p>Публичный поиск матчей доступен на главной. Войдите, чтобы привязать Steam-профиль и собирать личную историю.</p>
+          <SignInButton mode="modal">
+            <button className="archive-gate__button" type="button">Войти в архив</button>
+          </SignInButton>
+        </section>
+      </Show>
+    </>
+  );
 }

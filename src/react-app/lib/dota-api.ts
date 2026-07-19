@@ -28,11 +28,11 @@ export async function resolveSteamProfile(
   token: string,
   steamProfile: string,
 ): Promise<DotaPlayerProfile> {
-  return requestJson<DotaPlayerProfile>('/api/dota/players/resolve', token, {
+  return requestJson<DotaPlayerProfile>('/api/dota/players/resolve', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ steamProfile }),
-  });
+  }, token);
 }
 
 export async function fetchRecentMatches(
@@ -41,6 +41,7 @@ export async function fetchRecentMatches(
 ): Promise<RecentMatchesResponse> {
   return requestJson<RecentMatchesResponse>(
     `/api/dota/players/${accountId}/recent-matches`,
+    {},
     token,
   );
 }
@@ -51,8 +52,8 @@ export async function syncTrackedAccount(
 ): Promise<MatchSyncResult> {
   return requestJson<MatchSyncResult>(
     `/api/dota/tracked-accounts/${encodeURIComponent(trackedAccountId)}/matches/sync`,
-    token,
     { method: 'POST' },
+    token,
   );
 }
 
@@ -63,8 +64,8 @@ export async function syncTrackedMatchDetail(
 ): Promise<MatchDetailSyncResult> {
   return requestJson<MatchDetailSyncResult>(
     `/api/dota/tracked-accounts/${encodeURIComponent(trackedAccountId)}/matches/${matchId}/details/sync`,
-    token,
     { method: 'POST' },
+    token,
   );
 }
 
@@ -73,7 +74,7 @@ export async function importMatch(
   matchId: number,
 ): Promise<MatchImportResult> {
   return requestJson<MatchImportResult>(
-    `/api/dota/matches/${matchId}/import`, token, { method: 'POST' },
+    `/api/dota/matches/${matchId}/import`, { method: 'POST' }, token,
   );
 }
 
@@ -106,10 +107,9 @@ export async function syncAllTrackedAccount(
   throw new Error(`Полная синхронизация превысила лимит ${maxBatches} пакетов`);
 }
 
-export async function fetchHeroNames(token: string): Promise<Record<number, string>> {
+export async function fetchHeroNames(): Promise<Record<number, string>> {
   const response = await requestJson<HeroNamesResponse>(
     '/api/dota/constants/heroes',
-    token,
   );
 
   return Object.entries(response.heroes).reduce<Record<number, string>>(
@@ -126,14 +126,14 @@ export async function fetchHeroNames(token: string): Promise<Record<number, stri
 
 async function requestJson<T>(
   url: string,
-  token: string,
   init: RequestInit = {},
+  token?: string,
 ): Promise<T> {
   const response = await fetch(url, {
     ...init,
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
   });

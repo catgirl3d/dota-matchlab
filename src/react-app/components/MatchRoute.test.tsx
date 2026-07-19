@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MatchDetailRoute, MatchRouteLayout, RouteError } from './MatchRoute';
@@ -14,11 +15,14 @@ const mocks = vi.hoisted(() => ({
   fetchHeroNames: vi.fn(),
   importMatch: vi.fn(),
   syncTrackedMatchDetail: vi.fn(),
+  userId: 'user-1' as string | null,
+  session: { getToken: vi.fn().mockResolvedValue('clerk-token') } as { getToken: ReturnType<typeof vi.fn> } | null,
 }));
 
 vi.mock('@clerk/react', () => ({
-  useAuth: () => ({ userId: 'user-1' }),
-  useSession: () => ({ session: { getToken: vi.fn().mockResolvedValue('clerk-token') } }),
+  SignInButton: ({ children }: { children: ReactNode }) => children,
+  useAuth: () => ({ userId: mocks.userId }),
+  useSession: () => ({ session: mocks.session }),
 }));
 vi.mock('../lib/match-detail', () => ({ fetchMatchDetail: mocks.fetchMatchDetail }));
 vi.mock('../lib/dota-api', () => ({
@@ -27,6 +31,7 @@ vi.mock('../lib/dota-api', () => ({
   syncTrackedMatchDetail: mocks.syncTrackedMatchDetail,
 }));
 vi.mock('../lib/supabase', () => ({
+  createPublicSupabaseClient: () => ({ scope: 'public' }),
   createUserSupabaseClient: () => ({
     from: (table: string) => {
       if (table === 'tracked_accounts') {
@@ -46,14 +51,15 @@ vi.mock('../lib/supabase', () => ({
   }),
 }));
 vi.mock('./MatchDetailView', () => ({
-  MatchDetailView: ({ currentAccountId, isParsing, onParse, onBack }: { currentAccountId: number | null; isParsing: boolean; onParse: () => void; onBack: () => void }) => <div data-player={currentAccountId ?? ''}><button type="button" disabled={isParsing} onClick={onParse}>Parse detail</button><button type="button" onClick={onBack}>Back to archive</button></div>,
+  MatchDetailView: ({ currentAccountId, isParsing, parseDisabledReason, backLabel, onParse, onBack }: { currentAccountId: number | null; isParsing: boolean; parseDisabledReason?: string | null; backLabel?: string; onParse: () => void; onBack: () => void }) => <div data-player={currentAccountId ?? ''}>{parseDisabledReason ? <span>{parseDisabledReason}</span> : <button type="button" disabled={isParsing} onClick={onParse}>Parse detail</button>}<button type="button" onClick={onBack}>{backLabel ?? 'Back to archive'}</button></div>,
 }));
 
-function renderRoute(path = '/matches/8749050591') {
+function renderRoute(path = '/matches/8749050591', authEnabled = true) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const view = render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={[path]}><Routes>
-    <Route path="/" element={<ArchiveRoute />} />
-    <Route path="/matches/:matchId" element={<MatchRouteLayout />}><Route index element={<><MatchDetailRoute /><RouteNavigationControl /></>} /></Route>
+    <Route path="/" element={<div>Landing route</div>} />
+    <Route path="/archive" element={<ArchiveRoute />} />
+    <Route path="/matches/:matchId" element={<MatchRouteLayout authEnabled={authEnabled} />}><Route index element={<><MatchDetailRoute /><RouteNavigationControl /></>} /></Route>
     <Route path="*" element={<RouteError text="Страница не найдена." />} />
   </Routes></MemoryRouter></QueryClientProvider>);
   return { ...view, queryClient };
@@ -71,6 +77,8 @@ function ArchiveRoute() {
 }
 
 beforeEach(() => {
+  mocks.userId = 'user-1';
+  mocks.session = { getToken: vi.fn().mockResolvedValue('clerk-token') };
   mocks.accounts = [];
   mocks.linkedAccounts.clear();
   mocks.linkedAccountError = null;
@@ -92,6 +100,7 @@ describe('match router', () => {
     renderRoute();
     const importButton = await screen.findByRole('button', { name: 'Загрузить матч из STRATZ' });
     expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_591);
+    expect(mocks.fetchHeroNames).toHaveBeenCalledWith();
     expect(mocks.importMatch).not.toHaveBeenCalled();
     expect(mocks.readPerspectiveAccount).not.toHaveBeenCalled();
     fireEvent.click(importButton);
@@ -115,7 +124,7 @@ describe('match router', () => {
     expect(await screen.findByText('Матч недоступен у STRATZ.')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
     await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_592));
-    expect(screen.getByText('Матч ещё не загружен.')).toBeVisible();
+    expect(await screen.findByText('Матч ещё не загружен.')).toBeVisible();
     expect(screen.queryByText('Матч недоступен у STRATZ.')).not.toBeInTheDocument();
   });
 
@@ -129,7 +138,7 @@ describe('match router', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
     await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_592));
     expect(screen.queryByText('import failed')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Загрузить матч из STRATZ' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Загрузить матч из STRATZ' })).toBeEnabled();
   });
 
   it('retries a failed ownership lookup instead of falling back to public import', async () => {
@@ -157,7 +166,7 @@ describe('match router', () => {
   it('uses router navigation to return to the archive', async () => {
     mocks.fetchMatchDetail.mockResolvedValue({ players: [] });
     renderRoute();
-    fireEvent.click(await screen.findByRole('button', { name: 'Back to archive' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Назад к архиву' }));
     expect(await screen.findByText(/Archive route/)).toHaveTextContent('REPLACE');
   });
 
@@ -171,7 +180,7 @@ describe('match router', () => {
       id: 'tracked-1',
       dota_account_id: 77,
     });
-    fireEvent.click(await screen.findByRole('button', { name: 'Back to archive' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Назад к архиву' }));
     expect(await screen.findByText(/Archive route \?player=77/)).toHaveTextContent('REPLACE');
   });
 
@@ -194,7 +203,8 @@ describe('match router', () => {
     renderRoute('/matches/8749050591?player=77');
 
     await waitFor(() => expect(mocks.readPerspectiveAccount).toHaveBeenCalledWith(77));
-    fireEvent.click(await screen.findByRole('button', { name: 'Назад к архиву' }));
+    await screen.findByText('Матч ещё не загружен.');
+    fireEvent.click(screen.getByRole('button', { name: 'Назад к архиву' }));
     expect(await screen.findByText(/Archive route \?player=77/)).toHaveTextContent('REPLACE');
     resolvePerspective?.();
   });
@@ -204,9 +214,35 @@ describe('match router', () => {
     mocks.fetchMatchDetail.mockResolvedValue({ players: [{ accountId: 77 }] });
     renderRoute('/matches/8749050591?player=78');
 
-    await screen.findByRole('button', { name: 'Back to archive' });
+    await screen.findByRole('button', { name: 'Назад к архиву' });
     expect(document.querySelector('[data-player]')).toHaveAttribute('data-player', '');
-    fireEvent.click(screen.getByRole('button', { name: 'Back to archive' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад к архиву' }));
     expect(await screen.findByText(/Archive route/)).toHaveTextContent('REPLACE');
+  });
+
+  it('lets a signed-out visitor read an existing match without private queries', async () => {
+    mocks.userId = null;
+    mocks.session = null;
+    mocks.fetchMatchDetail.mockResolvedValue({ players: [] });
+
+    renderRoute();
+
+    expect(await screen.findByRole('button', { name: 'На главную' })).toBeVisible();
+    expect(screen.getByText('Войдите, чтобы загрузить недостающие данные.')).toBeVisible();
+    expect(mocks.fetchMatchDetail).toHaveBeenCalledWith({ scope: 'public' }, 8_749_050_591);
+    expect(mocks.readPerspectiveAccount).not.toHaveBeenCalled();
+    expect(mocks.readLinkedAccount).not.toHaveBeenCalled();
+    expect(mocks.importMatch).not.toHaveBeenCalled();
+  });
+
+  it('requires sign-in before importing a missing match', async () => {
+    mocks.userId = null;
+    mocks.session = null;
+
+    renderRoute();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Войти, чтобы загрузить матч' }));
+    expect(mocks.importMatch).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Загрузить матч из STRATZ' })).not.toBeInTheDocument();
   });
 });
