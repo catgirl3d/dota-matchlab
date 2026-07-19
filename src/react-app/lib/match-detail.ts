@@ -481,7 +481,7 @@ function buildRosterPlayers(
       ? normalizedPlayers.find((player) => !usedNormalized.has(player) && playerSlot !== null && player.player_slot === playerSlot)
       : normalizedPlayers.find((player) => !usedNormalized.has(player) && player.account_id === accountId);
     if (normalized) usedNormalized.add(normalized);
-    const resolvedAccountId = accountId ?? normalized?.account_id;
+    const resolvedAccountId = accountId ?? normalized?.account_id ?? null;
     return buildPlayer(
       rawPlayer,
       normalized,

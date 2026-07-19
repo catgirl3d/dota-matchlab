@@ -4,6 +4,7 @@ import type {
   MatchDetailPlayer,
   MatchDetailSnapshot,
 } from '../lib/match-detail';
+import { getHeroIcon } from '../lib/hero-icons';
 import { getItemIcon } from '../lib/item-icons';
 
 type MatchDetailViewProps = {
@@ -283,9 +284,7 @@ function ChatMessage({
   return (
     <article className={`chat-message ${message.isRadiant === true ? 'is-radiant' : message.isRadiant === false ? 'is-dire' : ''}`}>
       <time>{formatEventTime(message.time)}</time>
-      <span className="scoreboard-player__hero" aria-hidden="true">
-        {heroMark(message.heroId, heroNames)}
-      </span>
+      <HeroMark heroId={message.heroId} heroNames={heroNames} />
       <div>
         <strong>{message.playerName ?? formatAccount(message.accountId)}</strong>
         <span>{heroLabel(message.heroId, heroNames)}</span>
@@ -339,9 +338,7 @@ function TeamRoster({
           className={`scoreboard-player${player.accountId === currentAccountId ? ' is-current' : ''}`}
           key={player.key}
         >
-          <span className="scoreboard-player__hero" aria-hidden="true">
-            {heroMark(player.heroId, heroNames)}
-          </span>
+          <HeroMark heroId={player.heroId} heroNames={heroNames} />
           <div className="scoreboard-player__identity">
             <strong>{player.name ?? formatAccount(player.accountId)}</strong>
             <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
@@ -444,7 +441,7 @@ function PlayerBuild({
       aria-label={`Build for ${player.name ?? formatAccount(player.accountId)}`}
     >
       <div className="player-build__header">
-        <span className="scoreboard-player__hero" aria-hidden="true">{heroMark(player.heroId, heroNames)}</span>
+        <HeroMark heroId={player.heroId} heroNames={heroNames} />
         <div>
           <strong>{player.name ?? formatAccount(player.accountId)}</strong>
           <span>{heroLabel(player.heroId, heroNames)} · {player.level} lvl</span>
@@ -565,6 +562,17 @@ function ItemToken({ itemId, tone }: { itemId: number; tone?: 'backpack' | 'neut
     <span className={`item-token${tone ? ` is-${tone}` : ''}`}>
       <ItemIcon itemId={itemId} className="item-token__icon" />
       {getItemIcon(itemId) === null ? `#${itemId}` : null}
+    </span>
+  );
+}
+
+function HeroMark({ heroId, heroNames }: { heroId: number | null; heroNames: Record<number, string> }) {
+  const label = heroLabel(heroId, heroNames);
+  const hero = heroId === null ? null : getHeroIcon(heroId, label);
+
+  return (
+    <span className="scoreboard-player__hero" aria-hidden="true">
+      {hero ? <img className="scoreboard-player__hero-image" src={hero.src} alt="" title={hero.label} /> : heroMark(heroId, heroNames)}
     </span>
   );
 }

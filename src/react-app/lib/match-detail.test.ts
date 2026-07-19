@@ -281,6 +281,34 @@ describe('match detail read model', () => {
     expect(snapshot.players.map((player) => player.purchaseEvents[0]?.itemId)).toEqual([29, 50]);
   });
 
+  it('does not join stats or playback to a roster player without an account ID', () => {
+    const snapshot = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_005),
+      [],
+      [
+        detailPayload('players', { players: [
+          { playerSlot: 0, heroId: 1 },
+          { steamAccountId: 602, playerSlot: 128, heroId: 2 },
+        ] }),
+        detailPayload('player_stats', { players: [
+          { stats: { steamAccountId: 601, itemPurchases: [{ time: 10, itemId: 29 }] } },
+          { stats: { steamAccountId: 602, itemPurchases: [{ time: 20, itemId: 50 }] } },
+        ] }),
+        detailPayload('player_playback', { players: [
+          { steamAccountId: 601, playbackData: { abilityLearnEvents: [{ time: 10, abilityId: 1 }] } },
+          { steamAccountId: 602, playbackData: { abilityLearnEvents: [{ time: 20, abilityId: 2 }] } },
+        ] }),
+      ],
+    );
+
+    expect(snapshot.players[0]).toMatchObject({ accountId: null, abilityBuild: [], purchaseEvents: [] });
+    expect(snapshot.players[1]).toMatchObject({
+      accountId: 602,
+      abilityBuild: [{ abilityId: 2 }],
+      purchaseEvents: [{ time: 20, itemId: 50 }],
+    });
+  });
+
   it('maps reordered explicit playback entries to their matching players and enriches ability names', () => {
     const snapshot = buildMatchDetailSnapshot(
       baseMatch(9_000_000_006),

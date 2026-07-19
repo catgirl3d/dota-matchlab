@@ -58,6 +58,7 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('68')).toBeVisible();
     expect(screen.getByText('46')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
     expect(screen.getByText('Базовый разбор')).toBeVisible();
     expect(screen.getByText('2/10 players captured')).toBeVisible();
     expect(screen.getAllByText('N/A')).toHaveLength(4);
@@ -162,6 +163,7 @@ describe('MatchDetailView', () => {
     expect(screen.queryByText('Chat wheel #71')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Всё' }));
     expect(screen.getByText('Chat wheel #71')).toBeVisible();
+    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
   });
 
   it('groups compact builds by team, highlights the current account, and discloses long timelines', () => {
@@ -240,6 +242,18 @@ describe('MatchDetailView', () => {
     render(<MatchDetailView detail={completeRosterDetail} heroNames={{}} currentAccountId={1} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
     expect(screen.queryByText('10/10 players captured')).not.toBeInTheDocument();
+  });
+
+  it('keeps the textual hero mark when no local hero icon exists', () => {
+    const unknownHeroDetail: MatchDetailSnapshot = {
+      ...detail,
+      players: [createPlayer({ key: 'unknown', accountId: 111, heroId: 999_999 })],
+    };
+
+    render(<MatchDetailView detail={unknownHeroDetail} heroNames={{ 999_999: 'Unknown hero' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    expect(screen.getAllByText('UN')).toHaveLength(2);
+    expect(document.querySelector('img[src*="999999"]')).not.toBeInTheDocument();
   });
 });
 
