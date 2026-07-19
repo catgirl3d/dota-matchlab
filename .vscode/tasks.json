@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dota Matchlab: Start Dev Server",
+      "type": "shell",
+      "command": "pnpm dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dota Matchlab: Run All Tests",
+      "type": "shell",
+      "command": "pnpm test",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dota Matchlab: Run Frontend Tests (Vitest)",
+      "type": "shell",
+      "command": "pnpm test:frontend",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dota Matchlab: Run Worker Tests (Vitest)",
+      "type": "shell",
+      "command": "pnpm test:worker",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dota Matchlab: Run Typechecker (TSC)",
+      "type": "shell",
+      "command": "pnpm typecheck",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dota Matchlab: Run Linter (ESLint)",
+      "type": "shell",
+      "command": "pnpm lint",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dota Matchlab: Build Project (Frontend + Worker)",
+      "type": "shell",
+      "command": "pnpm build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dota Matchlab: Deploy to Cloudflare",
+      "type": "shell",
+      "command": "pnpm deploy",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

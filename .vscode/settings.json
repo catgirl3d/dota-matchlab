@@ -1,0 +1,30 @@
+{
+  "actionButtons": {
+    "commands": [
+      {
+        "name": "DEV",
+        "color": "#4fc3f7",
+        "singleInstance": true,
+        "cwd": "${workspaceFolder}",
+        "command": "pnpm dev"
+      },
+      {
+        "name": "TEST",
+        "color": "#81c784",
+        "singleInstance": true,
+        "cwd": "${workspaceFolder}",
+        "command": "pnpm test"
+      },
+      {
+        "name": "DEPLOY",
+        "color": "#ffb74d",
+        "singleInstance": true,
+        "cwd": "${workspaceFolder}",
+        "command": "pnpm deploy"
+      }
+    ],
+    "defaultColor": "white",
+    "reloadButton": "↻",
+    "loadNpmCommands": false
+  }
+}
