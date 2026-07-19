@@ -318,6 +318,49 @@ export type StratzMatchDetailResult = {
   error: StratzError | null;
 };
 
+export type NormalizedStratzDetailMatch = {
+  match_id: number;
+  start_time: number | null;
+  duration: number | null;
+  radiant_win: boolean | null;
+  game_mode: number | null;
+  lobby_type: number | null;
+  average_rank: number | null;
+  cluster: number | null;
+  version: number | null;
+  radiant_team_id: number | null;
+  dire_team_id: number | null;
+  league_id: number | null;
+  series_id: number | null;
+  series_type: number | null;
+  radiant_score: number | null;
+  dire_score: number | null;
+};
+
+export function normalizeStratzDetailMatch(value: unknown): NormalizedStratzDetailMatch | null {
+  if (!isObject(value)) return null;
+  const matchId = readInteger(value.id);
+  if (matchId === null) return null;
+  return {
+    match_id: matchId,
+    start_time: readNullableInteger(value.startDateTime),
+    duration: readNullableInteger(value.durationSeconds),
+    radiant_win: readBoolean(value.didRadiantWin),
+    game_mode: readGameMode(value.gameMode, value.lobbyType),
+    lobby_type: readLobbyType(value.lobbyType),
+    average_rank: readNullableInteger(value.averageRank),
+    cluster: readNullableInteger(value.clusterId) ?? readNullableInteger(value.regionId),
+    version: readVersion(value.gameVersionId),
+    radiant_team_id: readNullableInteger(value.radiantTeamId),
+    dire_team_id: readNullableInteger(value.direTeamId),
+    league_id: readNullableInteger(value.leagueId),
+    series_id: readNullableInteger(value.seriesId),
+    series_type: readNullableInteger(value.seriesType),
+    radiant_score: readNullableInteger(value.radiantScore) ?? readNullableInteger(value.radiantKills),
+    dire_score: readNullableInteger(value.direScore) ?? readNullableInteger(value.direKills),
+  };
+}
+
 export async function loadStratzMatchDetail(
   token: string,
   matchId: number,

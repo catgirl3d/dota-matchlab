@@ -3,10 +3,24 @@ import {
   loadStratzPlayerMatchesBatch,
   loadStratzMatchDetail,
   loadStratzPlayerMatchesPage,
+  normalizeStratzDetailMatch,
 } from './stratz';
 import { PLAYER_PLAYBACK_SELECTION } from './stratz-detail-selections';
 
 describe('STRATZ match provider', () => {
+  it('normalizes detail metadata with provider enum and score fallbacks', () => {
+    expect(normalizeStratzDetailMatch({
+      id: 9_001, startDateTime: 1_800_000_000, durationSeconds: 2_100, didRadiantWin: true,
+      gameMode: 'ALL_PICK', lobbyType: 'RANKED', averageRank: 54, clusterId: 123,
+      gameVersionId: '739', radiantTeamId: 11, direTeamId: 12, leagueId: 13,
+      seriesId: 14, seriesType: 2, radiantKills: 35, direKills: 19,
+    })).toEqual({
+      match_id: 9_001, start_time: 1_800_000_000, duration: 2_100, radiant_win: true,
+      game_mode: 22, lobby_type: 7, average_rank: 54, cluster: 123, version: 739,
+      radiant_team_id: 11, dire_team_id: 12, league_id: 13, series_id: 14, series_type: 2,
+      radiant_score: 35, dire_score: 19,
+    });
+  });
   it('loads and normalizes the player row from a GraphQL match page', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       Response.json({

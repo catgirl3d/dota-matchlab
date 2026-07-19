@@ -17,3 +17,9 @@ export type MatchDetailSyncResult = {
   failedMatches: number;
   backfillComplete: boolean;
 };
+
+export type MatchImportResult = {
+  matchId: number;
+  status: 'available' | 'unavailable';
+  imported: boolean;
+};

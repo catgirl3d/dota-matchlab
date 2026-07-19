@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(30);
 
 select has_function('public', 'get_match_archive_overview', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint'], 'overview RPC exists');
 select has_function('public', 'get_match_archive_page', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint', 'bigint', 'bigint', 'integer'], 'page RPC exists');
@@ -59,8 +59,24 @@ select public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'al
 
 select is((select value #>> '{matches,0,matchId}' from first_page), '9000001601', 'page orders equal timestamps by match id descending');
 select is((select value #>> '{matches,1,matchId}' from first_page), '9000001600', 'page uses deterministic second row order');
+select is((select value #>> '{matches,0,dataStatus}' from first_page), 'complete', 'page marks rows with player stats as complete');
 select is((select value #>> '{nextCursor,matchId}' from first_page), '9000001600', 'page returns cursor from final row');
-select is((select (public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'all', null, 1700000000, 9000001600, 2) -> 'matches' -> 0 ->> 'matchId')), '9000001599', 'cursor continues through null timestamps');
+select is((select (public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'all', null, 1700000000, 9000001600, 2) -> 'matches' -> 0 ->> 'matchId')), '9000001598', 'cursor includes linked matches without player stats');
+select is((select (public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'all', null, 1690000000, 9000001598, 2) -> 'matches' -> 0 ->> 'matchId')), '9000001599', 'cursor continues through null timestamps after an incomplete match');
+
+create temp table full_page as
+select public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'all', null, null, null, 4) as value;
+
+select is((select jsonb_array_length(value -> 'matches') from full_page), 4, 'default filters preserve every linked match on the page');
+select is(
+  (
+    select match ->> 'dataStatus'
+    from full_page, jsonb_array_elements(value -> 'matches') as match
+    where match ->> 'matchId' = '9000001598'
+  ),
+  'missing_player_stats',
+  'page explicitly marks a linked match without player stats'
+);
 select throws_ok(
   $$select public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'all', null, null, null, null::integer)$$,
   'P0001',

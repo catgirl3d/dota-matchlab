@@ -150,7 +150,7 @@ type PayloadRow = Pick<
 export async function fetchMatchDetail(
   client: SupabaseClient<Database>,
   matchId: number,
-): Promise<MatchDetailSnapshot> {
+): Promise<MatchDetailSnapshot | null> {
   const [matchResponse, playersResponse, payloadsResponse] = await Promise.all([
     client
       .from('dota_matches')
@@ -158,7 +158,7 @@ export async function fetchMatchDetail(
         'match_id,start_time,duration,radiant_win,game_mode,lobby_type,average_rank,radiant_score,dire_score,source,detail_status,detail_fetched_at',
       )
       .eq('match_id', matchId)
-      .single(),
+      .maybeSingle(),
     client
       .from('player_match_stats')
       .select(
@@ -190,6 +190,7 @@ export async function fetchMatchDetail(
   if (payloadsResponse.error) {
     throw new Error(`Не удалось загрузить STRATZ payload: ${payloadsResponse.error.message}`);
   }
+  if (!matchResponse.data) return null;
 
   return buildMatchDetailSnapshot(
     matchResponse.data,

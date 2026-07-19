@@ -582,6 +582,7 @@
     border: 1px dashed var(--line-strong);
     color: var(--muted);
     gap: 18px;
+    flex-wrap: wrap;
   }
 
   .workspace-message > span {
@@ -602,6 +603,52 @@
 
   .workspace-message--error > span {
     color: var(--error);
+  }
+
+  .workspace-message__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  .workspace-message__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    min-height: 44px;
+    padding: 0 20px;
+  }
+
+  .workspace-message__button:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  .workspace-message__button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .workspace-message__button--primary {
+    background: var(--acid);
+    color: var(--ink);
+  }
+
+  .workspace-message__button--secondary {
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--paper);
+  }
+
+  .workspace-message__button--secondary:hover:not(:disabled) {
+    border-color: var(--acid);
   }
 
   .account-rail {
@@ -2852,6 +2899,26 @@
     .workspace-header {
       align-items: start;
       gap: 44px;
+    }
+
+    .workspace-message {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+      min-height: auto;
+      padding: 24px;
+    }
+
+    .workspace-message__actions {
+      margin-left: 0;
+      width: 100%;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .workspace-message__button {
+      flex: 1 1 auto;
+      width: 100%;
     }
 
     .dashboard-columns {

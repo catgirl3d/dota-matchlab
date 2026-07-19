@@ -143,4 +143,20 @@ describe('protected Dota routes', () => {
     expect(batchResponse.status).toBe(404);
     expect(specificResponse.status).toBe(401);
   });
+
+  it('rejects anonymous public match import before provider work', async () => {
+    const importPublicMatchDetail = vi.fn();
+    const app = createApp({ importPublicMatchDetail });
+    const response = await app.request('https://example.com/api/dota/matches/8749050591/import', { method: 'POST' }, testEnv);
+    expect(response.status).toBe(401);
+    expect(importPublicMatchDetail).not.toHaveBeenCalled();
+  });
+
+  it('validates public match IDs before import work', async () => {
+    const importPublicMatchDetail = vi.fn();
+    const app = createApp({ importPublicMatchDetail });
+    const response = await app.request('https://example.com/api/dota/matches/not-a-number/import', { method: 'POST' }, testEnv);
+    expect(response.status).toBe(401); // Authentication is deliberately checked before ID parsing.
+    expect(importPublicMatchDetail).not.toHaveBeenCalled();
+  });
 });

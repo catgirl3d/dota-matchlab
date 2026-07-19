@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchHeroNames,
+  importMatch,
   resolveSteamProfile,
   syncAllTrackedAccount,
   syncTrackedMatchDetail,
@@ -176,5 +177,12 @@ describe('Dota API client', () => {
         headers: expect.objectContaining({ Authorization: 'Bearer clerk-token' }),
       }),
     );
+  });
+
+  it('imports an arbitrary match only through the explicit authenticated action', async () => {
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ matchId: 8_749_050_591, status: 'available', imported: true }));
+    vi.stubGlobal('fetch', fetcher);
+    await importMatch('clerk-token', 8_749_050_591);
+    expect(fetcher).toHaveBeenCalledWith('/api/dota/matches/8749050591/import', expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer clerk-token' }) }));
   });
 });

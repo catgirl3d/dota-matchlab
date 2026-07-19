@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database, Json } from '../../shared/database.types';
-import type { MatchDetailSyncResult } from '../../shared/match-archive';
-import { loadStratzMatchDetail, StratzError } from './stratz';
+import type { MatchDetailSyncResult, MatchImportResult } from '../../shared/match-archive';
+import { loadStratzMatchDetail, normalizeStratzDetailMatch, StratzError } from './stratz';
 
 type RpcResponse = { data: Json | null; error: { message: string } | null };
 
@@ -12,6 +12,7 @@ type DetailRpcClient = {
     p_match_id: number;
     p_lease_seconds: number;
   }): PromiseLike<RpcResponse>;
+  applyPublicMatchImport(args: { p_match_id: number; p_result: Json }): PromiseLike<RpcResponse>;
   applyMatchDetailBatch(args: {
     p_actor_user_id: string;
     p_tracked_account_id: string;
@@ -34,6 +35,7 @@ const defaultDependencies: Dependencies = {
     return {
       claimSpecificMatchDetail: (args) => client.rpc('claim_specific_match_detail', args),
       applyMatchDetailBatch: (args) => client.rpc('apply_match_detail_batch', args),
+      applyPublicMatchImport: (args) => client.rpc('apply_public_match_import', args),
     };
   },
   loadDetail: loadStratzMatchDetail,
@@ -60,6 +62,37 @@ export async function syncTrackedMatchDetail(
     p_lease_seconds: 300,
   }), 'Не удалось получить выбранный detail матч');
   return processDetailClaim(env, actorUserId, trackedAccountId, claim, client, dependencies);
+}
+
+export async function importPublicMatchDetail(
+  env: Env,
+  matchId: number,
+  dependencies: Dependencies = defaultDependencies,
+): Promise<MatchImportResult> {
+  if (!Number.isSafeInteger(matchId) || matchId <= 0) throw new StratzError('Некорректный match ID', 400);
+  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.STRATZ_API_TOKEN.trim()) throw new StratzError('STRATZ detail sync is not configured', 403);
+  const client = dependencies.createClient(env);
+  const detail = await dependencies.loadDetail(env.STRATZ_API_TOKEN, matchId);
+  if (detail.unavailable) return { matchId, status: 'unavailable', imported: false };
+  if (detail.error) throw detail.error;
+  if (!validateDetailIdentity(matchId, detail.payloads)) {
+    throw new StratzError('STRATZ detail returned another match', 502);
+  }
+  const normalizedMatch = readNormalizedMatch(detail.payloads);
+  if (!normalizedMatch || normalizedMatch.match_id !== matchId) {
+    throw new StratzError('STRATZ detail metadata is incomplete', 502);
+  }
+  const result: Json = {
+    status: 'available',
+    payloads: detail.payloads.map(toPayload),
+    normalized_match: normalizedMatch,
+  };
+  readObject(await client.applyPublicMatchImport({ p_match_id: matchId, p_result: result }), 'Не удалось сохранить матч');
+  return { matchId, status: 'available', imported: true };
+}
+
+function toPayload(payload: { section: string; response: Json }) {
+  return { payload_section: payload.section, payload: payload.response, schema_version: 'stratz.match.detail.v2' };
 }
 
 async function processDetailClaim(
@@ -146,6 +179,25 @@ async function processDetailClaim(
   };
 }
 
+function validateDetailIdentity(matchId: number, payloads: Array<{ section: string; response: Json }>): boolean {
+  return payloads.every(({ response }) => {
+    if (!isObject(response) || !isObject(response.data) || !isObject(response.data.match)) return true;
+    const match = response.data.match;
+    if (typeof match.id === 'number' && match.id !== matchId) return false;
+    if (!Array.isArray(match.players)) return true;
+    return match.players.every((player) => !isObject(player) || typeof player.matchId !== 'number' || player.matchId === matchId);
+  });
+}
+
+function readNormalizedMatch(payloads: Array<{ section: string; response: Json }>) {
+  for (const { response } of payloads) {
+    if (!isObject(response) || !isObject(response.data)) continue;
+    const normalized = normalizeStratzDetailMatch(response.data.match);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 function readObject(response: RpcResponse, message: string): Record<string, Json | undefined> {
   if (response.error || !isObject(response.data)) {
     throw new StratzError(response.error?.message || message, 502);
@@ -172,6 +224,6 @@ function readString(value: Json | undefined, field: string): string {
   return value;
 }
 
-function isObject(value: Json | null): value is Record<string, Json | undefined> {
+function isObject(value: Json | null | undefined): value is Record<string, Json | undefined> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

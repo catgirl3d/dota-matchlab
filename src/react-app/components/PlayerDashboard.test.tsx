@@ -35,6 +35,7 @@ const snapshot = {
   },
   matches: [
     {
+      dataStatus: 'complete' as const,
       matchId: 2,
       startTime: 1_800_000_000,
       durationSeconds: 2_400,
@@ -67,6 +68,7 @@ const snapshot = {
       won: true,
     },
     {
+      dataStatus: 'complete' as const,
       matchId: 1,
       startTime: 1_799_000_000,
       durationSeconds: 1_800,
@@ -194,5 +196,53 @@ describe('PlayerDashboard', () => {
     const unknownHeroRow = screen.getByRole('listitem', { name: /Открыть матч 2/i });
     expect(within(unknownHeroRow).getByText('HE')).toBeVisible();
     expect(unknownHeroRow.querySelector('img')).not.toBeInTheDocument();
+  });
+
+  it('keeps a linked match visible when player stats are missing', () => {
+    const incompletePage: ArchivePage = {
+      matches: [{
+        ...snapshot.matches[0],
+        dataStatus: 'missing_player_stats',
+        playerSlot: null,
+        heroId: null,
+        kills: null,
+        deaths: null,
+        assists: null,
+        goldPerMinute: null,
+        xpPerMinute: null,
+        won: null,
+      }],
+      nextCursor: null,
+    };
+
+    render(
+      <PlayerDashboard
+        account={account}
+        overview={{ ...overview, integrity: { linked: 2, complete: 1, missingStats: 1, missingMatch: 0 } }}
+        page={incompletePage}
+        filters={DEFAULT_ARCHIVE_FILTERS}
+        heroNames={{}}
+        isLoading={false}
+        isRefreshing={false}
+        error={null}
+        onRefresh={vi.fn()}
+        onSelectMatch={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
+        hasPreviousPage={false}
+        onSyncArchive={vi.fn()}
+        onSyncAllArchive={vi.fn()}
+        archiveSyncError={null}
+        isArchiveSyncing={false}
+        isArchiveSyncingAll={false}
+        archiveSyncProgress={null}
+      />,
+    );
+
+    const row = screen.getByRole('listitem', { name: /Открыть матч 2/i });
+    expect(within(row).getByText('DATA')).toBeVisible();
+    expect(within(row).getByText(/Missing player stats/)).toBeVisible();
+    expect(within(row).getByText('— / — / —')).toBeVisible();
   });
 });

@@ -3,6 +3,7 @@ import type { Database, Tables } from '../../shared/database.types';
 import type { ArchiveFilters } from './archive-analytics';
 
 export type ArchiveMatch = {
+  dataStatus: 'complete' | 'missing_player_stats';
   matchId: number;
   startTime: number | null;
   durationSeconds: number | null;
@@ -178,7 +179,7 @@ function mapPage(value: unknown): ArchivePage {
 function mapMatch(value: unknown): ArchiveMatch {
   const row = asRecord(value, 'match');
   return {
-    matchId: numberValue(row.matchId), startTime: nullableNumber(row.startTime), durationSeconds: nullableNumber(row.durationSeconds), radiantWin: nullableBoolean(row.radiantWin), gameMode: nullableNumber(row.gameMode), lobbyType: nullableNumber(row.lobbyType), averageRank: nullableNumber(row.averageRank), radiantScore: nullableNumber(row.radiantScore), direScore: nullableNumber(row.direScore), playerSlot: nullableNumber(row.playerSlot), heroId: nullableNumber(row.heroId), heroVariant: nullableNumber(row.heroVariant), kills: nullableNumber(row.kills), deaths: nullableNumber(row.deaths), assists: nullableNumber(row.assists), goldPerMinute: nullableNumber(row.goldPerMinute), xpPerMinute: nullableNumber(row.xpPerMinute), lastHits: nullableNumber(row.lastHits), denies: nullableNumber(row.denies), heroDamage: nullableNumber(row.heroDamage), towerDamage: nullableNumber(row.towerDamage), heroHealing: nullableNumber(row.heroHealing), level: nullableNumber(row.level), netWorth: nullableNumber(row.netWorth), leaverStatus: nullableNumber(row.leaverStatus), partySize: nullableNumber(row.partySize), lane: nullableNumber(row.lane), laneRole: nullableNumber(row.laneRole), isRoaming: nullableBoolean(row.isRoaming), won: nullableBoolean(row.won),
+    dataStatus: dataStatusValue(row.dataStatus), matchId: numberValue(row.matchId), startTime: nullableNumber(row.startTime), durationSeconds: nullableNumber(row.durationSeconds), radiantWin: nullableBoolean(row.radiantWin), gameMode: nullableNumber(row.gameMode), lobbyType: nullableNumber(row.lobbyType), averageRank: nullableNumber(row.averageRank), radiantScore: nullableNumber(row.radiantScore), direScore: nullableNumber(row.direScore), playerSlot: nullableNumber(row.playerSlot), heroId: nullableNumber(row.heroId), heroVariant: nullableNumber(row.heroVariant), kills: nullableNumber(row.kills), deaths: nullableNumber(row.deaths), assists: nullableNumber(row.assists), goldPerMinute: nullableNumber(row.goldPerMinute), xpPerMinute: nullableNumber(row.xpPerMinute), lastHits: nullableNumber(row.lastHits), denies: nullableNumber(row.denies), heroDamage: nullableNumber(row.heroDamage), towerDamage: nullableNumber(row.towerDamage), heroHealing: nullableNumber(row.heroHealing), level: nullableNumber(row.level), netWorth: nullableNumber(row.netWorth), leaverStatus: nullableNumber(row.leaverStatus), partySize: nullableNumber(row.partySize), lane: nullableNumber(row.lane), laneRole: nullableNumber(row.laneRole), isRoaming: nullableBoolean(row.isRoaming), won: nullableBoolean(row.won),
   };
 }
 
@@ -221,4 +222,8 @@ function nullableBoolean(value: unknown): boolean | null { if (value === null) r
 function formValue(value: unknown): ArchiveOverview['form'][number] {
   if (value === 'win' || value === 'loss' || value === 'unknown') return value;
   throw new Error('Некорректный результат формы архива');
+}
+function dataStatusValue(value: unknown): ArchiveMatch['dataStatus'] {
+  if (value === 'complete' || value === 'missing_player_stats') return value;
+  throw new Error('Некорректный статус данных матча');
 }

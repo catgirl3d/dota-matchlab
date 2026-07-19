@@ -3,7 +3,7 @@ import type {
   HeroNamesResponse,
   RecentMatchesResponse,
 } from '../../shared/dota';
-import type { MatchDetailSyncResult, MatchSyncResult } from '../../shared/match-archive';
+import type { MatchDetailSyncResult, MatchImportResult, MatchSyncResult } from '../../shared/match-archive';
 
 type ApiErrorPayload = {
   error?: unknown;
@@ -65,6 +65,15 @@ export async function syncTrackedMatchDetail(
     `/api/dota/tracked-accounts/${encodeURIComponent(trackedAccountId)}/matches/${matchId}/details/sync`,
     token,
     { method: 'POST' },
+  );
+}
+
+export async function importMatch(
+  token: string,
+  matchId: number,
+): Promise<MatchImportResult> {
+  return requestJson<MatchImportResult>(
+    `/api/dota/matches/${matchId}/import`, token, { method: 'POST' },
   );
 }
 

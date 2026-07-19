@@ -582,6 +582,10 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_public_match_import: {
+        Args: { p_match_id: number; p_result: Json }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

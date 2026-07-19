@@ -490,8 +490,9 @@ function ArchiveMatchRow({
   heroNames: Record<number, string>;
   onSelect: (matchId: number) => void;
 }) {
-  const result = match.won === true ? 'WIN' : match.won === false ? 'LOSS' : '—';
-  const resultClass = match.won === true ? 'is-win' : match.won === false ? 'is-loss' : 'is-unknown';
+  const isMissingStats = match.dataStatus === 'missing_player_stats';
+  const result = isMissingStats ? 'DATA' : match.won === true ? 'WIN' : match.won === false ? 'LOSS' : '—';
+  const resultClass = isMissingStats ? 'is-unknown' : match.won === true ? 'is-win' : match.won === false ? 'is-loss' : 'is-unknown';
   const heroLabel = match.heroId === null ? 'Unknown hero' : heroNames[match.heroId] ?? `Hero #${match.heroId}`;
   const heroFallback = match.heroId === null ? '?' : heroLabel.slice(0, 2).toUpperCase();
   return (
@@ -506,14 +507,17 @@ function ArchiveMatchRow({
       <HeroMark heroId={match.heroId} label={heroLabel} fallback={heroFallback} className="archive-match-row__hero-mark" />
       <div className="archive-match-row__identity">
         <strong>{heroLabel}</strong>
-        <span>{formatMatchDate(match.startTime)} · {formatMode(match.gameMode)}</span>
+        <span>
+          {formatMatchDate(match.startTime)} · {formatMode(match.gameMode)}
+          {isMissingStats ? ' · Missing player stats' : ''}
+        </span>
       </div>
       <strong className="archive-match-row__kda">
-        {match.kills ?? 0} / {match.deaths ?? 0} / {match.assists ?? 0}
+        {formatStat(match.kills)} / {formatStat(match.deaths)} / {formatStat(match.assists)}
       </strong>
       <div className="archive-match-row__metrics">
-        <span>{match.goldPerMinute ?? 0} <small>GPM</small></span>
-        <span>{match.xpPerMinute ?? 0} <small>XPM</small></span>
+        <span>{formatStat(match.goldPerMinute)} <small>GPM</small></span>
+        <span>{formatStat(match.xpPerMinute)} <small>XPM</small></span>
       </div>
       <span className="archive-match-row__duration">{formatDuration(match.durationSeconds)}</span>
     </button>
@@ -566,4 +570,8 @@ function formatDuration(seconds: number | null): string {
 
 function formatMode(mode: number | null): string {
   return { 1: 'All Pick', 22: 'Ranked', 23: 'Turbo' }[mode ?? -1] ?? 'Other mode';
+}
+
+function formatStat(value: number | null): string {
+  return value === null ? '—' : String(value);
 }

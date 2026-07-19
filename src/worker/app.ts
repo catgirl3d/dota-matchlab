@@ -13,6 +13,7 @@ import {
   syncTrackedAccount,
 } from './services/match-archive';
 import {
+  importPublicMatchDetail,
   syncTrackedMatchDetail,
 } from './services/match-detail-archive';
 import { StratzError } from './services/stratz';
@@ -28,6 +29,7 @@ type AppDependencies = {
   loadHeroConstants: typeof loadHeroConstants;
   syncTrackedAccount: typeof syncTrackedAccount;
   syncTrackedMatchDetail: typeof syncTrackedMatchDetail;
+  importPublicMatchDetail: typeof importPublicMatchDetail;
   resolveDotaPlayer: typeof resolveDotaPlayer;
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
 };
@@ -38,6 +40,7 @@ const defaultDependencies: AppDependencies = {
   loadHeroConstants,
   syncTrackedAccount,
   syncTrackedMatchDetail,
+  importPublicMatchDetail,
   resolveDotaPlayer,
   resolveSteamProfileInput,
 };
@@ -164,6 +167,14 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
       return context.json(result);
     },
   );
+
+  app.post('/api/dota/matches/:matchId/import', async (context) => {
+    const auth = getAuth(context);
+    if (!auth.userId) return context.json({ error: 'Unauthorized' }, 401);
+    const matchId = parseMatchId(context.req.param('matchId'));
+    if (matchId === null) return context.json({ error: 'Некорректный match id' }, 400);
+    return context.json(await dependencies.importPublicMatchDetail(context.env, matchId));
+  });
 
   app.post(
     '/api/dota/tracked-accounts/:trackedAccountId/matches/:matchId/details/sync',

@@ -20,8 +20,8 @@ describe('archive RPC adapter', () => {
   });
 
   it('maps deterministic page cursors and RPC filter arguments', async () => {
-    const client = createFakeClient({ matches: [{ matchId: 9, startTime: null, durationSeconds: null, radiantWin: null, gameMode: null, lobbyType: null, averageRank: null, radiantScore: null, direScore: null, playerSlot: null, heroId: null, heroVariant: null, kills: null, deaths: null, assists: null, goldPerMinute: null, xpPerMinute: null, lastHits: null, denies: null, heroDamage: null, towerDamage: null, heroHealing: null, level: null, netWorth: null, leaverStatus: null, partySize: null, lane: null, laneRole: null, isRoaming: null, won: null }], nextCursor: { startTime: null, matchId: 9 } });
-    await expect(fetchArchivePage(client, 'account', { ...DEFAULT_ARCHIVE_FILTERS, result: 'wins' }, { startTime: 100, matchId: 10 })).resolves.toMatchObject({ nextCursor: { matchId: 9 }, matches: [{ matchId: 9 }] });
+    const client = createFakeClient({ matches: [{ dataStatus: 'missing_player_stats', matchId: 9, startTime: null, durationSeconds: null, radiantWin: null, gameMode: null, lobbyType: null, averageRank: null, radiantScore: null, direScore: null, playerSlot: null, heroId: null, heroVariant: null, kills: null, deaths: null, assists: null, goldPerMinute: null, xpPerMinute: null, lastHits: null, denies: null, heroDamage: null, towerDamage: null, heroHealing: null, level: null, netWorth: null, leaverStatus: null, partySize: null, lane: null, laneRole: null, isRoaming: null, won: null }], nextCursor: { startTime: null, matchId: 9 } });
+    await expect(fetchArchivePage(client, 'account', { ...DEFAULT_ARCHIVE_FILTERS, result: 'wins' }, { startTime: 100, matchId: 10 })).resolves.toMatchObject({ nextCursor: { matchId: 9 }, matches: [{ matchId: 9, dataStatus: 'missing_player_stats' }] });
     expect(client.rpc).toHaveBeenCalledWith('get_match_archive_page', expect.objectContaining({ p_result: 'wins', p_cursor_start_time: 100, p_cursor_match_id: 10, p_limit: 100 }));
   });
 });

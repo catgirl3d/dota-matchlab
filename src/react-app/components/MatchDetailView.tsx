@@ -12,7 +12,7 @@ import { HeroPortrait } from './HeroPortrait';
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
   heroNames: Record<number, string>;
-  currentAccountId: number;
+  currentAccountId: number | null;
   isLoading: boolean;
   error: Error | null;
   parseError: Error | null;
@@ -46,8 +46,9 @@ export function MatchDetailView({
 
   const radiantPlayers = detail.players.filter((player) => player.isRadiant);
   const direPlayers = detail.players.filter((player) => !player.isRadiant);
-  const focusedPlayer =
-    detail.players.find((player) => player.accountId === currentAccountId) ?? detail.players[0];
+  const focusedPlayer = currentAccountId === null
+    ? null
+    : detail.players.find((player) => player.accountId === currentAccountId) ?? null;
   const hasPlayerStats = detail.availableSections.includes('player_stats');
   const hasDetailSections = detail.availableSections.length > 0;
   const detailNotice = detail.detailStatus === 'available'
@@ -334,14 +335,14 @@ function TeamRoster({
   label: string;
   players: MatchDetailPlayer[];
   heroNames: Record<number, string>;
-  currentAccountId: number;
+  currentAccountId: number | null;
 }) {
   return (
     <div className="team-roster">
       <span className="team-roster__label">{label}</span>
       {players.map((player) => (
         <article
-          className={`scoreboard-player${player.accountId === currentAccountId ? ' is-current' : ''}`}
+          className={`scoreboard-player${currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : ''}`}
           key={player.key}
         >
           <MatchDetailHeroMark heroId={player.heroId} heroNames={heroNames} />
@@ -402,7 +403,7 @@ function BuildTeamColumn({
   side: 'radiant' | 'dire';
   players: MatchDetailPlayer[];
   heroNames: Record<number, string>;
-  currentAccountId: number;
+  currentAccountId: number | null;
 }) {
   const orderedPlayers = [...players].sort((left, right) => left.playerSlot - right.playerSlot);
   return (
@@ -418,7 +419,7 @@ function BuildTeamColumn({
           key={player.key}
           player={player}
           heroNames={heroNames}
-          highlighted={player.accountId === currentAccountId}
+          highlighted={currentAccountId !== null && player.accountId === currentAccountId}
         />
       ))}
     </section>
