@@ -6,13 +6,7 @@ import { loadStratzMatchDetail, StratzError } from './stratz';
 type RpcResponse = { data: Json | null; error: { message: string } | null };
 
 type DetailRpcClient = {
-  claimMatchDetailBatch(args: {
-    p_actor_user_id: string;
-    p_tracked_account_id: string;
-    p_lease_seconds: number;
-    p_batch_size: number;
-  }): PromiseLike<RpcResponse>;
-  claimSpecificMatchDetail?(args: {
+  claimSpecificMatchDetail(args: {
     p_actor_user_id: string;
     p_tracked_account_id: string;
     p_match_id: number;
@@ -38,32 +32,12 @@ const defaultDependencies: Dependencies = {
       auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
     });
     return {
-      claimMatchDetailBatch: (args) => client.rpc('claim_match_detail_batch', args),
       claimSpecificMatchDetail: (args) => client.rpc('claim_specific_match_detail', args),
       applyMatchDetailBatch: (args) => client.rpc('apply_match_detail_batch', args),
     };
   },
   loadDetail: loadStratzMatchDetail,
 };
-
-export async function syncTrackedAccountDetails(
-  env: Env,
-  actorUserId: string,
-  trackedAccountId: string,
-  dependencies: Dependencies = defaultDependencies,
-): Promise<MatchDetailSyncResult> {
-  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.STRATZ_API_TOKEN.trim()) {
-    throw new StratzError('STRATZ detail sync is not configured', 403);
-  }
-  const client = dependencies.createClient(env);
-  const claim = readObject(await client.claimMatchDetailBatch({
-    p_actor_user_id: actorUserId,
-    p_tracked_account_id: trackedAccountId,
-    p_lease_seconds: 300,
-    p_batch_size: 2,
-  }), 'Не удалось получить очередь detail матчей');
-  return processDetailClaim(env, actorUserId, trackedAccountId, claim, client, dependencies);
-}
 
 export async function syncTrackedMatchDetail(
   env: Env,
@@ -79,9 +53,6 @@ export async function syncTrackedMatchDetail(
     throw new StratzError('STRATZ detail sync is not configured', 403);
   }
   const client = dependencies.createClient(env);
-  if (!client.claimSpecificMatchDetail) {
-    throw new StratzError('Specific STRATZ detail sync is not configured', 502);
-  }
   const claim = readObject(await client.claimSpecificMatchDetail({
     p_actor_user_id: actorUserId,
     p_tracked_account_id: trackedAccountId,

@@ -57,10 +57,10 @@ export function ArchiveSyncPanel({
           </span>
         ) : null}
       </div>
-        <h3 id="archive-sync-title">Собрать историю и detail</h3>
+        <h3 id="archive-sync-title">Собрать историю матчей</h3>
       <p>
-        История загружается пакетами до 500 матчей <strong>{accountName}</strong>, затем
-        detail-пayloads идут отдельной очередью по два матча.
+        История загружается пакетами до 500 матчей <strong>{accountName}</strong>.
+        Detail загружается вручную из выбранного матча.
       </p>
       <div className="archive-sync__actions">
         <button

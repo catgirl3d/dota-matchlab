@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(26);
 
 insert into public.tracked_accounts (id, user_id, steam_id64)
 values (
@@ -10,6 +10,25 @@ values (
 );
 
 set local role service_role;
+
+select is(
+  (select exists (
+    select 1 from pg_trigger
+    where tgrelid = 'public.match_provider_payloads'::regclass
+      and tgname = 'match_provider_payloads_enqueue_stratz_detail'
+      and not tgisinternal
+  )),
+  false,
+  'STRATZ history payload trigger is removed'
+);
+select ok(
+  to_regprocedure('public.enqueue_stratz_match_detail()') is null,
+  'automatic STRATZ detail enqueue function is removed'
+);
+select ok(
+  to_regprocedure('public.claim_match_detail_batch(text,uuid,integer,integer)') is null,
+  'batch detail claim function is removed'
+);
 
 create temp table stratz_claim as
 select public.claim_match_sync_for_provider(
@@ -99,6 +118,12 @@ select is(
   'stratz.match.history.v1',
   'raw payload records its provider schema version'
 );
+select is(
+  (select count(*)::integer from public.account_match_detail_queue
+   where dota_account_id = 223344556 and match_id = 9000000203),
+  0,
+  'inserting a STRATZ history payload does not enqueue detail'
+);
 
 update public.account_match_sync_state
 set status = 'syncing',
@@ -125,6 +150,12 @@ select is(
    where match_id = 9000000203 and provider = 'stratz' and payload_kind = 'history'),
   'false',
   'raw payload upsert updates the current provider payload atomically'
+);
+select is(
+  (select count(*)::integer from public.account_match_detail_queue
+   where dota_account_id = 223344556 and match_id = 9000000203),
+  0,
+  'updating a STRATZ history payload does not enqueue detail'
 );
 
 create temp table opendota_claim as
@@ -153,25 +184,36 @@ select is(
   'switching provider resets completion state'
 );
 
-create temp table detail_claim as
-select public.claim_match_detail_batch(
+create temp table specific_detail_claim as
+select public.claim_specific_match_detail(
   'sync-user-stratz',
   '00000000-0000-0000-0000-000000000203',
-  300,
-  2
+  9000000203,
+  300
 ) as value;
 
 select is(
-  (select value ->> 'claimed' from detail_claim),
+  (select value ->> 'claimed' from specific_detail_claim),
   'true',
-  'detail queue claims a bounded continuation batch independently from history'
+  'manual detail claim creates and leases the selected match'
+);
+select is(
+  (select value -> 'matchIds' from specific_detail_claim),
+  '[9000000203]'::jsonb,
+  'manual detail claim returns exactly one selected match'
+);
+select is(
+  (select status from public.account_match_detail_queue
+   where dota_account_id = 223344556 and match_id = 9000000203),
+  'syncing',
+  'manual detail claim creates exactly one syncing queue row'
 );
 
 select public.apply_match_detail_batch(
   'sync-user-stratz',
   '00000000-0000-0000-0000-000000000203',
   223344556,
-  ((select value ->> 'leaseToken' from detail_claim))::uuid,
+  ((select value ->> 'leaseToken' from specific_detail_claim))::uuid,
   '[{
     "match_id": 9000000203,
     "status": "available",
@@ -223,7 +265,7 @@ select is(
   'detail processing does not mutate the history cursor completion state'
 );
 
-create temp table specific_detail_claim as
+create temp table completed_specific_detail_claim as
 select public.claim_specific_match_detail(
   'sync-user-stratz',
   '00000000-0000-0000-0000-000000000203',
@@ -232,12 +274,12 @@ select public.claim_specific_match_detail(
 ) as value;
 
 select is(
-  (select value ->> 'claimed' from specific_detail_claim),
+  (select value ->> 'claimed' from completed_specific_detail_claim),
   'false',
   'specific detail claim does not refetch an available match'
 );
 select is(
-  (select value ->> 'status' from specific_detail_claim),
+  (select value ->> 'status' from completed_specific_detail_claim),
   'available',
   'specific detail claim reports the existing detail status'
 );

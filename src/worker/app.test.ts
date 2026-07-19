@@ -126,4 +126,21 @@ describe('protected Dota routes', () => {
     expect(response.status).toBe(401);
     expect(syncTrackedAccount).not.toHaveBeenCalled();
   });
+
+  it('does not expose batch detail sync and keeps the selected-match route', async () => {
+    const app = createApp();
+    const batchResponse = await app.request(
+      'https://example.com/api/dota/tracked-accounts/00000000-0000-0000-0000-000000000202/matches/details/sync',
+      { method: 'POST' },
+      testEnv,
+    );
+    const specificResponse = await app.request(
+      'https://example.com/api/dota/tracked-accounts/00000000-0000-0000-0000-000000000202/matches/9001/details/sync',
+      { method: 'POST' },
+      testEnv,
+    );
+
+    expect(batchResponse.status).toBe(404);
+    expect(specificResponse.status).toBe(401);
+  });
 });

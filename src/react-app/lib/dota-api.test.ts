@@ -133,15 +133,6 @@ describe('Dota API client', () => {
           nextOffset: 0,
         }),
       )
-      .mockResolvedValueOnce(
-        Response.json({
-          accountId: 154_783_030,
-          processedMatches: 2,
-          availableMatches: 2,
-          failedMatches: 0,
-          backfillComplete: true,
-        }),
-      );
     vi.stubGlobal('fetch', fetcher);
     const progress = vi.fn();
 
@@ -152,8 +143,8 @@ describe('Dota API client', () => {
       }),
     ).resolves.toMatchObject({ status: 'ready', fetchedMatches: 73 });
 
-    expect(fetcher).toHaveBeenCalledTimes(4);
-    expect(fetcher).toHaveBeenLastCalledWith(
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(fetcher).not.toHaveBeenCalledWith(
       `/api/dota/tracked-accounts/${trackedAccountId}/matches/details/sync`,
       expect.anything(),
     );

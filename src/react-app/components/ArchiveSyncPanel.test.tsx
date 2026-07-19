@@ -34,6 +34,8 @@ describe('ArchiveSyncPanel', () => {
 
     expect(screen.getByText('PARTIAL')).toBeInTheDocument();
     expect(screen.getByText('98')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Собрать историю матчей' })).toBeVisible();
+    expect(screen.getByText(/Detail загружается вручную из выбранного матча/)).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: /Загрузить один пакет/i }));
     expect(onSync).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: /Запарсить все/i }));

@@ -516,15 +516,6 @@ export type Database = {
         }
         Returns: Json
       }
-      claim_match_detail_batch: {
-        Args: {
-          p_actor_user_id: string
-          p_batch_size?: number
-          p_lease_seconds?: number
-          p_tracked_account_id: string
-        }
-        Returns: Json
-      }
       claim_specific_match_detail: {
         Args: {
           p_actor_user_id: string
