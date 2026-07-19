@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Tables } from '../../shared/database.types';
-import type { ArchiveSnapshot } from '../lib/archive';
+import type { ArchiveOverview, ArchivePage } from '../lib/archive';
+import { DEFAULT_ARCHIVE_FILTERS } from '../lib/archive-analytics';
 import { PlayerDashboard } from './PlayerDashboard';
 
 afterEach(() => {
@@ -18,7 +19,7 @@ const account: Pick<Tables<'tracked_accounts'>, 'id' | 'avatar_url' | 'persona_n
   dota_account_id: 93_447_624,
 };
 
-const snapshot: ArchiveSnapshot = {
+const snapshot = {
   syncState: {
     status: 'partial',
     history_provider: 'stratz',
@@ -100,19 +101,36 @@ const snapshot: ArchiveSnapshot = {
   ],
 };
 
+const overview: ArchiveOverview = {
+  summary: { matches: 2, wins: 1, losses: 1, unknownResults: 0, winRate: 50, averageKills: 6.5, averageDeaths: 4.5, averageAssists: 9.5, averageKda: 2.5, averageGpm: 500, averageXpm: 625, averageLastHits: 220, averageDamage: 21000, averageDurationMinutes: 35, firstMatchAt: 1_799_000_000, latestMatchAt: 1_800_000_000 },
+  form: ['win', 'loss'], modes: [], heroes: [{ key: '1', heroId: 1, matches: 1, wins: 1, winRate: 100, averageKda: 9, averageGpm: 600 }], positions: [], lanes: [], party: [], tempo: [], heroOptions: [1, 2], syncState: snapshot.syncState, integrity: { linked: 2, complete: 2, missingStats: 0, missingMatch: 0 },
+};
+
+const page: ArchivePage = { matches: snapshot.matches, nextCursor: null };
+
 describe('PlayerDashboard', () => {
   it('renders archive metrics and filters the match log by result', () => {
     const onSelectMatch = vi.fn();
+    const onFiltersChange = vi.fn();
+    const onNextPage = vi.fn();
+    const onPreviousPage = vi.fn();
+    const nextCursor = { startTime: 1_799_000_000, matchId: 1 };
     render(
       <PlayerDashboard
         account={account}
-        snapshot={snapshot}
+        overview={overview}
+        page={{ ...page, nextCursor }}
+        filters={DEFAULT_ARCHIVE_FILTERS}
         heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }}
         isLoading={false}
         isRefreshing={false}
         error={null}
         onRefresh={vi.fn()}
         onSelectMatch={onSelectMatch}
+        onFiltersChange={onFiltersChange}
+        onNextPage={onNextPage}
+        onPreviousPage={onPreviousPage}
+        hasPreviousPage
         onSyncArchive={vi.fn()}
         onSyncAllArchive={vi.fn()}
         archiveSyncError={null}
@@ -124,36 +142,46 @@ describe('PlayerDashboard', () => {
 
     expect(screen.getByRole('heading', { name: /fish\.bone/ })).toBeVisible();
     expect(screen.getByText('50%')).toBeVisible();
+    expect(screen.getByText('2 complete · 0 missing stats · 0 missing match')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
     const knownHeroRow = screen.getByRole('listitem', { name: /Открыть матч 2/i });
     expect(knownHeroRow.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getByText('PARTIAL')).toBeVisible();
 
     fireEvent.change(screen.getByLabelText('Result'), { target: { value: 'wins' } });
-
-    expect(screen.getByText('1 matches in view')).toBeVisible();
-    expect(screen.queryByText('LOSS')).not.toBeInTheDocument();
+    expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, result: 'wins' });
 
     fireEvent.click(screen.getByRole('listitem', { name: /Открыть матч 2/i }));
     expect(onSelectMatch).toHaveBeenCalledWith(2);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(onNextPage).toHaveBeenCalledWith(nextCursor);
+    expect(onPreviousPage).toHaveBeenCalledOnce();
   });
 
   it('keeps the textual hero mark when an archive hero has no local icon', () => {
-    const unknownHeroSnapshot: ArchiveSnapshot = {
-      ...snapshot,
+    const unknownHeroPage: ArchivePage = {
+      ...page,
       matches: [{ ...snapshot.matches[0], heroId: 999_999 }],
     };
 
     render(
       <PlayerDashboard
         account={account}
-        snapshot={unknownHeroSnapshot}
+        overview={overview}
+        page={unknownHeroPage}
+        filters={DEFAULT_ARCHIVE_FILTERS}
         heroNames={{}}
         isLoading={false}
         isRefreshing={false}
         error={null}
         onRefresh={vi.fn()}
         onSelectMatch={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
+        hasPreviousPage={false}
         onSyncArchive={vi.fn()}
         onSyncAllArchive={vi.fn()}
         archiveSyncError={null}

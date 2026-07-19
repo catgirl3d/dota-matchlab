@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '../../shared/database.types';
+import type { ArchiveFilters } from './archive-analytics';
 
 export type ArchiveMatch = {
   matchId: number;
@@ -49,223 +50,175 @@ export type ArchiveSyncState = Pick<
   | 'oldest_match_id'
 >;
 
-export type ArchiveSnapshot = {
-  matches: ArchiveMatch[];
-  syncState: ArchiveSyncState | null;
+export type ArchiveBreakdown = {
+  key: string;
+  label: string;
+  matches: number;
+  wins: number;
+  winRate: number;
 };
+
+export type ArchiveHeroBreakdown = Omit<ArchiveBreakdown, 'label'> & {
+  heroId: number;
+  averageKda: number;
+  averageGpm: number;
+};
+
+export type ArchiveOverview = {
+  summary: {
+    matches: number;
+    wins: number;
+    losses: number;
+    unknownResults: number;
+    winRate: number;
+    averageKills: number;
+    averageDeaths: number;
+    averageAssists: number;
+    averageKda: number;
+    averageGpm: number;
+    averageXpm: number;
+    averageLastHits: number;
+    averageDamage: number;
+    averageDurationMinutes: number;
+    firstMatchAt: number | null;
+    latestMatchAt: number | null;
+  };
+  form: Array<'win' | 'loss' | 'unknown'>;
+  modes: ArchiveBreakdown[];
+  heroes: ArchiveHeroBreakdown[];
+  positions: ArchiveBreakdown[];
+  lanes: ArchiveBreakdown[];
+  party: ArchiveBreakdown[];
+  tempo: ArchiveBreakdown[];
+  heroOptions: number[];
+  syncState: ArchiveSyncState | null;
+  integrity: { linked: number; complete: number; missingStats: number; missingMatch: number };
+};
+
+export type ArchiveCursor = { startTime: number | null; matchId: number };
+export type ArchivePage = { matches: ArchiveMatch[]; nextCursor: ArchiveCursor | null };
 
 type UserSupabaseClient = SupabaseClient<Database>;
 
-const PAGE_SIZE = 1_000;
-const ID_CHUNK_SIZE = 200;
-
-const MATCH_SELECT =
-  'match_id,start_time,duration,radiant_win,game_mode,lobby_type,average_rank,radiant_score,dire_score' as const;
-const PLAYER_SELECT =
-  'match_id,player_slot,hero_id,hero_variant,kills,deaths,assists,gold_per_min,xp_per_min,last_hits,denies,hero_damage,tower_damage,hero_healing,level,net_worth,leaver_status,party_size,lane,lane_role,is_roaming' as const;
-
-export async function fetchArchiveSnapshot(
+export async function fetchArchiveOverview(
   client: UserSupabaseClient,
   trackedAccountId: string,
-  dotaAccountId: number,
-): Promise<ArchiveSnapshot> {
-  const links = await readAllMatchLinks(client, trackedAccountId);
-  const matchIds = links.map((link) => link.match_id);
-
-  const [matches, playerStats, syncState] = await Promise.all([
-    readMatches(client, matchIds),
-    readPlayerStats(client, matchIds, dotaAccountId),
-    readSyncState(client, dotaAccountId),
-  ]);
-
-  const statsByMatch = new Map(playerStats.map((stats) => [stats.match_id, stats]));
-  const matchesById = new Map(matches.map((match) => [match.match_id, match]));
-
-  const archiveMatches = matchIds.flatMap((matchId): ArchiveMatch[] => {
-    const match = matchesById.get(matchId);
-    const stats = statsByMatch.get(matchId);
-    if (!match || !stats) {
-      return [];
-    }
-
-    const isRadiant = stats.player_slot === null ? null : stats.player_slot < 128;
-    const won =
-      isRadiant === null || match.radiant_win === null
-        ? null
-        : isRadiant === match.radiant_win;
-
-    return [
-      {
-        matchId: match.match_id,
-        startTime: match.start_time,
-        durationSeconds: match.duration,
-        radiantWin: match.radiant_win,
-        gameMode: match.game_mode,
-        lobbyType: match.lobby_type,
-        averageRank: match.average_rank,
-        radiantScore: match.radiant_score,
-        direScore: match.dire_score,
-        playerSlot: stats.player_slot,
-        heroId: stats.hero_id,
-        heroVariant: stats.hero_variant,
-        kills: stats.kills,
-        deaths: stats.deaths,
-        assists: stats.assists,
-        goldPerMinute: stats.gold_per_min,
-        xpPerMinute: stats.xp_per_min,
-        lastHits: stats.last_hits,
-        denies: stats.denies,
-        heroDamage: stats.hero_damage,
-        towerDamage: stats.tower_damage,
-        heroHealing: stats.hero_healing,
-        level: stats.level,
-        netWorth: stats.net_worth,
-        leaverStatus: stats.leaver_status,
-        partySize: stats.party_size,
-        lane: stats.lane,
-        laneRole: stats.lane_role,
-        isRoaming: stats.is_roaming,
-        won,
-      },
-    ];
-  });
-
-  archiveMatches.sort((left, right) => (right.startTime ?? 0) - (left.startTime ?? 0));
-
-  return { matches: archiveMatches, syncState };
-}
-
-async function readAllMatchLinks(
-  client: UserSupabaseClient,
-  trackedAccountId: string,
-): Promise<Array<Pick<Tables<'tracked_account_matches'>, 'match_id'>>> {
-  const rows: Array<Pick<Tables<'tracked_account_matches'>, 'match_id'>> = [];
-
-  for (let offset = 0; ; offset += PAGE_SIZE) {
-    const { data, error } = await client
-      .from('tracked_account_matches')
-      .select('match_id')
-      .eq('tracked_account_id', trackedAccountId)
-      .order('match_id', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    if (error) {
-      throw new Error(`Не удалось загрузить связи архива: ${error.message}`);
-    }
-
-    rows.push(...(data ?? []));
-    if (!data || data.length < PAGE_SIZE) {
-      return rows;
-    }
-  }
-}
-
-async function readMatches(
-  client: UserSupabaseClient,
-  matchIds: number[],
-): Promise<Pick<Tables<'dota_matches'>, MatchField>[]> {
-  const rows: Pick<Tables<'dota_matches'>, MatchField>[] = [];
-
-  for (const chunk of chunkIds(matchIds)) {
-    const { data, error } = await client
-      .from('dota_matches')
-      .select(MATCH_SELECT)
-      .in('match_id', chunk);
-
-    if (error) {
-      throw new Error(`Не удалось загрузить архив матчей: ${error.message}`);
-    }
-
-    rows.push(...(data ?? []));
-  }
-
-  return rows;
-}
-
-async function readPlayerStats(
-  client: UserSupabaseClient,
-  matchIds: number[],
-  dotaAccountId: number,
-): Promise<Pick<Tables<'player_match_stats'>, PlayerField>[]> {
-  const rows: Pick<
-    Tables<'player_match_stats'>,
-    PlayerField
-  >[] = [];
-
-  for (const chunk of chunkIds(matchIds)) {
-    const { data, error } = await client
-      .from('player_match_stats')
-      .select(PLAYER_SELECT)
-      .eq('account_id', dotaAccountId)
-      .in('match_id', chunk);
-
-    if (error) {
-      throw new Error(`Не удалось загрузить статистику игрока: ${error.message}`);
-    }
-
-    rows.push(...(data ?? []));
-  }
-
-  return rows;
-}
-
-type MatchField =
-  | 'match_id'
-  | 'start_time'
-  | 'duration'
-  | 'radiant_win'
-  | 'game_mode'
-  | 'lobby_type'
-  | 'average_rank'
-  | 'radiant_score'
-  | 'dire_score';
-
-type PlayerField =
-  | 'match_id'
-  | 'player_slot'
-  | 'hero_id'
-  | 'hero_variant'
-  | 'kills'
-  | 'deaths'
-  | 'assists'
-  | 'gold_per_min'
-  | 'xp_per_min'
-  | 'last_hits'
-  | 'denies'
-  | 'hero_damage'
-  | 'tower_damage'
-  | 'hero_healing'
-  | 'level'
-  | 'net_worth'
-  | 'leaver_status'
-  | 'party_size'
-  | 'lane'
-  | 'lane_role'
-  | 'is_roaming';
-
-async function readSyncState(
-  client: UserSupabaseClient,
-  dotaAccountId: number,
-): Promise<ArchiveSyncState | null> {
+  filters: ArchiveFilters,
+  signal?: AbortSignal,
+): Promise<ArchiveOverview> {
   const { data, error } = await client
-    .from('account_match_sync_state')
-    .select(
-      'status,history_provider,backfill_offset,backfill_complete,last_attempt_at,last_success_at,next_retry_at,consecutive_failures,last_error_message,newest_match_id,oldest_match_id',
-    )
-    .eq('dota_account_id', dotaAccountId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`Не удалось загрузить состояние синхронизации: ${error.message}`);
-  }
-
-  return data;
+    .rpc('get_match_archive_overview', archiveFilterArgs(trackedAccountId, filters))
+    .abortSignal(signal ?? new AbortController().signal);
+  if (error) throw new Error(`Не удалось загрузить обзор архива: ${error.message}`);
+  return mapOverview(data);
 }
 
-function chunkIds(ids: number[]): number[][] {
-  const chunks: number[][] = [];
-  for (let index = 0; index < ids.length; index += ID_CHUNK_SIZE) {
-    chunks.push(ids.slice(index, index + ID_CHUNK_SIZE));
-  }
-  return chunks;
+export async function fetchArchivePage(
+  client: UserSupabaseClient,
+  trackedAccountId: string,
+  filters: ArchiveFilters,
+  cursor: ArchiveCursor | null,
+  signal?: AbortSignal,
+): Promise<ArchivePage> {
+  const { data, error } = await client
+    .rpc('get_match_archive_page', {
+      ...archiveFilterArgs(trackedAccountId, filters),
+      p_cursor_start_time: cursor?.startTime ?? null,
+      p_cursor_match_id: cursor?.matchId ?? null,
+      p_limit: 100,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  if (error) throw new Error(`Не удалось загрузить страницу архива: ${error.message}`);
+  return mapPage(data);
+}
+
+export function archiveFilterArgs(trackedAccountId: string, filters: ArchiveFilters) {
+  return {
+    p_tracked_account_id: trackedAccountId,
+    p_period: filters.period,
+    p_mode: filters.mode,
+    p_result: filters.result,
+    p_party: filters.party,
+    p_position: filters.position,
+    p_hero_id: filters.heroId,
+  };
+}
+
+function mapOverview(value: unknown): ArchiveOverview {
+  const record = asRecord(value, 'overview');
+  const summary = asRecord(record.summary, 'overview.summary');
+  const integrity = asRecord(record.integrity, 'overview.integrity');
+  return {
+    summary: {
+      matches: numberValue(summary.matches), wins: numberValue(summary.wins), losses: numberValue(summary.losses),
+      unknownResults: numberValue(summary.unknown_results), winRate: numberValue(summary.win_rate),
+      averageKills: numberValue(summary.average_kills), averageDeaths: numberValue(summary.average_deaths),
+      averageAssists: numberValue(summary.average_assists), averageKda: numberValue(summary.average_kda),
+      averageGpm: numberValue(summary.average_gpm), averageXpm: numberValue(summary.average_xpm),
+      averageLastHits: numberValue(summary.average_last_hits), averageDamage: numberValue(summary.average_damage),
+      averageDurationMinutes: numberValue(summary.average_duration_minutes), firstMatchAt: nullableNumber(summary.first_match_at), latestMatchAt: nullableNumber(summary.latest_match_at),
+    },
+    form: arrayValue(record.form).map(formValue),
+    modes: mapBreakdowns(record.modes), heroes: mapHeroBreakdowns(record.heroes), positions: mapBreakdowns(record.positions),
+    lanes: mapBreakdowns(record.lanes), party: mapBreakdowns(record.party), tempo: mapBreakdowns(record.tempo),
+    heroOptions: arrayValue(record.heroOptions).map(numberValue),
+    syncState: record.syncState === null || record.syncState === undefined ? null : asRecord(record.syncState, 'overview.syncState') as ArchiveSyncState,
+    integrity: { linked: numberValue(integrity.linked), complete: numberValue(integrity.complete), missingStats: numberValue(integrity.missing_stats), missingMatch: numberValue(integrity.missing_match) },
+  };
+}
+
+function mapPage(value: unknown): ArchivePage {
+  const record = asRecord(value, 'page');
+  return {
+    matches: arrayValue(record.matches).map(mapMatch),
+    nextCursor: record.nextCursor === null || record.nextCursor === undefined ? null : mapCursor(record.nextCursor),
+  };
+}
+
+function mapMatch(value: unknown): ArchiveMatch {
+  const row = asRecord(value, 'match');
+  return {
+    matchId: numberValue(row.matchId), startTime: nullableNumber(row.startTime), durationSeconds: nullableNumber(row.durationSeconds), radiantWin: nullableBoolean(row.radiantWin), gameMode: nullableNumber(row.gameMode), lobbyType: nullableNumber(row.lobbyType), averageRank: nullableNumber(row.averageRank), radiantScore: nullableNumber(row.radiantScore), direScore: nullableNumber(row.direScore), playerSlot: nullableNumber(row.playerSlot), heroId: nullableNumber(row.heroId), heroVariant: nullableNumber(row.heroVariant), kills: nullableNumber(row.kills), deaths: nullableNumber(row.deaths), assists: nullableNumber(row.assists), goldPerMinute: nullableNumber(row.goldPerMinute), xpPerMinute: nullableNumber(row.xpPerMinute), lastHits: nullableNumber(row.lastHits), denies: nullableNumber(row.denies), heroDamage: nullableNumber(row.heroDamage), towerDamage: nullableNumber(row.towerDamage), heroHealing: nullableNumber(row.heroHealing), level: nullableNumber(row.level), netWorth: nullableNumber(row.netWorth), leaverStatus: nullableNumber(row.leaverStatus), partySize: nullableNumber(row.partySize), lane: nullableNumber(row.lane), laneRole: nullableNumber(row.laneRole), isRoaming: nullableBoolean(row.isRoaming), won: nullableBoolean(row.won),
+  };
+}
+
+function mapCursor(value: unknown): ArchiveCursor {
+  const row = asRecord(value, 'page.nextCursor');
+  return { startTime: nullableNumber(row.startTime), matchId: numberValue(row.matchId) };
+}
+
+function mapBreakdowns(value: unknown): ArchiveBreakdown[] {
+  return arrayValue(value).map((item) => {
+    const row = asRecord(item, 'breakdown');
+    return { key: stringValue(row.key), label: stringValue(row.label), matches: numberValue(row.matches), wins: numberValue(row.wins), winRate: numberValue(row.winRate) };
+  });
+}
+
+function mapHeroBreakdowns(value: unknown): ArchiveHeroBreakdown[] {
+  return arrayValue(value).map((item) => {
+    const row = asRecord(item, 'hero breakdown');
+    return {
+      key: stringValue(row.key),
+      heroId: numberValue(row.heroId),
+      matches: numberValue(row.matches),
+      wins: numberValue(row.wins),
+      winRate: numberValue(row.winRate),
+      averageKda: numberValue(row.averageKda),
+      averageGpm: numberValue(row.averageGpm),
+    };
+  });
+}
+
+function asRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Некорректный ответ ${label}`);
+  return value as Record<string, unknown>;
+}
+function arrayValue(value: unknown): unknown[] { if (!Array.isArray(value)) throw new Error('Некорректный массив архива'); return value; }
+function numberValue(value: unknown): number { if (typeof value !== 'number') throw new Error('Некорректное число архива'); return value; }
+function nullableNumber(value: unknown): number | null { return value === null ? null : numberValue(value); }
+function stringValue(value: unknown): string { if (typeof value !== 'string') throw new Error('Некорректная строка архива'); return value; }
+function nullableBoolean(value: unknown): boolean | null { if (value === null) return null; if (typeof value !== 'boolean') throw new Error('Некорректный флаг архива'); return value; }
+function formValue(value: unknown): ArchiveOverview['form'][number] {
+  if (value === 'win' || value === 'loss' || value === 'unknown') return value;
+  throw new Error('Некорректный результат формы архива');
 }

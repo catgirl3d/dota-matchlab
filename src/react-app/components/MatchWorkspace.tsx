@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import type { Tables } from '../../shared/database.types';
 import type { MatchSyncResult } from '../../shared/match-archive';
-import { fetchArchiveSnapshot } from '../lib/archive';
+import { fetchArchiveOverview, fetchArchivePage, type ArchiveCursor } from '../lib/archive';
+import { DEFAULT_ARCHIVE_FILTERS, type ArchiveFilters } from '../lib/archive-analytics';
+import { archiveQueryKeys } from '../lib/archive-query-keys';
 import { fetchMatchDetail } from '../lib/match-detail';
 import {
   fetchHeroNames,
@@ -40,6 +42,8 @@ export function MatchWorkspace() {
   const [archiveSyncProgress, setArchiveSyncProgress] =
     useState<MatchSyncProgress | null>(null);
   const [archiveSyncMode, setArchiveSyncMode] = useState<'page' | 'all' | null>(null);
+  const [archiveFilters, setArchiveFilters] = useState<ArchiveFilters>(DEFAULT_ARCHIVE_FILTERS);
+  const [archiveCursors, setArchiveCursors] = useState<ArchiveCursor[]>([]);
 
   const accountsQuery = useQuery({
     queryKey: ['tracked-accounts', userId],
@@ -107,6 +111,7 @@ export function MatchWorkspace() {
     },
     onSuccess: (account) => {
       setSteamProfile('');
+      resetArchiveView();
       setSelectedAccountId(account.dota_account_id);
       void queryClient.invalidateQueries({ queryKey: ['tracked-accounts', userId] });
     },
@@ -117,11 +122,13 @@ export function MatchWorkspace() {
   const activeAccount =
     accounts.find((account) => account.dota_account_id === activeAccountId) ?? null;
 
-  const archiveQuery = useQuery({
-    queryKey: ['match-archive', activeAccount?.id, activeAccountId],
+  const archiveCursor = archiveCursors.at(-1) ?? null;
+  const archiveOverviewQuery = useQuery({
+    queryKey: archiveQueryKeys.overview(activeAccount?.id, archiveFilters),
     enabled: Boolean(session && activeAccount),
     staleTime: 60_000,
-    queryFn: async () => {
+    retry: false,
+    queryFn: async ({ signal }) => {
       if (!session || !activeAccount) {
         throw new Error('Профиль не выбран');
       }
@@ -132,11 +139,21 @@ export function MatchWorkspace() {
       }
 
       const supabase = createUserSupabaseClient(async () => token);
-      return fetchArchiveSnapshot(
-        supabase,
-        activeAccount.id,
-        activeAccount.dota_account_id,
-      );
+      return fetchArchiveOverview(supabase, activeAccount.id, archiveFilters, signal);
+    },
+  });
+
+  const archivePageQuery = useQuery({
+    queryKey: archiveQueryKeys.page(activeAccount?.id, archiveFilters, archiveCursor),
+    enabled: Boolean(session && activeAccount),
+    staleTime: 60_000,
+    retry: false,
+    queryFn: async ({ signal }) => {
+      if (!session || !activeAccount) throw new Error('Профиль не выбран');
+      const token = await session.getToken();
+      if (!token) throw new Error('Не удалось получить Clerk JWT');
+      const supabase = createUserSupabaseClient(async () => token);
+      return fetchArchivePage(supabase, activeAccount.id, archiveFilters, archiveCursor, signal);
     },
   });
 
@@ -191,10 +208,8 @@ export function MatchWorkspace() {
       setArchiveSyncMode('page');
       setArchiveSyncProgress(null);
     },
-    onSuccess: (_result, trackedAccountId) => {
-      void queryClient.invalidateQueries({
-        queryKey: ['match-archive', trackedAccountId],
-      });
+    onSettled: (_result, _error, trackedAccountId) => {
+      void queryClient.invalidateQueries({ queryKey: archiveQueryKeys.root(trackedAccountId) });
     },
   });
 
@@ -218,9 +233,7 @@ export function MatchWorkspace() {
       setArchiveSyncProgress(null);
     },
     onSettled: (_result, _error, trackedAccountId) => {
-      void queryClient.invalidateQueries({
-        queryKey: ['match-archive', trackedAccountId],
-      });
+      void queryClient.invalidateQueries({ queryKey: archiveQueryKeys.root(trackedAccountId) });
       void queryClient.invalidateQueries({ queryKey: ['match-detail'] });
     },
   });
@@ -246,20 +259,25 @@ export function MatchWorkspace() {
       void queryClient.invalidateQueries({
         queryKey: ['match-detail', variables.matchId],
       });
-      void queryClient.invalidateQueries({
-        queryKey: ['match-archive', variables.trackedAccountId],
-      });
+      void queryClient.invalidateQueries({ queryKey: archiveQueryKeys.root(variables.trackedAccountId) });
     },
   });
 
   function handleSelectAccount(accountId: number) {
+    resetArchiveView();
     setSelectedAccountId(accountId);
-    setSelectedMatchId(null);
     archiveSync.reset();
     archiveSyncAll.reset();
     matchDetailSync.reset();
     setArchiveSyncProgress(null);
     setArchiveSyncMode(null);
+  }
+
+  function resetArchiveView() {
+    void queryClient.cancelQueries({ queryKey: ['match-archive'] });
+    setSelectedMatchId(null);
+    setArchiveFilters(DEFAULT_ARCHIVE_FILTERS);
+    setArchiveCursors([]);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -358,13 +376,25 @@ export function MatchWorkspace() {
           ) : (
             <PlayerDashboard
               account={activeAccount}
-              snapshot={archiveQuery.data}
+              overview={archiveOverviewQuery.data}
+              page={archivePageQuery.data}
+              filters={archiveFilters}
               heroNames={heroNamesQuery.data ?? {}}
-              isLoading={archiveQuery.isPending}
-              error={archiveQuery.error}
-              onRefresh={() => archiveQuery.refetch()}
+              isLoading={archiveOverviewQuery.isPending || archivePageQuery.isPending}
+              error={archiveOverviewQuery.error ?? archivePageQuery.error}
+              onRefresh={() => {
+                void archiveOverviewQuery.refetch();
+                void archivePageQuery.refetch();
+              }}
               onSelectMatch={setSelectedMatchId}
-              isRefreshing={archiveQuery.isFetching}
+              isRefreshing={archiveOverviewQuery.isFetching || archivePageQuery.isFetching}
+              onFiltersChange={(filters) => {
+                setArchiveFilters(filters);
+                setArchiveCursors([]);
+              }}
+              onNextPage={(cursor) => setArchiveCursors((current) => [...current, cursor])}
+              onPreviousPage={() => setArchiveCursors((current) => current.slice(0, -1))}
+              hasPreviousPage={archiveCursors.length > 0}
               onSyncArchive={() => {
                 if (activeAccount) {
                   archiveSync.mutate(activeAccount.id);

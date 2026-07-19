@@ -1,13 +1,10 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { type CSSProperties } from 'react';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import type { Tables } from '../../shared/database.types';
-import type { ArchiveSnapshot } from '../lib/archive';
+import type { ArchiveCursor, ArchiveOverview, ArchivePage } from '../lib/archive';
 import { HeroMark } from './HeroMark';
 import type { MatchSyncProgress } from '../lib/dota-api';
 import {
-  calculateArchiveAnalytics,
-  DEFAULT_ARCHIVE_FILTERS,
-  filterArchiveMatches,
   getModeLabelForFilter,
   getPositionLabelForFilter,
   type ArchiveFilters,
@@ -21,13 +18,19 @@ type PlayerAccount = Pick<
 
 type PlayerDashboardProps = {
   account: PlayerAccount | null;
-  snapshot?: ArchiveSnapshot;
+  overview?: ArchiveOverview;
+  page?: ArchivePage;
+  filters: ArchiveFilters;
   heroNames: Record<number, string>;
   isLoading: boolean;
   isRefreshing: boolean;
   error: Error | null;
   onRefresh: () => void;
   onSelectMatch: (matchId: number) => void;
+  onFiltersChange: (filters: ArchiveFilters) => void;
+  onNextPage: (cursor: ArchiveCursor) => void;
+  onPreviousPage: () => void;
+  hasPreviousPage: boolean;
   onSyncArchive: () => void;
   onSyncAllArchive: () => void;
   archiveSyncResult?: MatchSyncResult;
@@ -37,17 +40,21 @@ type PlayerDashboardProps = {
   archiveSyncProgress: MatchSyncProgress | null;
 };
 
-const EMPTY_ARCHIVE_MATCHES: ArchiveSnapshot['matches'] = [];
-
 export function PlayerDashboard({
   account,
-  snapshot,
+  overview,
+  page,
+  filters,
   heroNames,
   isLoading,
   isRefreshing,
   error,
   onRefresh,
   onSelectMatch,
+  onFiltersChange,
+  onNextPage,
+  onPreviousPage,
+  hasPreviousPage,
   onSyncArchive,
   onSyncAllArchive,
   archiveSyncResult,
@@ -56,18 +63,10 @@ export function PlayerDashboard({
   isArchiveSyncingAll,
   archiveSyncProgress,
 }: PlayerDashboardProps) {
-  const [filters, setFilters] = useState<ArchiveFilters>(DEFAULT_ARCHIVE_FILTERS);
-  const matches = snapshot?.matches ?? EMPTY_ARCHIVE_MATCHES;
-  const filteredMatches = useMemo(
-    () => filterArchiveMatches(matches, filters),
-    [matches, filters],
-  );
-  const analytics = useMemo(
-    () => calculateArchiveAnalytics(filteredMatches, heroNames),
-    [filteredMatches, heroNames],
-  );
+  const analytics = overview?.summary;
+  const matches = page?.matches ?? [];
 
-  if (isLoading) {
+  if (isLoading && !overview) {
     return <WorkspaceMessage text="Читаем личный архив из Supabase…" />;
   }
   if (error) {
@@ -75,6 +74,9 @@ export function PlayerDashboard({
   }
   if (!account) {
     return <WorkspaceMessage text="Профиль игрока не выбран." />;
+  }
+  if (!overview || !analytics) {
+    return <WorkspaceMessage text="Архив пока не содержит доступного обзора." />;
   }
 
   return (
@@ -104,7 +106,8 @@ export function PlayerDashboard({
           <div className="player-identity__meta">
             <span>{formatRank(account.rank_tier)}</span>
             <span>Personal match archive</span>
-            <span>{matches.length.toLocaleString('ru-RU')} indexed</span>
+            <span>{overview.integrity.linked.toLocaleString('ru-RU')} indexed</span>
+            <span>{overview.integrity.complete} complete · {overview.integrity.missingStats} missing stats · {overview.integrity.missingMatch} missing match</span>
           </div>
         </div>
         <div className="player-identity__actions">
@@ -124,12 +127,12 @@ export function PlayerDashboard({
       <div className="archive-control-bar">
         <div className="filter-heading">
           <span className="micro-label">FILTER THE SIGNAL</span>
-          <strong>{filteredMatches.length.toLocaleString('ru-RU')} matches in view</strong>
+          <strong>{analytics.matches.toLocaleString('ru-RU')} matches in view</strong>
         </div>
         <FilterSelect
           label="Period"
           value={filters.period}
-          onChange={(value) => setFilters((current) => ({ ...current, period: value as ArchiveFilters['period'] }))}
+          onChange={(value) => onFiltersChange({ ...filters, period: value as ArchiveFilters['period'] })}
           options={[
             ['all', 'All time'],
             ['30d', 'Last 30 days'],
@@ -140,7 +143,7 @@ export function PlayerDashboard({
         <FilterSelect
           label="Mode"
           value={filters.mode}
-          onChange={(value) => setFilters((current) => ({ ...current, mode: value as ArchiveFilters['mode'] }))}
+          onChange={(value) => onFiltersChange({ ...filters, mode: value as ArchiveFilters['mode'] })}
           options={(['all', 'ranked', 'turbo', 'all-pick'] as const).map((value) => [
             value,
             getModeLabelForFilter(value),
@@ -149,7 +152,7 @@ export function PlayerDashboard({
         <FilterSelect
           label="Position"
           value={filters.position}
-          onChange={(value) => setFilters((current) => ({ ...current, position: value as ArchiveFilters['position'] }))}
+          onChange={(value) => onFiltersChange({ ...filters, position: value as ArchiveFilters['position'] })}
           options={(['all', 'carry', 'mid', 'offlane', 'support', 'hard-support'] as const).map(
             (value) => [value, getPositionLabelForFilter(value)],
           )}
@@ -157,7 +160,7 @@ export function PlayerDashboard({
         <FilterSelect
           label="Result"
           value={filters.result}
-          onChange={(value) => setFilters((current) => ({ ...current, result: value as ArchiveFilters['result'] }))}
+          onChange={(value) => onFiltersChange({ ...filters, result: value as ArchiveFilters['result'] })}
           options={[
             ['all', 'All results'],
             ['wins', 'Wins only'],
@@ -167,7 +170,7 @@ export function PlayerDashboard({
         <FilterSelect
           label="Queue"
           value={filters.party}
-          onChange={(value) => setFilters((current) => ({ ...current, party: value as ArchiveFilters['party'] }))}
+          onChange={(value) => onFiltersChange({ ...filters, party: value as ArchiveFilters['party'] })}
           options={[
             ['all', 'Solo / Party'],
             ['solo', 'Solo only'],
@@ -177,8 +180,8 @@ export function PlayerDashboard({
         <HeroFilter
           value={filters.heroId}
           heroNames={heroNames}
-          matches={matches}
-          onChange={(heroId) => setFilters((current) => ({ ...current, heroId }))}
+          heroIds={overview.heroOptions}
+          onChange={(heroId) => onFiltersChange({ ...filters, heroId })}
         />
       </div>
 
@@ -218,9 +221,9 @@ export function PlayerDashboard({
                 <span className="micro-label">RECENT FORM / LAST 20</span>
                 <h3 id="form-title">The signal is still moving</h3>
               </div>
-              <span className="card-heading__count">{analytics.matches} / {matches.length}</span>
+              <span className="card-heading__count">{analytics.matches} / {overview.integrity.complete}</span>
             </div>
-            <FormStrip form={analytics.form} />
+            <FormStrip form={overview.form} />
             <div className="form-card__footer">
               <span>{analytics.wins} wins in current view</span>
               <span>{analytics.averageDurationMinutes} min average match</span>
@@ -233,13 +236,15 @@ export function PlayerDashboard({
                 <span className="micro-label">ARCHIVE / MATCH LOG</span>
                 <h3 id="matches-title">Matches</h3>
               </div>
-              <span className="card-heading__count">{matches.length.toLocaleString('ru-RU')} indexed</span>
+              <span className="card-heading__count">{overview.integrity.complete.toLocaleString('ru-RU')} complete</span>
             </div>
-            {filteredMatches.length === 0 ? (
+            {isLoading && !page ? (
+              <div className="empty-state">Загружаем страницу матчей…</div>
+            ) : matches.length === 0 ? (
               <div className="empty-state">Нет матчей под выбранные фильтры.</div>
             ) : (
               <div className="archive-match-table" role="list" aria-label="Архив матчей">
-                {filteredMatches.slice(0, 100).map((match) => (
+                {matches.map((match) => (
                   <ArchiveMatchRow
                     key={match.matchId}
                     match={match}
@@ -249,9 +254,10 @@ export function PlayerDashboard({
                 ))}
               </div>
             )}
-            {filteredMatches.length > 100 ? (
-              <p className="table-note">Показаны последние 100 матчей из текущего среза.</p>
-            ) : null}
+            <div className="table-note">
+              <button type="button" onClick={onPreviousPage} disabled={!hasPreviousPage || isRefreshing}>Previous</button>
+              <button type="button" onClick={() => page?.nextCursor && onNextPage(page.nextCursor)} disabled={!page?.nextCursor || isRefreshing}>Next</button>
+            </div>
           </section>
         </div>
 
@@ -263,11 +269,11 @@ export function PlayerDashboard({
                 <h3 id="breakdown-title">Where the wins come from</h3>
               </div>
             </div>
-            <BreakdownList items={analytics.modes} />
+            <BreakdownList items={overview.modes} />
             <div className="side-divider" />
             <span className="micro-label">QUEUE / TEMPO</span>
-            <BreakdownList items={analytics.party} compact />
-            <BreakdownList items={analytics.tempo} compact />
+            <BreakdownList items={overview.party} compact />
+            <BreakdownList items={overview.tempo} compact />
           </section>
 
           <section className="dashboard-card hero-pool-card" aria-labelledby="hero-pool-title">
@@ -277,7 +283,7 @@ export function PlayerDashboard({
                 <h3 id="hero-pool-title">Most played</h3>
               </div>
             </div>
-            <HeroPool heroes={analytics.heroes.slice(0, 6)} />
+            <HeroPool heroes={overview.heroes.slice(0, 6).map((hero) => ({ ...hero, label: heroNames[hero.heroId] ?? `Hero #${hero.heroId}` }))} />
           </section>
 
           <section className="dashboard-card lane-card" aria-labelledby="lane-title">
@@ -287,15 +293,15 @@ export function PlayerDashboard({
                 <h3 id="lane-title">Role record</h3>
               </div>
             </div>
-            <BreakdownList items={analytics.positions} />
-            <BreakdownList items={analytics.lanes} compact />
+            <BreakdownList items={overview.positions} />
+            <BreakdownList items={overview.lanes} compact />
           </section>
 
           <ArchiveSyncPanel
             accountName={account.persona_name ?? 'Dota player'}
             result={archiveSyncResult}
-            syncState={snapshot?.syncState}
-            archivedCount={matches.length}
+            syncState={overview.syncState}
+            archivedCount={overview.integrity.linked}
             isPending={isArchiveSyncing}
             isSyncingAll={isArchiveSyncingAll}
             fullSyncProgress={archiveSyncProgress}
@@ -337,15 +343,15 @@ function FilterSelect({
 function HeroFilter({
   value,
   heroNames,
-  matches,
+  heroIds,
   onChange,
 }: {
   value: number | null;
   heroNames: Record<number, string>;
-  matches: ArchiveSnapshot['matches'];
+  heroIds: number[];
   onChange: (heroId: number | null) => void;
 }) {
-  const heroIds = [...new Set(matches.flatMap((match) => (match.heroId === null ? [] : [match.heroId])))].sort(
+  const sortedHeroIds = [...heroIds].sort(
     (left, right) => (heroNames[left] ?? '').localeCompare(heroNames[right] ?? ''),
   );
 
@@ -357,7 +363,7 @@ function HeroFilter({
         onChange={(event) => onChange(event.target.value === 'all' ? null : Number(event.target.value))}
       >
         <option value="all">All heroes</option>
-        {heroIds.map((heroId) => (
+        {sortedHeroIds.map((heroId) => (
           <option key={heroId} value={heroId}>
             {heroNames[heroId] ?? `Hero #${heroId}`}
           </option>
@@ -480,7 +486,7 @@ function ArchiveMatchRow({
   heroNames,
   onSelect,
 }: {
-  match: ArchiveSnapshot['matches'][number];
+  match: ArchivePage['matches'][number];
   heroNames: Record<number, string>;
   onSelect: (matchId: number) => void;
 }) {

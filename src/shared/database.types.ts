@@ -534,6 +534,33 @@ export type Database = {
         }
         Returns: Json
       }
+      get_match_archive_overview: {
+        Args: {
+          p_tracked_account_id: string
+          p_period?: string
+          p_mode?: string
+          p_result?: string
+          p_party?: string
+          p_position?: string
+          p_hero_id?: number | null
+        }
+        Returns: Json
+      }
+      get_match_archive_page: {
+        Args: {
+          p_tracked_account_id: string
+          p_period?: string
+          p_mode?: string
+          p_result?: string
+          p_party?: string
+          p_position?: string
+          p_hero_id?: number | null
+          p_cursor_start_time?: number | null
+          p_cursor_match_id?: number | null
+          p_limit?: number
+        }
+        Returns: Json
+      }
       record_match_sync_failure: {
         Args: {
           p_actor_user_id: string
