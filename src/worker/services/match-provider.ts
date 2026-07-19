@@ -1,4 +1,7 @@
+import type { Json } from '../../shared/database.types';
+
 export type MatchHistoryProvider = 'stratz' | 'opendota';
+export type ProviderPayloadKind = 'history' | 'detail';
 
 export type ArchivedPlayerMatch = {
   matchId: string;
@@ -37,6 +40,9 @@ export type ArchivedPlayerMatch = {
   lane: number | null;
   laneRole: number | null;
   isRoaming: boolean | null;
+  rawPayload: Json;
+  rawPayloadKind: ProviderPayloadKind;
+  rawPayloadSchemaVersion: string;
 };
 
 export type PlayerMatchesPage = {

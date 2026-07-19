@@ -3,6 +3,7 @@ import type {
   RecentDotaMatch,
   RecentMatchesResponse,
 } from '../../shared/dota';
+import type { Json } from '../../shared/database.types';
 import { steamId64ToAccountId } from './steam-id';
 import type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
 
@@ -320,6 +321,16 @@ function isObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isJson(value: unknown): value is Json {
+  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJson);
+  }
+  return isObject(value) && Object.values(value).every(isJson);
+}
+
 function readString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -339,7 +350,7 @@ function readBoolean(value: unknown): boolean | null {
 function normalizeArchivedPlayerMatch(
   value: unknown,
 ): ArchivedPlayerMatch | null {
-  if (!isObject(value)) {
+  if (!isObject(value) || !isJson(value)) {
     return null;
   }
 
@@ -393,5 +404,8 @@ function normalizeArchivedPlayerMatch(
     lane: readNullableInteger(value.lane),
     laneRole: readNullableInteger(value.lane_role),
     isRoaming: readBoolean(value.is_roaming),
+    rawPayload: value,
+    rawPayloadKind: 'history',
+    rawPayloadSchemaVersion: 'opendota.player-matches.v1',
   };
 }

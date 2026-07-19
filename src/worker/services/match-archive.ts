@@ -38,6 +38,7 @@ type ApplyMatchSyncPageArgs = {
   p_backfill_complete: boolean;
   p_backfill_upper_bound_match_id: number;
   p_source: MatchHistoryProvider;
+  p_payloads: Json;
 };
 
 type RecordMatchSyncFailureArgs = {
@@ -51,7 +52,7 @@ type RecordMatchSyncFailureArgs = {
 
 type ArchiveRpcClient = {
   claimMatchSyncForProvider(args: ClaimMatchSyncArgs): Promise<RpcResponse>;
-  applyMatchSyncPageWithBoundaryAndSource(
+  applyMatchSyncPageWithBoundarySourceAndPayloads(
     args: ApplyMatchSyncPageArgs,
   ): Promise<RpcResponse>;
   recordMatchSyncFailure(args: RecordMatchSyncFailureArgs): Promise<RpcResponse>;
@@ -141,7 +142,7 @@ export async function syncTrackedAccount(
       : page.matches.filter((match) => Number(match.matchId) <= upperBound);
     const backfillComplete = !page.hasMore;
     const nextOffset = backfillComplete ? 0 : page.nextOffset;
-    const applyResponse = await archiveClient.applyMatchSyncPageWithBoundaryAndSource({
+    const applyResponse = await archiveClient.applyMatchSyncPageWithBoundarySourceAndPayloads({
       p_actor_user_id: actorUserId,
       p_tracked_account_id: trackedAccountId,
       p_dota_account_id: accountId,
@@ -153,6 +154,7 @@ export async function syncTrackedAccount(
       // Zero is outside the valid match ID range and is translated to NULL in SQL.
       p_backfill_upper_bound_match_id: upperBound ?? 0,
       p_source: provider,
+      p_payloads: boundedMatches.map((match) => toArchiveRpcPayload(match, provider)),
     });
     const applied = readRpcData(
       applyResponse,
@@ -209,8 +211,8 @@ function createArchiveRpcClient(env: Env): ArchiveRpcClient {
   return {
     claimMatchSyncForProvider: async (args) =>
       client.rpc('claim_match_sync_for_provider', args),
-    applyMatchSyncPageWithBoundaryAndSource: async (args) =>
-      client.rpc('apply_match_sync_page_with_boundary_and_source', args),
+    applyMatchSyncPageWithBoundarySourceAndPayloads: async (args) =>
+      client.rpc('apply_match_sync_page_with_boundary_source_and_payloads', args),
     recordMatchSyncFailure: async (args) =>
       client.rpc('record_match_sync_failure', args),
   };
@@ -301,6 +303,20 @@ function toArchiveRpcMatch(
     lane_role: match.laneRole,
     is_roaming: match.isRoaming,
     source,
+  };
+}
+
+function toArchiveRpcPayload(
+  match: ArchivedPlayerMatch,
+  provider: MatchHistoryProvider,
+): Json {
+  return {
+    match_id: Number(match.matchId),
+    provider,
+    payload_kind: match.rawPayloadKind,
+    payload_section: 'match',
+    payload: match.rawPayload,
+    schema_version: match.rawPayloadSchemaVersion,
   };
 }
 

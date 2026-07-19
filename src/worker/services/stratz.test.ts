@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   loadStratzPlayerMatchesBatch,
+  loadStratzMatchDetail,
   loadStratzPlayerMatchesPage,
 } from './stratz';
 
@@ -22,6 +23,14 @@ describe('STRATZ match provider', () => {
                 regionId: 12,
                 leagueId: 345,
                 gameVersionId: '7.39e',
+                averageRank: 54,
+                clusterId: 123,
+                radiantTeamId: 11,
+                direTeamId: 12,
+                seriesId: 13,
+                pickBans: [{ isPick: true, heroId: 1, order: 0 }],
+                chatEvents: [{ time: 12, type: 1, fromHeroId: 1 }],
+                towerDeaths: [{ time: 300, npcId: 123, isRadiant: false }],
                 players: [
                   {
                     steamAccountId: 93_447_624,
@@ -67,6 +76,11 @@ describe('STRATZ match provider', () => {
           matchId: '9000000001',
           gameMode: 23,
           lobbyType: 0,
+          averageRank: 54,
+          cluster: 123,
+          radiantTeamId: 11,
+          direTeamId: 12,
+          seriesId: 13,
           version: null,
           playerSlot: 0,
           heroId: 1,
@@ -87,6 +101,12 @@ describe('STRATZ match provider', () => {
           laneRole: 4,
           isRoaming: null,
           heroVariant: 0,
+          rawPayload: expect.objectContaining({
+            pickBans: [{ isPick: true, heroId: 1, order: 0 }],
+            chatEvents: [{ time: 12, type: 1, fromHeroId: 1 }],
+            towerDeaths: [{ time: 300, npcId: 123, isRadiant: false }],
+          }),
+          rawPayloadSchemaVersion: 'stratz.match.history.v1',
         }),
       ],
     });
@@ -99,9 +119,15 @@ describe('STRATZ match provider', () => {
           Authorization: 'Bearer token',
           'User-Agent': 'STRATZ_API',
         }),
-         body: expect.stringMatching(/PlayerMatchesRequestType.*goldPerMinute/s),
+        body: expect.stringContaining('PlayerMatchesRequestType'),
       }),
     );
+    const requestBody = JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body));
+    expect(requestBody.query).toContain('goldPerMinute');
+    expect(requestBody.query).toContain('pickBans');
+    expect(requestBody.query).toContain('chatEvents');
+    expect(requestBody.query).toContain('towerDeaths');
+    expect(requestBody.query).toContain('winRates');
   });
 
   it('maps GraphQL errors and upstream limits to provider errors', async () => {
@@ -141,6 +167,57 @@ describe('STRATZ match provider', () => {
       ]),
     });
     expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps the complete detail response as raw JSON', async () => {
+    const fetcher = vi.fn().mockImplementation((_: string, init: RequestInit) => {
+      const request = JSON.parse(String(init.body));
+      return Response.json({
+        data: {
+          match: {
+            id: 9_000_000_001,
+            section: request.operationName,
+            playbackData: { runeEvents: [{ time: 120, action: 'SPAWN', rune: 'HASTE' }] },
+            players: [{
+              steamAccountId: 93_447_624,
+              stats: { goldPerMinute: [0, 600], networthPerMinute: [600, 1_200] },
+            }],
+          },
+        },
+      });
+    });
+
+    await expect(loadStratzMatchDetail('token', 9_000_000_001, fetcher)).resolves.toMatchObject({
+      unavailable: false,
+      error: null,
+      payloads: [
+        expect.objectContaining({ section: 'metadata' }),
+        expect.objectContaining({ section: 'players' }),
+        expect.objectContaining({ section: 'player_stats' }),
+        expect.objectContaining({ section: 'player_playback' }),
+        expect.objectContaining({ section: 'match_playback' }),
+      ],
+    });
+    expect(fetcher).toHaveBeenCalledTimes(5);
+    const requestBodies = fetcher.mock.calls.map((call) => JSON.parse(String(call[1]?.body)));
+    expect(requestBodies.map((request) => request.operationName)).toEqual([
+      'MatchDetailMetadata', 'MatchDetailPlayers', 'MatchDetailPlayerStats',
+      'MatchDetailPlayerPlayback', 'MatchDetailMatchPlayback',
+    ]);
+    expect(requestBodies[2].query).toContain('inventoryReport');
+    expect(requestBodies[3].query).toContain('playerUpdatePositionEvents');
+  });
+
+  it('returns earlier successful sections when a later section fails', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(Response.json({ data: { match: { id: 9_000_000_001 } } }))
+      .mockResolvedValueOnce(Response.json({ errors: [{ message: 'section limited' }] }));
+
+    await expect(loadStratzMatchDetail('token', 9_000_000_001, fetcher)).resolves.toMatchObject({
+      unavailable: false,
+      error: expect.objectContaining({ message: 'section limited' }),
+      payloads: [expect.objectContaining({ section: 'metadata' })],
+    });
   });
 });
 

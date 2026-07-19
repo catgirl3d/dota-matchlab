@@ -12,6 +12,7 @@ import {
   MatchArchiveError,
   syncTrackedAccount,
 } from './services/match-archive';
+import { syncTrackedAccountDetails } from './services/match-detail-archive';
 import { StratzError } from './services/stratz';
 import {
   resolveSteamProfileInput,
@@ -24,6 +25,7 @@ type AppDependencies = {
   loadRecentMatches: typeof loadRecentMatches;
   loadHeroConstants: typeof loadHeroConstants;
   syncTrackedAccount: typeof syncTrackedAccount;
+  syncTrackedAccountDetails: typeof syncTrackedAccountDetails;
   resolveDotaPlayer: typeof resolveDotaPlayer;
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
 };
@@ -33,6 +35,7 @@ const defaultDependencies: AppDependencies = {
   loadRecentMatches,
   loadHeroConstants,
   syncTrackedAccount,
+  syncTrackedAccountDetails,
   resolveDotaPlayer,
   resolveSteamProfileInput,
 };
@@ -157,6 +160,23 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
       );
 
       return context.json(result);
+    },
+  );
+
+  app.post(
+    '/api/dota/tracked-accounts/:trackedAccountId/matches/details/sync',
+    async (context) => {
+      const auth = getAuth(context);
+      if (!auth.userId) return context.json({ error: 'Unauthorized' }, 401);
+      const trackedAccountId = context.req.param('trackedAccountId');
+      if (!isUuid(trackedAccountId)) {
+        return context.json({ error: 'Некорректный tracked account id' }, 400);
+      }
+      return context.json(await dependencies.syncTrackedAccountDetails(
+        context.env,
+        auth.userId,
+        trackedAccountId,
+      ));
     },
   );
 

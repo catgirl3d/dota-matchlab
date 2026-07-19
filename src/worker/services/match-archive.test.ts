@@ -61,7 +61,7 @@ describe('match archive sync', () => {
     expect(archiveClient.claimMatchSyncForProvider).toHaveBeenCalledWith(
       expect.objectContaining({ p_history_provider: 'stratz' }),
     );
-    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
+    expect(archiveClient.applyMatchSyncPageWithBoundarySourceAndPayloads).toHaveBeenCalledWith(
       expect.objectContaining({ p_source: 'stratz' }),
     );
   });
@@ -127,6 +127,9 @@ describe('match archive sync', () => {
           lane: null,
           laneRole: 1,
           isRoaming: null,
+          rawPayload: { match_id: 9_000_000_201, provider_field: 'raw-value' },
+          rawPayloadKind: 'history',
+          rawPayloadSchemaVersion: 'opendota.player-matches.v1',
         },
       ],
     };
@@ -158,7 +161,7 @@ describe('match archive sync', () => {
       0,
       100,
     );
-    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
+    expect(archiveClient.applyMatchSyncPageWithBoundarySourceAndPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         p_actor_user_id: 'sync-user-a',
         p_tracked_account_id: trackedAccountId,
@@ -168,6 +171,11 @@ describe('match archive sync', () => {
         p_backfill_complete: true,
         p_backfill_upper_bound_match_id: 9000000201,
         p_matches: [expect.objectContaining({ match_id: 9000000201 })],
+        p_payloads: [expect.objectContaining({
+          match_id: 9000000201,
+          provider: 'opendota',
+          payload: { match_id: 9_000_000_201, provider_field: 'raw-value' },
+        })],
       }),
     );
     expect(archiveClient.recordMatchSyncFailure).not.toHaveBeenCalled();
@@ -192,7 +200,7 @@ describe('match archive sync', () => {
     ).rejects.toMatchObject({ statusCode: 404 });
 
     expect(loadOpenDotaPlayerMatchesPage).not.toHaveBeenCalled();
-    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).not.toHaveBeenCalled();
+    expect(archiveClient.applyMatchSyncPageWithBoundarySourceAndPayloads).not.toHaveBeenCalled();
   });
 
   it('returns conflict when another sync owns the lease', async () => {
@@ -257,7 +265,7 @@ describe('match archive sync', () => {
       },
     );
 
-    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
+    expect(archiveClient.applyMatchSyncPageWithBoundarySourceAndPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         p_backfill_upper_bound_match_id: 9000000200,
         p_next_offset: 200,
@@ -304,7 +312,7 @@ describe('match archive sync', () => {
       },
     );
 
-    expect(archiveClient.applyMatchSyncPageWithBoundaryAndSource).toHaveBeenCalledWith(
+    expect(archiveClient.applyMatchSyncPageWithBoundarySourceAndPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         p_backfill_upper_bound_match_id: 9000000300,
         p_next_offset: 100,
@@ -359,7 +367,7 @@ function createArchiveClient(options: {
       data: options.claim,
       error: null,
     }),
-    applyMatchSyncPageWithBoundaryAndSource: vi.fn().mockResolvedValue({
+    applyMatchSyncPageWithBoundarySourceAndPayloads: vi.fn().mockResolvedValue({
       data: options.apply ?? {},
       error: null,
     }),
@@ -409,5 +417,8 @@ function createArchivedMatch(matchId: string): ArchivedPlayerMatch {
     lane: null,
     laneRole: null,
     isRoaming: null,
+    rawPayload: { match_id: Number(matchId), provider_field: 'raw-value' },
+    rawPayloadKind: 'history',
+    rawPayloadSchemaVersion: 'opendota.player-matches.v1',
   };
 }

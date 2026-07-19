@@ -9,3 +9,11 @@ export type MatchSyncResult = {
   backfillComplete: boolean;
   nextOffset: number;
 };
+
+export type MatchDetailSyncResult = {
+  accountId: number;
+  processedMatches: number;
+  availableMatches: number;
+  failedMatches: number;
+  backfillComplete: boolean;
+};

@@ -101,6 +101,7 @@ describe('OpenDota adapter', () => {
           party_size: 0,
           lane_role: 4,
           is_roaming: false,
+          provider_only_field: { preserved: true },
         },
         {
           match_id: 8_889_779_249,
@@ -133,6 +134,10 @@ describe('OpenDota adapter', () => {
           averageRank: null,
           laneRole: 4,
           partySize: 0,
+          rawPayload: expect.objectContaining({
+            provider_only_field: { preserved: true },
+          }),
+          rawPayloadSchemaVersion: 'opendota.player-matches.v1',
         },
         {
           matchId: '8889779249',

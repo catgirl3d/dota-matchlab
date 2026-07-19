@@ -1,8 +1,18 @@
 import type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
+import type { Json } from '../../shared/database.types';
+import {
+  METADATA_SELECTION,
+  PLAYBACK_SELECTION,
+  PLAYER_PLAYBACK_SELECTION,
+  PLAYERS_SELECTION,
+  STATS_SELECTION,
+  RELATIONS_SELECTION,
+} from './stratz-detail-selections';
 
 const STRATZ_GRAPHQL_URL = 'https://api.stratz.com/graphql';
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_RESPONSE_BYTES = 1_000_000;
+const MAX_DETAIL_RESPONSE_BYTES = 25_000_000;
 export const STRATZ_PAGE_SIZE = 100;
 export const STRATZ_PAGES_PER_SYNC = 5;
 export const STRATZ_SYNC_BATCH_SIZE = STRATZ_PAGE_SIZE * STRATZ_PAGES_PER_SYNC;
@@ -64,16 +74,86 @@ const PLAYER_MATCHES_QUERY = `
         startDateTime
         durationSeconds
         didRadiantWin
+        endDateTime
+        towerStatusRadiant
+        towerStatusDire
+        barracksStatusRadiant
+        barracksStatusDire
+        clusterId
+        firstBloodTime
         gameMode
         lobbyType
         regionId
         leagueId
         gameVersionId
+        numHumanPlayers
+        replaySalt
+        isStats
+        tournamentId
+        tournamentRound
+        actualRank
+        averageRank
+        averageImp
+        parsedDateTime
+        statsDateTime
+        radiantTeamId
+        direTeamId
+        seriesId
+        sequenceNum
+        rank
+        bracket
+        analysisOutcome
+        predictedOutcomeWeight
+        radiantNetworthLeads
+        radiantExperienceLeads
+        radiantKills
+        direKills
+        winRates
+        predictedWinRates
+        bottomLaneOutcome
+        midLaneOutcome
+        topLaneOutcome
+        didRequestDownload
+        league { id }
+        radiantTeam { id }
+        direTeam { id }
+        series { id }
+        pickBans {
+          isPick
+          heroId
+          order
+          bannedHeroId
+          isRadiant
+          playerIndex
+          wasBannedSuccessfully
+          isCaptain
+          baseWinRate
+          adjustedWinRate
+          letter
+        }
+        chatEvents {
+          time
+          type
+          fromHeroId
+          toHeroId
+          value
+          pausedTick
+          isRadiant
+        }
+        towerDeaths {
+          time
+          npcId
+          isRadiant
+          attacker
+        }
         players {
+          matchId
           steamAccountId
           heroId
           isRadiant
+          isVictory
           playerSlot
+          gameVersionId
           kills
           deaths
           assists
@@ -89,14 +169,44 @@ const PLAYER_MATCHES_QUERY = `
           towerDamage
           heroHealing
           partyId
+          isRandom
           lane
           position
+          streakPrediction
+          intentionalFeeding
+          role
+          roleBasic
+          award
+          item0Id
+          item1Id
+          item2Id
+          item3Id
+          item4Id
+          item5Id
+          backpack0Id
+          backpack1Id
+          backpack2Id
+          neutral0Id
+          behavior
+          invisibleSeconds
+          dotaPlusHeroXp
           variant
         }
       }
     }
   }
 `;
+
+// This selection contains only fields verified by the STRATZ schema probe and
+// generated schema consumer. Detail requests are intentionally one match each:
+// playback timelines can be substantially larger than history rows.
+const DETAIL_SECTIONS = [
+  ['metadata', `${METADATA_SELECTION} ${RELATIONS_SELECTION}`],
+  ['players', `players { ${PLAYERS_SELECTION} }`],
+  ['player_stats', `players { ${STATS_SELECTION} }`],
+  ['player_playback', `players { ${PLAYER_PLAYBACK_SELECTION} }`],
+  ['match_playback', PLAYBACK_SELECTION],
+] as const;
 
 type JsonObject = Record<string, unknown>;
 
@@ -197,10 +307,67 @@ export async function loadStratzPlayerMatchesBatch(
   };
 }
 
-async function fetchStratzJson(
+export type StratzDetailPayload = {
+  section: string;
+  response: Json;
+};
+
+export type StratzMatchDetailResult = {
+  payloads: StratzDetailPayload[];
+  unavailable: boolean;
+  error: StratzError | null;
+};
+
+export async function loadStratzMatchDetail(
+  token: string,
+  matchId: number,
+  fetcher: typeof fetch = fetch,
+): Promise<StratzMatchDetailResult> {
+  if (!Number.isSafeInteger(matchId) || matchId <= 0) {
+    throw new StratzError('Некорректный STRATZ match ID', 400);
+  }
+  const payloads: StratzDetailPayload[] = [];
+  let unavailable = false;
+  let error: StratzError | null = null;
+
+  for (const [section, selection] of DETAIL_SECTIONS) {
+    try {
+      const response = await fetchStratzJson(
+        token,
+        {
+          query: `query MatchDetail${toOperationSuffix(section)}($matchId: Long!) { match(id: $matchId) { ${selection} } }`,
+          operationName: `MatchDetail${toOperationSuffix(section)}`,
+          variables: { matchId },
+        },
+        fetcher,
+        MAX_DETAIL_RESPONSE_BYTES,
+      );
+      const data = isObject(response.data) ? response.data : null;
+      const match = data?.match;
+      if (match === null || match === undefined) {
+        unavailable = true;
+        break;
+      }
+      if (!isObject(match) || !isJson(response)) {
+        throw new StratzError('STRATZ вернул некорректный detail матча', 502);
+      }
+      payloads.push({ section, response });
+    } catch (sectionError) {
+      error = sectionError instanceof StratzError
+        ? sectionError
+        : new StratzError('Не удалось загрузить STRATZ detail section', 502);
+      break;
+    }
+  }
+
+  return { payloads, unavailable, error };
+}
+
+export async function fetchStratzJson(
   token: string,
   body: JsonObject,
   fetcher: typeof fetch,
+  maxResponseBytes: number = MAX_RESPONSE_BYTES,
 ): Promise<JsonObject> {
   const abortController = new AbortController();
   const timeout = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
@@ -219,7 +386,7 @@ async function fetchStratzJson(
     });
 
     const contentLength = Number(response.headers.get('content-length') ?? 0);
-    if (contentLength > MAX_RESPONSE_BYTES) {
+    if (contentLength > maxResponseBytes) {
       await response.body?.cancel();
       throw new StratzError('Ответ STRATZ превышает допустимый размер', 502);
     }
@@ -265,11 +432,15 @@ async function fetchStratzJson(
   }
 }
 
+function toOperationSuffix(section: string): string {
+  return section.replace(/(^|_)([a-z])/g, (_, _prefix: string, letter: string) => letter.toUpperCase());
+}
+
 function normalizeStratzMatch(
   value: unknown,
   accountId: number,
 ): ArchivedPlayerMatch | null {
-  if (!isObject(value)) return null;
+  if (!isObject(value) || !isJson(value)) return null;
 
   const matchId = readInteger(value.id);
   const radiantWin = readBoolean(value.didRadiantWin);
@@ -295,13 +466,13 @@ function normalizeStratzMatch(
     radiantWin,
     gameMode: readGameMode(value.gameMode, value.lobbyType),
     lobbyType: readLobbyType(value.lobbyType),
-    averageRank: null,
-    cluster: readNullableInteger(value.regionId),
+    averageRank: readNullableInteger(value.averageRank),
+    cluster: readNullableInteger(value.clusterId) ?? readNullableInteger(value.regionId),
     version: readVersion(value.gameVersionId),
-    radiantTeamId: null,
-    direTeamId: null,
+    radiantTeamId: readNullableInteger(value.radiantTeamId),
+    direTeamId: readNullableInteger(value.direTeamId),
     leagueId: readNullableInteger(value.leagueId),
-    seriesId: null,
+    seriesId: readNullableInteger(value.seriesId),
     seriesType: null,
     radiantScore: null,
     direScore: null,
@@ -325,6 +496,9 @@ function normalizeStratzMatch(
     lane: readLane(player.lane),
     laneRole: readPosition(player.position),
     isRoaming: player.lane === 'ROAMING' ? true : null,
+    rawPayload: value,
+    rawPayloadKind: 'history',
+    rawPayloadSchemaVersion: 'stratz.match.history.v1',
   };
 }
 
@@ -400,6 +574,16 @@ function readPosition(value: unknown): number | null {
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isJson(value: unknown): value is Json {
+  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJson);
+  }
+  return isObject(value) && Object.values(value).every(isJson);
 }
 
 function readInteger(value: unknown): number | null {

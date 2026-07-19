@@ -3,7 +3,7 @@ import type {
   HeroNamesResponse,
   RecentMatchesResponse,
 } from '../../shared/dota';
-import type { MatchSyncResult } from '../../shared/match-archive';
+import type { MatchDetailSyncResult, MatchSyncResult } from '../../shared/match-archive';
 
 type ApiErrorPayload = {
   error?: unknown;
@@ -56,6 +56,17 @@ export async function syncTrackedAccount(
   );
 }
 
+export async function syncTrackedAccountDetails(
+  token: string,
+  trackedAccountId: string,
+): Promise<MatchDetailSyncResult> {
+  return requestJson<MatchDetailSyncResult>(
+    `/api/dota/tracked-accounts/${encodeURIComponent(trackedAccountId)}/matches/details/sync`,
+    token,
+    { method: 'POST' },
+  );
+}
+
 export async function syncAllTrackedAccount(
   token: string,
   trackedAccountId: string,
@@ -75,7 +86,12 @@ export async function syncAllTrackedAccount(
     });
 
     if (result.status === 'ready' || result.backfillComplete) {
-      return result;
+      for (let detailBatches = 0; detailBatches < maxBatches; detailBatches += 1) {
+        const detail = await syncTrackedAccountDetails(token, trackedAccountId);
+        if (detail.backfillComplete) return result;
+        if (delayMs > 0) await wait(delayMs);
+      }
+      throw new Error(`Detail синхронизация превысила лимит ${maxBatches} пакетов`);
     }
     if (delayMs > 0) {
       await wait(delayMs);
