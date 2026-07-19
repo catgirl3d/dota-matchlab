@@ -1372,15 +1372,21 @@
 
   .archive-match-table {
     content-visibility: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .archive-match-row {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .archive-match-row__link {
     width: 100%;
     display: grid;
     min-height: 72px;
     align-items: center;
     padding: 0 20px;
-    border-bottom: 1px solid var(--line);
     gap: 14px;
     grid-template-columns: 48px 42px minmax(150px, 1fr) 110px 150px 58px;
     transition: background-color 140ms ease, transform 140ms ease;
@@ -1390,9 +1396,10 @@
     color: inherit;
     cursor: pointer;
     text-align: left;
+    text-decoration: none;
   }
 
-  .archive-match-row:hover {
+  .archive-match-row__link:hover {
     background: rgba(224, 230, 208, 0.035);
     transform: translateX(3px);
   }
@@ -2841,7 +2848,7 @@
       grid-template-columns: minmax(0, 1.35fr) minmax(290px, 0.65fr);
     }
 
-    .archive-match-row {
+    .archive-match-row__link {
       grid-template-columns: 44px 38px minmax(130px, 1fr) 100px 58px;
     }
 
@@ -3077,7 +3084,7 @@
       gap: 6px;
     }
 
-    .archive-match-row {
+    .archive-match-row__link {
       min-height: 78px;
       padding: 0 14px;
       gap: 10px;

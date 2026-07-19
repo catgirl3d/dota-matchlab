@@ -1,24 +1,20 @@
 import { useAuth, useSession } from '@clerk/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router';
 import type { Tables } from '../../shared/database.types';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import { fetchArchiveOverview, fetchArchivePage, type ArchiveCursor } from '../lib/archive';
 import { DEFAULT_ARCHIVE_FILTERS, type ArchiveFilters } from '../lib/archive-analytics';
 import { archiveQueryKeys } from '../lib/archive-query-keys';
-import { fetchMatchDetail } from '../lib/match-detail';
 import {
   fetchHeroNames,
-  importMatch,
   resolveSteamProfile,
   syncAllTrackedAccount,
-  syncTrackedMatchDetail,
   syncTrackedAccount,
   type MatchSyncProgress,
 } from '../lib/dota-api';
 import { createUserSupabaseClient } from '../lib/supabase';
-import { matchPath, parseMatchRoute } from '../lib/match-route';
-import { MatchDetailView } from './MatchDetailView';
 import { PlayerDashboard } from './PlayerDashboard';
 
 type TrackedAccount = Pick<
@@ -38,15 +34,8 @@ export function MatchWorkspace() {
   const { session } = useSession();
   const { userId } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [steamProfile, setSteamProfile] = useState('');
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
-  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(() => {
-    const route = parseMatchRoute(window.location.pathname);
-    return route.kind === 'match' ? route.matchId : null;
-  });
-  const [invalidMatchPath, setInvalidMatchPath] = useState(
-    () => parseMatchRoute(window.location.pathname).kind === 'invalid-match',
-  );
   const [archiveSyncProgress, setArchiveSyncProgress] =
     useState<MatchSyncProgress | null>(null);
   const [archiveSyncMode, setArchiveSyncMode] = useState<'page' | 'all' | null>(null);
@@ -120,15 +109,29 @@ export function MatchWorkspace() {
     onSuccess: (account) => {
       setSteamProfile('');
       resetArchiveView();
-      setSelectedAccountId(account.dota_account_id);
+      setSearchParams({ player: String(account.dota_account_id) });
       void queryClient.invalidateQueries({ queryKey: ['tracked-accounts', userId] });
     },
   });
 
   const accounts = accountsQuery.data ?? [];
-  const activeAccountId = selectedAccountId ?? accounts[0]?.dota_account_id ?? null;
+  const requestedAccountId = parsePositiveId(searchParams.get('player'));
+  const isRequestedAccountOwned = requestedAccountId !== null
+    && accounts.some((account) => account.dota_account_id === requestedAccountId);
+  const activeAccountId = isRequestedAccountOwned
+    ? requestedAccountId
+    : accounts[0]?.dota_account_id ?? null;
   const activeAccount =
     accounts.find((account) => account.dota_account_id === activeAccountId) ?? null;
+
+  useEffect(() => {
+    const playerParam = searchParams.get('player');
+    if (!accountsQuery.isSuccess || !playerParam || isRequestedAccountOwned) return;
+
+    const normalizedSearchParams = new URLSearchParams(searchParams);
+    normalizedSearchParams.delete('player');
+    setSearchParams(normalizedSearchParams, { replace: true });
+  }, [accountsQuery.isSuccess, isRequestedAccountOwned, searchParams, setSearchParams]);
 
   const archiveCursor = archiveCursors.at(-1) ?? null;
   const archiveOverviewQuery = useQuery({
@@ -182,40 +185,6 @@ export function MatchWorkspace() {
     },
   });
 
-  const matchDetailQuery = useQuery({
-    queryKey: ['match-detail', userId, selectedMatchId],
-    enabled: Boolean(session && selectedMatchId),
-    staleTime: 300_000,
-    queryFn: async () => {
-      if (!session || selectedMatchId === null) {
-        throw new Error('Матч не выбран');
-      }
-      const token = await session.getToken();
-      if (!token) {
-        throw new Error('Не удалось получить Clerk JWT');
-      }
-      const supabase = createUserSupabaseClient(async () => token);
-      return fetchMatchDetail(supabase, selectedMatchId);
-    },
-  });
-
-  const linkedAccountQuery = useQuery({
-    queryKey: ['match-linked-account', userId, selectedMatchId],
-    enabled: Boolean(session && selectedMatchId),
-    queryFn: async () => {
-      if (!session || selectedMatchId === null) return null;
-      const supabase = createUserSupabaseClient(() => session.getToken());
-      const { data, error } = await supabase
-        .from('tracked_account_matches')
-        .select('tracked_account_id')
-        .eq('match_id', selectedMatchId)
-        .limit(1)
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      return data?.tracked_account_id ?? null;
-    },
-  });
-
   const archiveSync = useMutation({
     mutationFn: async (trackedAccountId: string) => {
       if (!session) {
@@ -263,47 +232,9 @@ export function MatchWorkspace() {
     },
   });
 
-  const matchDetailSync = useMutation({
-    mutationFn: async ({ trackedAccountId, matchId }: { trackedAccountId: string; matchId: number }) => {
-      if (!session) throw new Error('Clerk session is not ready');
-      const token = await session.getToken();
-      if (!token) throw new Error('Не удалось получить Clerk JWT');
-      return syncTrackedMatchDetail(token, trackedAccountId, matchId);
-    },
-    onSuccess: (_result, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ['match-detail', userId, variables.matchId] });
-      void queryClient.invalidateQueries({ queryKey: archiveQueryKeys.root(variables.trackedAccountId) });
-    },
-  });
-
-  const publicImport = useMutation({
-    mutationFn: async (matchId: number) => {
-      if (!session) throw new Error('Clerk session is not ready');
-      const token = await session.getToken();
-      if (!token) throw new Error('Не удалось получить Clerk JWT');
-      return importMatch(token, matchId);
-    },
-    onSuccess: (_result, matchId) => {
-      void queryClient.invalidateQueries({ queryKey: ['match-detail', userId, matchId] });
-      if (activeAccount) {
-        void queryClient.invalidateQueries({ queryKey: archiveQueryKeys.root(activeAccount.id) });
-      }
-    },
-  });
-
-  useEffect(() => {
-    const onPopState = () => {
-      const route = parseMatchRoute(window.location.pathname);
-      setSelectedMatchId(route.kind === 'match' ? route.matchId : null);
-      setInvalidMatchPath(route.kind === 'invalid-match');
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
   function handleSelectAccount(accountId: number) {
     resetArchiveView();
-    setSelectedAccountId(accountId);
+    setSearchParams({ player: String(accountId) });
     archiveSync.reset();
     archiveSyncAll.reset();
     setArchiveSyncProgress(null);
@@ -312,7 +243,6 @@ export function MatchWorkspace() {
 
   function resetArchiveView() {
     void queryClient.cancelQueries({ queryKey: ['match-archive'] });
-    navigateToArchive();
     setArchiveFilters(DEFAULT_ARCHIVE_FILTERS);
     setArchiveCursors([]);
   }
@@ -323,18 +253,6 @@ export function MatchWorkspace() {
     if (normalizedSteamProfile) {
       addAccount.mutate(normalizedSteamProfile);
     }
-  }
-
-  function navigateToMatch(matchId: number) {
-    window.history.pushState(null, '', matchPath(matchId));
-    setInvalidMatchPath(false);
-    setSelectedMatchId(matchId);
-  }
-
-  function navigateToArchive() {
-    if (window.location.pathname !== '/') window.history.pushState(null, '', '/');
-    setInvalidMatchPath(false);
-    setSelectedMatchId(null);
   }
 
   const isArchiveSyncForActiveAccount = archiveSync.variables === activeAccount?.id;
@@ -351,9 +269,6 @@ export function MatchWorkspace() {
     : archiveSyncMode === 'page' && isArchiveSyncForActiveAccount
       ? archiveSync.error
       : null;
-  const isPublicImportForSelectedMatch = publicImport.variables === selectedMatchId;
-  const isTrackedSyncForSelectedMatch = matchDetailSync.variables?.matchId === selectedMatchId;
-
   return (
     <section className="match-workspace" aria-labelledby="workspace-title">
       <div className="workspace-header">
@@ -386,51 +301,7 @@ export function MatchWorkspace() {
         </form>
       </div>
 
-      {invalidMatchPath ? <WorkspaceMessage text="Некорректный match ID в URL." tone="error" /> : selectedMatchId !== null ? (
-        <RouteMatchDetail
-          detail={matchDetailQuery.data ?? undefined}
-          heroNames={heroNamesQuery.data ?? {}}
-          currentAccountId={
-            activeAccount && matchDetailQuery.data?.players.some((player) => player.accountId === activeAccount.dota_account_id)
-              ? activeAccount.dota_account_id
-              : null
-          }
-          isLoading={matchDetailQuery.isPending}
-          error={matchDetailQuery.error}
-          parseError={
-            matchDetailQuery.data && linkedAccountQuery.error
-              ? linkedAccountQuery.error
-              : isTrackedSyncForSelectedMatch
-              ? matchDetailSync.error
-              : isPublicImportForSelectedMatch
-                ? publicImport.error
-                : null
-          }
-          isUnavailable={
-            isPublicImportForSelectedMatch && publicImport.data?.status === 'unavailable'
-          }
-          isParsing={
-            (isTrackedSyncForSelectedMatch && matchDetailSync.isPending)
-            || (isPublicImportForSelectedMatch && publicImport.isPending)
-            || (Boolean(matchDetailQuery.data) && linkedAccountQuery.isFetching)
-          }
-          onBack={navigateToArchive}
-          onRefresh={() => void matchDetailQuery.refetch()}
-          onImport={() => publicImport.mutate(selectedMatchId)}
-          onParse={() => {
-            if (linkedAccountQuery.isError) {
-              void linkedAccountQuery.refetch();
-              return;
-            }
-            const trackedAccountId = linkedAccountQuery.data;
-            if (trackedAccountId) {
-              matchDetailSync.mutate({ trackedAccountId, matchId: selectedMatchId });
-            } else {
-              publicImport.mutate(selectedMatchId);
-            }
-          }}
-        />
-      ) : accountsQuery.isPending ? (
+      {accountsQuery.isPending ? (
         <WorkspaceMessage text="Загружаем профили…" />
       ) : accountsQuery.isError ? (
         <WorkspaceMessage text={accountsQuery.error.message} tone="error" />
@@ -455,8 +326,7 @@ export function MatchWorkspace() {
                 void archiveOverviewQuery.refetch();
                 void archivePageQuery.refetch();
               }}
-               onSelectMatch={navigateToMatch}
-              isRefreshing={archiveOverviewQuery.isFetching || archivePageQuery.isFetching}
+                isRefreshing={archiveOverviewQuery.isFetching || archivePageQuery.isFetching}
               onFiltersChange={(filters) => {
                 setArchiveFilters(filters);
                 setArchiveCursors([]);
@@ -486,38 +356,10 @@ export function MatchWorkspace() {
   );
 }
 
-function RouteMatchDetail({ onImport, onParse, isUnavailable, ...props }: {
-  onImport: () => void;
-  onParse: () => void;
-  isUnavailable: boolean;
-} & Omit<React.ComponentProps<typeof MatchDetailView>, 'onParse'>) {
-  if (props.isLoading || props.detail || props.error) {
-    return <MatchDetailView {...props} onParse={onParse} />;
-  }
-  return (
-    <section className="workspace-message workspace-message--neutral">
-      <span aria-hidden="true">+</span>
-      <p>{isUnavailable ? 'Матч недоступен у STRATZ.' : 'Матч ещё не загружен.'}</p>
-      <div className="workspace-message__actions">
-        <button
-          className="workspace-message__button workspace-message__button--primary"
-          type="button"
-          onClick={onImport}
-          disabled={props.isParsing}
-        >
-          {props.isParsing ? 'Загружаем…' : 'Загрузить матч из STRATZ'}
-        </button>
-        <button
-          className="workspace-message__button workspace-message__button--secondary"
-          type="button"
-          onClick={props.onBack}
-        >
-          Назад к архиву
-        </button>
-      </div>
-      {props.parseError ? <p className="form-error">{props.parseError.message}</p> : null}
-    </section>
-  );
+function parsePositiveId(value: string | null): number | null {
+  if (!value || !/^\d+$/.test(value)) return null;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 function AccountRail({

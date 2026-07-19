@@ -1,6 +1,8 @@
 import { Show } from '@clerk/react';
 import { useQuery } from '@tanstack/react-query';
+import { BrowserRouter, Route, Routes } from 'react-router';
 import { AccessPanel } from './components/AccessPanel';
+import { MatchDetailRoute, MatchRouteLayout, RouteError } from './components/MatchRoute';
 import { MatchWorkspace } from './components/MatchWorkspace';
 import { SystemStatus } from './components/SystemStatus';
 import { fetchSystemHealth } from './lib/api';
@@ -35,8 +37,7 @@ export default function App({ clerkEnabled }: AppProps) {
     staleTime: 30_000,
   });
 
-  return (
-    <div className="app-shell">
+  return <BrowserRouter><div className="app-shell">
       <header className="topbar">
         <a className="wordmark" href="/" aria-label="Dota MatchLab, главная">
           <span className="wordmark__mark" aria-hidden="true">
@@ -84,11 +85,13 @@ export default function App({ clerkEnabled }: AppProps) {
           <AccessPanel clerkEnabled={clerkEnabled} />
         </section>
 
-        {clerkEnabled ? (
-          <Show when="signed-in">
-            <MatchWorkspace />
-          </Show>
-        ) : null}
+        {clerkEnabled ? <Routes>
+          <Route path="/" element={<SignedInArchive />} />
+          <Route path="/matches/:matchId" element={<SignedInMatchLayout />}>
+            <Route index element={<MatchDetailRoute />} />
+          </Route>
+          <Route path="*" element={<RouteError text="Страница не найдена." />} />
+        </Routes> : null}
 
         <section className="workflow" aria-labelledby="workflow-title">
           <div className="workflow__intro">
@@ -111,6 +114,13 @@ export default function App({ clerkEnabled }: AppProps) {
         <span>INDEPENDENT ANALYSIS TOOL</span>
         <span>DATA PROVIDER: STRATZ PRIMARY · OPENDOTA FALLBACK</span>
       </footer>
-    </div>
-  );
+    </div></BrowserRouter>;
+}
+
+function SignedInArchive() {
+  return <Show when="signed-in"><MatchWorkspace /></Show>;
+}
+
+function SignedInMatchLayout() {
+  return <Show when="signed-in"><MatchRouteLayout /></Show>;
 }

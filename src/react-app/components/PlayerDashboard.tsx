@@ -1,4 +1,5 @@
 import { type CSSProperties } from 'react';
+import { Link } from 'react-router';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import type { Tables } from '../../shared/database.types';
 import type { ArchiveCursor, ArchiveOverview, ArchivePage } from '../lib/archive';
@@ -26,7 +27,6 @@ type PlayerDashboardProps = {
   isRefreshing: boolean;
   error: Error | null;
   onRefresh: () => void;
-  onSelectMatch: (matchId: number) => void;
   onFiltersChange: (filters: ArchiveFilters) => void;
   onNextPage: (cursor: ArchiveCursor) => void;
   onPreviousPage: () => void;
@@ -50,7 +50,6 @@ export function PlayerDashboard({
   isRefreshing,
   error,
   onRefresh,
-  onSelectMatch,
   onFiltersChange,
   onNextPage,
   onPreviousPage,
@@ -243,16 +242,16 @@ export function PlayerDashboard({
             ) : matches.length === 0 ? (
               <div className="empty-state">Нет матчей под выбранные фильтры.</div>
             ) : (
-              <div className="archive-match-table" role="list" aria-label="Архив матчей">
+              <ul className="archive-match-table" aria-label="Архив матчей">
                 {matches.map((match) => (
                   <ArchiveMatchRow
                     key={match.matchId}
                     match={match}
                     heroNames={heroNames}
-                    onSelect={onSelectMatch}
+                    playerId={account.dota_account_id}
                   />
                 ))}
-              </div>
+              </ul>
             )}
             <div className="table-note">
               <button type="button" onClick={onPreviousPage} disabled={!hasPreviousPage || isRefreshing}>Previous</button>
@@ -484,11 +483,11 @@ function HeroPool({
 function ArchiveMatchRow({
   match,
   heroNames,
-  onSelect,
+  playerId,
 }: {
   match: ArchivePage['matches'][number];
   heroNames: Record<number, string>;
-  onSelect: (matchId: number) => void;
+  playerId: number;
 }) {
   const isMissingStats = match.dataStatus === 'missing_player_stats';
   const result = isMissingStats ? 'DATA' : match.won === true ? 'WIN' : match.won === false ? 'LOSS' : '—';
@@ -496,31 +495,31 @@ function ArchiveMatchRow({
   const heroLabel = match.heroId === null ? 'Unknown hero' : heroNames[match.heroId] ?? `Hero #${match.heroId}`;
   const heroFallback = match.heroId === null ? '?' : heroLabel.slice(0, 2).toUpperCase();
   return (
-    <button
-      className={`archive-match-row ${resultClass}`}
-      type="button"
-      role="listitem"
-      onClick={() => onSelect(match.matchId)}
-      aria-label={`Открыть матч ${match.matchId}`}
-    >
-      <span className="archive-match-row__result">{result}</span>
-      <HeroMark heroId={match.heroId} label={heroLabel} fallback={heroFallback} className="archive-match-row__hero-mark" />
-      <div className="archive-match-row__identity">
-        <strong>{heroLabel}</strong>
-        <span>
-          {formatMatchDate(match.startTime)} · {formatMode(match.gameMode)}
-          {isMissingStats ? ' · Missing player stats' : ''}
-        </span>
-      </div>
-      <strong className="archive-match-row__kda">
-        {formatStat(match.kills)} / {formatStat(match.deaths)} / {formatStat(match.assists)}
-      </strong>
-      <div className="archive-match-row__metrics">
-        <span>{formatStat(match.goldPerMinute)} <small>GPM</small></span>
-        <span>{formatStat(match.xpPerMinute)} <small>XPM</small></span>
-      </div>
-      <span className="archive-match-row__duration">{formatDuration(match.durationSeconds)}</span>
-    </button>
+    <li className="archive-match-row">
+      <Link
+        className={`archive-match-row__link ${resultClass}`}
+        to={`/matches/${match.matchId}?player=${playerId}`}
+        aria-label={`Открыть матч ${match.matchId}`}
+      >
+        <span className="archive-match-row__result">{result}</span>
+        <HeroMark heroId={match.heroId} label={heroLabel} fallback={heroFallback} className="archive-match-row__hero-mark" />
+        <div className="archive-match-row__identity">
+          <strong>{heroLabel}</strong>
+          <span>
+            {formatMatchDate(match.startTime)} · {formatMode(match.gameMode)}
+            {isMissingStats ? ' · Missing player stats' : ''}
+          </span>
+        </div>
+        <strong className="archive-match-row__kda">
+          {formatStat(match.kills)} / {formatStat(match.deaths)} / {formatStat(match.assists)}
+        </strong>
+        <div className="archive-match-row__metrics">
+          <span>{formatStat(match.goldPerMinute)} <small>GPM</small></span>
+          <span>{formatStat(match.xpPerMinute)} <small>XPM</small></span>
+        </div>
+        <span className="archive-match-row__duration">{formatDuration(match.durationSeconds)}</span>
+      </Link>
+    </li>
   );
 }
 

@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Tables } from '../../shared/database.types';
 import type { ArchiveOverview, ArchivePage } from '../lib/archive';
@@ -112,13 +113,12 @@ const page: ArchivePage = { matches: snapshot.matches, nextCursor: null };
 
 describe('PlayerDashboard', () => {
   it('renders archive metrics and filters the match log by result', () => {
-    const onSelectMatch = vi.fn();
     const onFiltersChange = vi.fn();
     const onNextPage = vi.fn();
     const onPreviousPage = vi.fn();
     const nextCursor = { startTime: 1_799_000_000, matchId: 1 };
     render(
-      <PlayerDashboard
+      <MemoryRouter><PlayerDashboard
         account={account}
         overview={overview}
         page={{ ...page, nextCursor }}
@@ -128,7 +128,6 @@ describe('PlayerDashboard', () => {
         isRefreshing={false}
         error={null}
         onRefresh={vi.fn()}
-        onSelectMatch={onSelectMatch}
         onFiltersChange={onFiltersChange}
         onNextPage={onNextPage}
         onPreviousPage={onPreviousPage}
@@ -139,22 +138,25 @@ describe('PlayerDashboard', () => {
         isArchiveSyncing={false}
         isArchiveSyncingAll={false}
         archiveSyncProgress={null}
-      />,
+      /></MemoryRouter>,
     );
 
     expect(screen.getByRole('heading', { name: /fish\.bone/ })).toBeVisible();
     expect(screen.getByText('50%')).toBeVisible();
     expect(screen.getByText('2 complete · 0 missing stats · 0 missing match')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
-    const knownHeroRow = screen.getByRole('listitem', { name: /Открыть матч 2/i });
-    expect(knownHeroRow.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
+    const knownHeroLink = screen.getByRole('link', { name: /Открыть матч 2/i });
+    expect(knownHeroLink.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByText('PARTIAL')).toBeVisible();
 
     fireEvent.change(screen.getByLabelText('Result'), { target: { value: 'wins' } });
     expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, result: 'wins' });
 
-    fireEvent.click(screen.getByRole('listitem', { name: /Открыть матч 2/i }));
-    expect(onSelectMatch).toHaveBeenCalledWith(2);
+    expect(knownHeroLink).toHaveAttribute(
+      'href',
+      '/matches/2?player=93447624',
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
@@ -169,7 +171,7 @@ describe('PlayerDashboard', () => {
     };
 
     render(
-      <PlayerDashboard
+      <MemoryRouter><PlayerDashboard
         account={account}
         overview={overview}
         page={unknownHeroPage}
@@ -179,7 +181,6 @@ describe('PlayerDashboard', () => {
         isRefreshing={false}
         error={null}
         onRefresh={vi.fn()}
-        onSelectMatch={vi.fn()}
         onFiltersChange={vi.fn()}
         onNextPage={vi.fn()}
         onPreviousPage={vi.fn()}
@@ -190,12 +191,12 @@ describe('PlayerDashboard', () => {
         isArchiveSyncing={false}
         isArchiveSyncingAll={false}
         archiveSyncProgress={null}
-      />,
+      /></MemoryRouter>,
     );
 
-    const unknownHeroRow = screen.getByRole('listitem', { name: /Открыть матч 2/i });
-    expect(within(unknownHeroRow).getByText('HE')).toBeVisible();
-    expect(unknownHeroRow.querySelector('img')).not.toBeInTheDocument();
+    const unknownHeroLink = screen.getByRole('link', { name: /Открыть матч 2/i });
+    expect(within(unknownHeroLink).getByText('HE')).toBeVisible();
+    expect(unknownHeroLink.querySelector('img')).not.toBeInTheDocument();
   });
 
   it('keeps a linked match visible when player stats are missing', () => {
@@ -216,7 +217,7 @@ describe('PlayerDashboard', () => {
     };
 
     render(
-      <PlayerDashboard
+      <MemoryRouter><PlayerDashboard
         account={account}
         overview={{ ...overview, integrity: { linked: 2, complete: 1, missingStats: 1, missingMatch: 0 } }}
         page={incompletePage}
@@ -226,7 +227,6 @@ describe('PlayerDashboard', () => {
         isRefreshing={false}
         error={null}
         onRefresh={vi.fn()}
-        onSelectMatch={vi.fn()}
         onFiltersChange={vi.fn()}
         onNextPage={vi.fn()}
         onPreviousPage={vi.fn()}
@@ -237,12 +237,12 @@ describe('PlayerDashboard', () => {
         isArchiveSyncing={false}
         isArchiveSyncingAll={false}
         archiveSyncProgress={null}
-      />,
+      /></MemoryRouter>,
     );
 
-    const row = screen.getByRole('listitem', { name: /Открыть матч 2/i });
-    expect(within(row).getByText('DATA')).toBeVisible();
-    expect(within(row).getByText(/Missing player stats/)).toBeVisible();
-    expect(within(row).getByText('— / — / —')).toBeVisible();
+    const link = screen.getByRole('link', { name: /Открыть матч 2/i });
+    expect(within(link).getByText('DATA')).toBeVisible();
+    expect(within(link).getByText(/Missing player stats/)).toBeVisible();
+    expect(within(link).getByText('— / — / —')).toBeVisible();
   });
 });
