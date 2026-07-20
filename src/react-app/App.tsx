@@ -52,6 +52,7 @@ function HeaderActions({ clerkEnabled }: AppProps) {
       {clerkEnabled ? (
         <>
           <Show when="signed-out">
+            <Link className="topbar__archive-link" to="/demo">Демо</Link>
             <SignInButton mode="modal">
               <button className="topbar__auth-button" type="button">Войти</button>
             </SignInButton>

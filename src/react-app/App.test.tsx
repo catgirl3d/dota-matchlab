@@ -59,6 +59,7 @@ describe('App routes', () => {
       </QueryClientProvider>,
     );
 
+    expect(screen.getByRole('link', { name: 'Демо' })).toHaveAttribute('href', '/demo');
     expect(screen.getByRole('button', { name: 'Войти' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Требуется авторизация' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Войти в архив' })).toBeVisible();
