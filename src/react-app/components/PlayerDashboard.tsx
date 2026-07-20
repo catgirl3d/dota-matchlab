@@ -11,6 +11,7 @@ import {
   type ArchiveFilters,
 } from '../lib/archive-analytics';
 import { ArchiveSyncPanel } from './ArchiveSyncPanel';
+import { FilterDropdown } from './FilterDropdown';
 
 type PlayerAccount = Pick<
   Tables<'tracked_accounts'>,
@@ -128,7 +129,7 @@ export function PlayerDashboard({
           <span className="micro-label">FILTER THE SIGNAL</span>
           <strong>{analytics.matches.toLocaleString('ru-RU')} matches in view</strong>
         </div>
-        <FilterSelect
+        <FilterDropdown
           label="Period"
           value={filters.period}
           onChange={(value) => onFiltersChange({ ...filters, period: value as ArchiveFilters['period'] })}
@@ -139,7 +140,7 @@ export function PlayerDashboard({
             ['year', 'Last year'],
           ]}
         />
-        <FilterSelect
+        <FilterDropdown
           label="Mode"
           value={filters.mode}
           onChange={(value) => onFiltersChange({ ...filters, mode: value as ArchiveFilters['mode'] })}
@@ -148,7 +149,7 @@ export function PlayerDashboard({
             getModeLabelForFilter(value),
           ])}
         />
-        <FilterSelect
+        <FilterDropdown
           label="Position"
           value={filters.position}
           onChange={(value) => onFiltersChange({ ...filters, position: value as ArchiveFilters['position'] })}
@@ -156,7 +157,7 @@ export function PlayerDashboard({
             (value) => [value, getPositionLabelForFilter(value)],
           )}
         />
-        <FilterSelect
+        <FilterDropdown
           label="Result"
           value={filters.result}
           onChange={(value) => onFiltersChange({ ...filters, result: value as ArchiveFilters['result'] })}
@@ -166,7 +167,7 @@ export function PlayerDashboard({
             ['losses', 'Losses only'],
           ]}
         />
-        <FilterSelect
+        <FilterDropdown
           label="Queue"
           value={filters.party}
           onChange={(value) => onFiltersChange({ ...filters, party: value as ArchiveFilters['party'] })}
@@ -314,31 +315,6 @@ export function PlayerDashboard({
   );
 }
 
-function FilterSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: ReadonlyArray<readonly [string, string]>;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="filter-select">
-      <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map(([optionValue, optionLabel]) => (
-          <option key={optionValue} value={optionValue}>
-            {optionLabel}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 function HeroFilter({
   value,
   heroNames,
@@ -355,20 +331,16 @@ function HeroFilter({
   );
 
   return (
-    <label className="filter-select">
-      <span>Hero</span>
-      <select
-        value={value === null ? 'all' : String(value)}
-        onChange={(event) => onChange(event.target.value === 'all' ? null : Number(event.target.value))}
-      >
-        <option value="all">All heroes</option>
-        {sortedHeroIds.map((heroId) => (
-          <option key={heroId} value={heroId}>
-            {heroNames[heroId] ?? `Hero #${heroId}`}
-          </option>
-        ))}
-      </select>
-    </label>
+    <FilterDropdown
+      label="Hero"
+      value={value === null ? 'all' : String(value)}
+      searchable
+      onChange={(optionValue) => onChange(optionValue === 'all' ? null : Number(optionValue))}
+      options={[
+        ['all', 'All heroes'],
+        ...sortedHeroIds.map((heroId) => [String(heroId), heroNames[heroId] ?? `Hero #${heroId}`] as const),
+      ]}
+    />
   );
 }
 

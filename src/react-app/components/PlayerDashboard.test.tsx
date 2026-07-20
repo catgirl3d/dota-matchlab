@@ -150,8 +150,28 @@ describe('PlayerDashboard', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByText('PARTIAL')).toBeVisible();
 
-    fireEvent.change(screen.getByLabelText('Result'), { target: { value: 'wins' } });
+    const resultDropdown = screen.getByRole('button', { name: 'Result: All results' });
+    const queueDropdown = screen.getByRole('button', { name: 'Queue: Solo / Party' });
+
+    fireEvent.click(resultDropdown);
+    expect(screen.getByRole('group', { name: 'Result options' })).toBeVisible();
+
+    fireEvent.click(queueDropdown);
+    expect(screen.queryByRole('group', { name: 'Result options' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Queue options' })).toBeVisible();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('group', { name: 'Queue options' })).not.toBeInTheDocument();
+
+    fireEvent.click(resultDropdown);
+    fireEvent.click(screen.getByRole('button', { name: 'Wins only' }));
     expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, result: 'wins' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hero: All heroes' }));
+    const heroSearch = screen.getByRole('searchbox', { name: 'Search hero' });
+    fireEvent.change(heroSearch, { target: { value: 'axe' } });
+    expect(screen.getByRole('button', { name: 'Axe' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Anti-Mage' })).not.toBeInTheDocument();
 
     expect(knownHeroLink).toHaveAttribute(
       'href',
