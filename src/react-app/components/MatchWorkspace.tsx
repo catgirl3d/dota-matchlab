@@ -114,6 +114,45 @@ export function MatchWorkspace() {
     },
   });
 
+  const deleteAccount = useMutation({
+    mutationFn: async (account: TrackedAccount) => {
+      if (!session || !userId) {
+        throw new Error('Clerk session is not ready');
+      }
+
+      const token = await session.getToken();
+      if (!token) {
+        throw new Error('Не удалось получить Clerk JWT');
+      }
+
+      const supabase = createUserSupabaseClient(async () => token);
+      const { error } = await supabase
+        .from('tracked_accounts')
+        .delete()
+        .eq('id', account.id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: (_, account) => {
+      if (account.dota_account_id === activeAccountId) {
+        resetArchiveView();
+      }
+      void queryClient.invalidateQueries({ queryKey: ['tracked-accounts', userId] });
+    },
+  });
+
+  function handleDeleteAccount(account: TrackedAccount) {
+    if (
+      window.confirm(
+        `Вы действительно хотите удалить профиль "${account.persona_name ?? 'Неизвестный игрок'}" из списка?`
+      )
+    ) {
+      deleteAccount.mutate(account);
+    }
+  }
+
   const accounts = accountsQuery.data ?? [];
   const requestedAccountId = parsePositiveId(searchParams.get('player'));
   const isRequestedAccountOwned = requestedAccountId !== null
@@ -303,6 +342,7 @@ export function MatchWorkspace() {
             accounts={accounts}
             activeAccountId={activeAccountId}
             onSelect={handleSelectAccount}
+            onDelete={handleDeleteAccount}
           />
           <PlayerDashboard
               account={activeAccount}
@@ -356,40 +396,58 @@ function AccountRail({
   accounts,
   activeAccountId,
   onSelect,
+  onDelete,
 }: {
   accounts: TrackedAccount[];
   activeAccountId: number | null;
   onSelect: (accountId: number) => void;
+  onDelete: (account: TrackedAccount) => void;
 }) {
   return (
     <div className="account-rail" aria-label="Отслеживаемые профили">
       {accounts.map((account) => (
-        <button
+        <div
           key={account.id}
           className={
             account.dota_account_id === activeAccountId
               ? 'account-chip account-chip--active'
               : 'account-chip'
           }
-          type="button"
-          onClick={() => onSelect(account.dota_account_id)}
         >
-          {account.avatar_url ? (
-            <img
-              src={account.avatar_url}
-              alt=""
-              width="34"
-              height="34"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span className="account-chip__fallback" aria-hidden="true" />
-          )}
-          <span>
-            <strong>{account.persona_name ?? 'Неизвестный игрок'}</strong>
-            <small>ID {account.dota_account_id}</small>
-          </span>
-        </button>
+          <button
+            className="account-chip__select-btn"
+            type="button"
+            onClick={() => onSelect(account.dota_account_id)}
+          >
+            {account.avatar_url ? (
+              <img
+                src={account.avatar_url}
+                alt=""
+                width="34"
+                height="34"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="account-chip__fallback" aria-hidden="true" />
+            )}
+            <span>
+              <strong>{account.persona_name ?? 'Неизвестный игрок'}</strong>
+              <small>ID {account.dota_account_id}</small>
+            </span>
+          </button>
+          <button
+            className="account-chip__delete-btn"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(account);
+            }}
+            title="Удалить профиль из списка"
+            aria-label={`Удалить профиль ${account.persona_name ?? 'Неизвестный игрок'} из списка`}
+          >
+            ✕
+          </button>
+        </div>
       ))}
     </div>
   );
