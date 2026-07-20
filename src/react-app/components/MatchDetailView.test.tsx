@@ -244,13 +244,14 @@ describe('MatchDetailView', () => {
     expect(within(currentBuild).getByRole('img', { name: 'Talent: +12 Desolate Damage, 0:10' })).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1000')).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1001')).toBeVisible();
-    expect(within(currentBuild).getByRole('img', { name: 'Shrapnel, 2:10 · level 3' })).toBeVisible();
+    const shrapnelAbility = within(currentBuild).getByRole('img', { name: 'Shrapnel, 2:10 · level 3' });
+    expect(shrapnelAbility).toBeVisible();
     expect(within(currentBuild).getByText('#99999')).toBeVisible();
     const abilityLevels = currentBuild.querySelectorAll('.build-timeline__ability-level');
     expect(abilityLevels).toHaveLength(12);
     expect(abilityLevels[1]).toHaveTextContent('4');
-    expect(currentBuild.querySelector('.build-timeline__token--ability small')).toHaveTextContent('2:10');
-    expect(currentBuild.querySelector('.build-timeline__token--ability small')).not.toHaveTextContent(/L\d/);
+    expect(shrapnelAbility.querySelector('small')).toHaveTextContent('2:10');
+    expect(shrapnelAbility.querySelector('small')).not.toHaveTextContent(/L\d/);
     expect(within(currentBuild).queryByRole('button', { name: /more events/i })).not.toBeInTheDocument();
   });
 

@@ -284,7 +284,7 @@ function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][
   const timing = ability.isTalent ? formatEventTime(ability.time) : `${formatEventTime(ability.time)} · level ${ability.level + 1}`;
 
   return (
-    <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : abilityIcon ? ' build-timeline__token--ability' : ''}`} role="img" aria-label={`${label}, ${timing}`} title={label}>
+    <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : ' build-timeline__token--ability'}`} role="img" aria-label={`${label}, ${timing}`} title={label}>
       {ability.isTalent ? (
         <>
           <span className="build-timeline__talent-mark" aria-hidden="true">T</span>
