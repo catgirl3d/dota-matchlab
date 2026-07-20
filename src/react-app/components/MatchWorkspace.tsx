@@ -376,7 +376,6 @@ export function MatchWorkspace() {
             activeAccountId={activeAccountId}
             onSelect={handleSelectAccount}
             onDelete={handleDeleteAccount}
-            t={t}
           />
           <PlayerDashboard
               account={activeAccount}
@@ -419,14 +418,13 @@ function AccountRail({
   activeAccountId,
   onSelect,
   onDelete,
-  t,
 }: {
   accounts: TrackedAccount[];
   activeAccountId: number | null;
   onSelect: (accountId: number) => void;
   onDelete: (account: TrackedAccount) => void;
-  t: (key: any, options?: any) => string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="account-rail" aria-label={t('trackedProfilesAriaLabel')}>
       {accounts.map((account) => (

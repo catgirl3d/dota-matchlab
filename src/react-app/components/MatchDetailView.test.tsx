@@ -105,6 +105,10 @@ describe('MatchDetailView', () => {
     expect(screen.getAllByRole('img', { name: 'Phase Boots' })).toHaveLength(2);
     expect(screen.getAllByRole('img', { name: 'Power Treads' })).toHaveLength(2);
     expect(screen.getAllByRole('img', { name: 'Keen Optic' })).toHaveLength(2);
+    const lanesPanel = screen.getByRole('heading', { name: 'Opening map' }).closest('section');
+    const eventGrid = screen.getByText('MATCH EVENTS / ALL PLAYERS').closest<HTMLElement>('.detail-events');
+    expect(lanesPanel).toContainElement(eventGrid);
+    expect(eventGrid?.children).toHaveLength(7);
 
     fireEvent.click(screen.getByRole('button', { name: /Back to archive/i }));
     expect(onBack).toHaveBeenCalledOnce();

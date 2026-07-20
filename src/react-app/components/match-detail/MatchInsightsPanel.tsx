@@ -2,7 +2,7 @@ import type { MatchDetailSnapshot } from '../../lib/match-detail';
 import { AdvantageTimeline } from '../AdvantageTimeline';
 import { formatEnum } from './match-detail-display';
 import { DetailHeading } from './match-detail-primitives';
-import { useTranslation } from '../../lib/i18n';
+import { useTranslation, type TranslationKey } from '../../lib/i18n';
 
 type MatchInsightsPanelProps = {
   networth: number[];
@@ -25,7 +25,7 @@ export function MatchInsightsPanel({
   return (
     <div className="detail-analysis-grid">
       <section className="detail-panel detail-advantage" aria-labelledby="advantage-title">
-        <DetailHeading eyebrow="ECONOMY / TIMELINE" title="Advantage curve" id="advantage-title" />
+        <DetailHeading eyebrow={t('economyTimeline')} title={t('advantageCurve')} id="advantage-title" />
         <AdvantageTimeline
           networth={networth}
           experience={experience}
@@ -35,7 +35,7 @@ export function MatchInsightsPanel({
       </section>
 
       <section className="detail-panel detail-lanes" aria-labelledby="lanes-title">
-        <DetailHeading eyebrow="LANES / OUTCOME" title="Opening map" id="lanes-title" />
+        <DetailHeading eyebrow={t('lanesOutcome')} title={t('openingMap')} id="lanes-title" />
         <div className="detail-lanes__list">
           {laneOutcomes.map((lane) => {
             const outcomeClass = lane.outcome.toLowerCase().replace('_', '-');
@@ -48,7 +48,7 @@ export function MatchInsightsPanel({
           })}
         </div>
         <div className="detail-events">
-          <span className="detail-events__scope">MATCH EVENTS / ALL PLAYERS</span>
+          <span className="detail-events__scope">{t('matchEventsAllPlayers')}</span>
           {Object.entries(eventCounts).map(([label, count]) => (
             <span key={label} title={matchEventDescription(label, t)} className={count === null ? 'is-empty' : 'has-values'}>
               <strong>{count === null ? 'N/A' : count}</strong>{label}
@@ -60,8 +60,8 @@ export function MatchInsightsPanel({
   );
 }
 
-function matchEventDescription(label: string, t: (key: any) => string): string {
-  const keys: Record<string, any> = {
+function matchEventDescription(label: string, t: (key: TranslationKey) => string): string {
+  const keys: Record<string, TranslationKey> = {
     chat: 'insightChat',
     towers: 'insightTowers',
     runes: 'insightRunes',
@@ -72,4 +72,3 @@ function matchEventDescription(label: string, t: (key: any) => string): string {
   const key = keys[label];
   return key ? t(key) : label;
 }
-
