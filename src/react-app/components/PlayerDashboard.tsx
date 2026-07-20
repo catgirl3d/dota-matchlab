@@ -1,4 +1,4 @@
-import { type CSSProperties } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { Link } from 'react-router';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import type { Tables } from '../../shared/database.types';
@@ -60,8 +60,31 @@ export function PlayerDashboard({
   hasPreviousPage,
   syncControls,
 }: PlayerDashboardProps) {
+  const [heroSort, setHeroSort] = useState<'played' | 'winrate' | 'lossrate'>('played');
+  const [minGames, setMinGames] = useState<number>(10);
   const analytics = overview?.summary;
   const matches = page?.matches ?? [];
+
+  const filteredHeroes = (overview?.heroes ?? []).filter((h) => h.matches >= minGames);
+
+  const sortedHeroes = [...filteredHeroes].sort((a, b) => {
+    if (heroSort === 'winrate') {
+      if (b.winRate !== a.winRate) {
+        return b.winRate - a.winRate;
+      }
+      return b.matches - a.matches;
+    } else if (heroSort === 'lossrate') {
+      if (a.winRate !== b.winRate) {
+        return a.winRate - b.winRate;
+      }
+      return b.matches - a.matches;
+    } else {
+      if (b.matches !== a.matches) {
+        return b.matches - a.matches;
+      }
+      return b.winRate - a.winRate;
+    }
+  });
 
   if (isLoading && !overview) {
     return <WorkspaceMessage text="Читаем личный архив из Supabase…" />;
@@ -287,7 +310,9 @@ export function PlayerDashboard({
             <div className="card-heading">
               <div>
                 <span className="micro-label">HERO POOL / REPEAT SIGNAL</span>
-                <h3 id="hero-pool-title">Most played</h3>
+                <h3 id="hero-pool-title">
+                  {heroSort === 'played' ? 'Most played' : heroSort === 'winrate' ? 'Highest win rate' : 'Highest loss rate'}
+                </h3>
               </div>
               {filters.heroId !== null ? (
                 <button
@@ -301,8 +326,47 @@ export function PlayerDashboard({
                 </button>
               ) : null}
             </div>
+            <div className="hero-pool__tabs">
+              <button
+                className={`hero-pool__tab ${heroSort === 'played' ? 'is-active' : ''}`}
+                onClick={() => setHeroSort('played')}
+                type="button"
+              >
+                Top played
+              </button>
+              <button
+                className={`hero-pool__tab ${heroSort === 'winrate' ? 'is-active' : ''}`}
+                onClick={() => setHeroSort('winrate')}
+                type="button"
+              >
+                Win rate
+              </button>
+              <button
+                className={`hero-pool__tab ${heroSort === 'lossrate' ? 'is-active' : ''}`}
+                onClick={() => setHeroSort('lossrate')}
+                type="button"
+              >
+                Loss rate
+              </button>
+            </div>
+            <div className="hero-pool__settings">
+              <span>Min games:</span>
+              <div className="hero-pool__min-games-buttons">
+                {([1, 2, 5, 10, 20] as const).map((g) => (
+                  <button
+                    key={g}
+                    className={`hero-pool__setting-btn ${minGames === g ? 'is-active' : ''}`}
+                    onClick={() => setMinGames(g)}
+                    type="button"
+                    aria-label={`Show heroes with at least ${g} games`}
+                  >
+                    {g === 1 ? '1+' : `${g}+`}
+                  </button>
+                ))}
+              </div>
+            </div>
             <HeroPool
-              heroes={overview.heroes.slice(0, 6).map((hero) => ({ ...hero, label: heroNames[hero.heroId] ?? `Hero #${hero.heroId}` }))}
+              heroes={sortedHeroes.slice(0, 6).map((hero) => ({ ...hero, label: heroNames[hero.heroId] ?? `Hero #${hero.heroId}` }))}
               selectedHeroId={filters.heroId}
               onSelectHero={(heroId) => onFiltersChange({ ...filters, heroId })}
             />

@@ -232,6 +232,106 @@ describe('PlayerDashboard', () => {
     expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, heroId: null });
   });
 
+  it('sorts the hero pool by win rate and loss rate when clicking sorting tabs', () => {
+    const overviewWithMultipleHeroes: ArchiveOverview = {
+      ...overview,
+      heroes: [
+        { key: '1', heroId: 1, matches: 10, wins: 5, winRate: 50, averageKda: 3, averageGpm: 400 },
+        { key: '2', heroId: 2, matches: 5, wins: 4, winRate: 80, averageKda: 4, averageGpm: 500 },
+        { key: '3', heroId: 3, matches: 2, wins: 0, winRate: 0, averageKda: 1, averageGpm: 300 },
+      ],
+    };
+
+    render(
+      <MemoryRouter><PlayerDashboard
+        account={account}
+        overview={overviewWithMultipleHeroes}
+        page={page}
+        filters={DEFAULT_ARCHIVE_FILTERS}
+        heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane' }}
+        isLoading={false}
+        isRefreshing={false}
+        error={null}
+        onRefresh={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
+        hasPreviousPage={false}
+      /></MemoryRouter>,
+    );
+
+    let rows = screen.getAllByRole('button', { name: /Filter by/ });
+    expect(rows[0]).toHaveAttribute('aria-label', 'Filter by Anti-Mage');
+    expect(rows[1]).toHaveAttribute('aria-label', 'Filter by Axe');
+    expect(rows[2]).toHaveAttribute('aria-label', 'Filter by Bane');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Win rate' }));
+    rows = screen.getAllByRole('button', { name: /Filter by/ });
+    expect(rows[0]).toHaveAttribute('aria-label', 'Filter by Axe');
+    expect(rows[1]).toHaveAttribute('aria-label', 'Filter by Anti-Mage');
+    expect(rows[2]).toHaveAttribute('aria-label', 'Filter by Bane');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Loss rate' }));
+    rows = screen.getAllByRole('button', { name: /Filter by/ });
+    expect(rows[0]).toHaveAttribute('aria-label', 'Filter by Bane');
+    expect(rows[1]).toHaveAttribute('aria-label', 'Filter by Anti-Mage');
+    expect(rows[2]).toHaveAttribute('aria-label', 'Filter by Axe');
+  });
+
+  it('filters the hero pool by minimum games played', () => {
+    const overviewWithMultipleHeroes: ArchiveOverview = {
+      ...overview,
+      heroes: [
+        { key: '1', heroId: 1, matches: 10, wins: 5, winRate: 50, averageKda: 3, averageGpm: 400 },
+        { key: '2', heroId: 2, matches: 3, wins: 2, winRate: 66.7, averageKda: 4, averageGpm: 500 },
+        { key: '3', heroId: 3, matches: 1, wins: 0, winRate: 0, averageKda: 1, averageGpm: 300 },
+      ],
+    };
+
+    render(
+      <MemoryRouter><PlayerDashboard
+        account={account}
+        overview={overviewWithMultipleHeroes}
+        page={page}
+        filters={DEFAULT_ARCHIVE_FILTERS}
+        heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane' }}
+        isLoading={false}
+        isRefreshing={false}
+        error={null}
+        onRefresh={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
+        hasPreviousPage={false}
+      /></MemoryRouter>,
+    );
+
+    // Initial state: Min games = 10
+    // Bane (1 match) and Axe (3 matches) are hidden. Only Anti-Mage (10 matches) is visible.
+    expect(screen.queryByRole('button', { name: 'Filter by Bane' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Filter by Axe' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filter by Anti-Mage' })).toBeInTheDocument();
+
+    // Toggle Min games to 1
+    fireEvent.click(screen.getByRole('button', { name: 'Show heroes with at least 1 games' }));
+    expect(screen.getByRole('button', { name: 'Filter by Bane' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filter by Axe' })).toBeInTheDocument();
+
+    // Toggle Min games to 2
+    fireEvent.click(screen.getByRole('button', { name: 'Show heroes with at least 2 games' }));
+    expect(screen.queryByRole('button', { name: 'Filter by Bane' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filter by Axe' })).toBeInTheDocument();
+
+    // Toggle Min games to 5
+    fireEvent.click(screen.getByRole('button', { name: 'Show heroes with at least 5 games' }));
+    expect(screen.queryByRole('button', { name: 'Filter by Axe' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filter by Anti-Mage' })).toBeInTheDocument();
+
+    // Toggle Min games to 10
+    fireEvent.click(screen.getByRole('button', { name: 'Show heroes with at least 10 games' }));
+    expect(screen.getByRole('button', { name: 'Filter by Anti-Mage' })).toBeInTheDocument();
+  });
+
   it('hides synchronization controls in a read-only dashboard', () => {
     render(<MemoryRouter><PlayerDashboard account={account} overview={overview} page={page} filters={DEFAULT_ARCHIVE_FILTERS} heroNames={{}} isLoading={false} isRefreshing={false} error={null} onRefresh={vi.fn()} onFiltersChange={vi.fn()} onNextPage={vi.fn()} onPreviousPage={vi.fn()} hasPreviousPage={false} /></MemoryRouter>);
     expect(screen.queryByText('PARTIAL')).not.toBeInTheDocument();

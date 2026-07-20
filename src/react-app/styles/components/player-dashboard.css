@@ -1135,6 +1135,95 @@
     padding: 0 22px;
   }
 
+  .hero-pool__tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-bottom: 1px solid var(--line);
+    background: rgba(16, 18, 15, 0.4);
+  }
+
+  .hero-pool__tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: background-color 140ms ease, color 140ms ease;
+    position: relative;
+  }
+
+  .hero-pool__tab:last-child {
+    border-right: 0;
+  }
+
+  .hero-pool__tab:hover {
+    background: rgba(224, 230, 208, 0.02);
+    color: var(--paper);
+  }
+
+  .hero-pool__tab.is-active {
+    background: rgba(198, 242, 74, 0.06);
+    color: var(--acid);
+  }
+
+  .hero-pool__tab.is-active::after {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--acid);
+    content: '';
+  }
+
+  .hero-pool__settings {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(16, 18, 15, 0.25);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    color: var(--muted);
+  }
+
+  .hero-pool__min-games-buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  .hero-pool__setting-btn {
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: all 120ms ease;
+  }
+
+  .hero-pool__setting-btn:hover {
+    border-color: var(--acid);
+    color: var(--paper);
+  }
+
+  .hero-pool__setting-btn.is-active {
+    border-color: var(--acid);
+    background: rgba(198, 242, 74, 0.08);
+    color: var(--acid);
+  }
+
   .hero-pool {
     display: grid;
     padding: 0;
