@@ -1,5 +1,21 @@
 import type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
-import type { Json } from '../../shared/database.types';
+import * as v from 'valibot';
+import {
+  NormalizedDetailPlayerSchema,
+  type NormalizedDetailPlayer,
+} from '../../shared/contracts/detail-ingestion';
+import {
+  isJsonValue,
+  isShallowObject,
+  readNullableSafeInteger as readNullableInteger,
+  readSafeInteger,
+  type JsonObject,
+} from '../../shared/contracts/json';
+import {
+  StratzDetailPayloadSchema,
+  readStratzDetailPlayers,
+  type StratzDetailPayload,
+} from '../../shared/contracts/stratz-detail';
 import {
   METADATA_SELECTION,
   PLAYBACK_SELECTION,
@@ -205,8 +221,6 @@ const DETAIL_SECTIONS = [
   ['match_playback', PLAYBACK_SELECTION],
 ] as const;
 
-type JsonObject = Record<string, unknown>;
-
 export class StratzError extends Error {
   readonly statusCode: 400 | 403 | 404 | 429 | 502 | 504;
   readonly code: string;
@@ -249,8 +263,8 @@ export async function loadStratzPlayerMatchesPage(
     fetcher,
   );
 
-  const data = isObject(payload.data) ? payload.data : null;
-  const player = data && isObject(data.player) ? data.player : null;
+  const data = isShallowObject(payload.data) ? payload.data : null;
+  const player = data && isShallowObject(data.player) ? data.player : null;
   const rawMatches = player && Array.isArray(player.matches) ? player.matches : null;
   if (!rawMatches) {
     throw new StratzError('STRATZ returned unexpected match history format', 502, 'STRATZ_UNEXPECTED_FORMAT');
@@ -306,10 +320,8 @@ export async function loadStratzPlayerMatchesBatch(
   };
 }
 
-export type StratzDetailPayload = {
-  section: string;
-  response: Json;
-};
+export type { NormalizedDetailPlayer as NormalizedStratzDetailPlayer } from '../../shared/contracts/detail-ingestion';
+export type { StratzDetailPayload } from '../../shared/contracts/stratz-detail';
 
 export type StratzMatchDetailResult = {
   payloads: StratzDetailPayload[];
@@ -337,8 +349,8 @@ export type NormalizedStratzDetailMatch = {
 };
 
 export function normalizeStratzDetailMatch(value: unknown): NormalizedStratzDetailMatch | null {
-  if (!isObject(value)) return null;
-  const matchId = readInteger(value.id);
+  if (!isShallowObject(value)) return null;
+  const matchId = readSafeInteger(value.id);
   if (matchId === null) return null;
   return {
     match_id: matchId,
@@ -358,6 +370,18 @@ export function normalizeStratzDetailMatch(value: unknown): NormalizedStratzDeta
     radiant_score: readNullableInteger(value.radiantScore) ?? readNullableInteger(value.radiantKills),
     dire_score: readNullableInteger(value.direScore) ?? readNullableInteger(value.direKills),
   };
+}
+
+export function normalizeStratzDetailPlayers(
+  payloads: StratzDetailPayload[],
+): NormalizedDetailPlayer[] {
+  return payloads.flatMap(({ section, response }) => {
+    if (section !== 'players') return [];
+    return readStratzDetailPlayers(response).flatMap((player): NormalizedDetailPlayer[] => {
+      const normalized = normalizeStratzDetailPlayer(player);
+      return normalized ? [normalized] : [];
+    });
+  });
 }
 
 export async function loadStratzMatchDetail(
@@ -384,13 +408,18 @@ export async function loadStratzMatchDetail(
         fetcher,
         MAX_DETAIL_RESPONSE_BYTES,
       );
-      const data = isObject(response.data) ? response.data : null;
+      const data = isShallowObject(response.data) ? response.data : null;
       const match = data?.match;
       if (match === null || match === undefined) {
         unavailable = true;
         break;
       }
-      if (!isObject(match) || !isJson(response)) {
+      if (!isShallowObject(match)) {
+        throw new StratzError('STRATZ returned invalid match details', 502, 'STRATZ_DETAIL_INVALID');
+      }
+      // Preserve the original provider response for raw payload archival.
+      const payload = v.safeParse(StratzDetailPayloadSchema, { section, response });
+      if (!payload.success) {
         throw new StratzError('STRATZ returned invalid match details', 502, 'STRATZ_DETAIL_INVALID');
       }
       payloads.push({ section, response });
@@ -453,7 +482,7 @@ export async function fetchStratzJson(
       throw new StratzError('STRATZ returned invalid JSON', 502, 'STRATZ_INVALID_JSON');
     }
 
-    if (!isObject(responseBody)) {
+    if (!isJsonValue(responseBody) || !isShallowObject(responseBody)) {
       throw new StratzError('STRATZ returned unexpected response', 502, 'STRATZ_UNEXPECTED_RESPONSE');
     }
     if (Array.isArray(responseBody.errors) && responseBody.errors.length > 0) {
@@ -482,21 +511,21 @@ function normalizeStratzMatch(
   value: unknown,
   accountId: number,
 ): ArchivedPlayerMatch | null {
-  if (!isObject(value) || !isJson(value)) return null;
+  if (!isShallowObject(value)) return null;
 
-  const matchId = readInteger(value.id);
+  const matchId = readSafeInteger(value.id);
   const radiantWin = readBoolean(value.didRadiantWin);
   const players = Array.isArray(value.players) ? value.players : [];
   const player = players.find(
-    (candidate) => isObject(candidate) && readInteger(candidate.steamAccountId) === accountId,
+    (candidate) => isShallowObject(candidate) && readSafeInteger(candidate.steamAccountId) === accountId,
   );
 
-  if (matchId === null || radiantWin === null || !isObject(player)) {
+  if (matchId === null || radiantWin === null || !isShallowObject(player)) {
     return null;
   }
 
-  const playerSlot = readInteger(player.playerSlot);
-  const heroId = readInteger(player.heroId);
+  const playerSlot = readSafeInteger(player.playerSlot);
+  const heroId = readSafeInteger(player.heroId);
   if (playerSlot === null || heroId === null) {
     return null;
   }
@@ -544,9 +573,39 @@ function normalizeStratzMatch(
   };
 }
 
+function normalizeStratzDetailPlayer(value: unknown): NormalizedDetailPlayer | null {
+  if (!isShallowObject(value)) return null;
+
+  const matchId = readPositiveInteger(value.matchId);
+  const accountId = readIntegerInRange(value.steamAccountId, 0, 4_294_967_295);
+  if (matchId === null || accountId === null) return null;
+
+  const normalized = {
+    match_id: matchId,
+    account_id: accountId,
+    player_slot: readNullableIntegerInRange(value.playerSlot, 0, 255),
+    hero_id: readNullableIntegerInRange(value.heroId, 1, 32_767),
+    kills: readNullableDatabaseInteger(value.kills),
+    deaths: readNullableDatabaseInteger(value.deaths),
+    assists: readNullableDatabaseInteger(value.assists),
+    gold_per_min: readNullableDatabaseInteger(value.goldPerMinute),
+    xp_per_min: readNullableDatabaseInteger(value.experiencePerMinute),
+    last_hits: readNullableDatabaseInteger(value.numLastHits),
+    denies: readNullableDatabaseInteger(value.numDenies),
+    hero_damage: readNullableDatabaseInteger(value.heroDamage),
+    tower_damage: readNullableDatabaseInteger(value.towerDamage),
+    hero_healing: readNullableDatabaseInteger(value.heroHealing),
+    level: readNullableIntegerInRange(value.level, -32_768, 32_767),
+    net_worth: readNullableDatabaseInteger(value.networth),
+    leaver_status: readNullableIntegerInRange(readLeaverStatus(value.leaverStatus), -32_768, 32_767),
+  };
+  const parsed = v.safeParse(NormalizedDetailPlayerSchema, normalized);
+  return parsed.success ? parsed.output : null;
+}
+
 function readGraphqlError(errors: unknown[]): string {
   const first = errors[0];
-  return isObject(first) && typeof first.message === 'string'
+  return isShallowObject(first) && typeof first.message === 'string'
     ? first.message
     : 'STRATZ GraphQL returned error';
 }
@@ -588,7 +647,7 @@ function readPartySize(players: unknown[], trackedPlayer: JsonObject): number {
     return 0;
   }
   const partyMembers = players.filter(
-    (candidate) => isObject(candidate) && readNullableInteger(candidate.partyId) === partyId,
+    (candidate) => isShallowObject(candidate) && readNullableInteger(candidate.partyId) === partyId,
   ).length;
   return partyMembers > 1 ? partyMembers : 0;
 }
@@ -614,26 +673,22 @@ function readPosition(value: unknown): number | null {
   }[value as string] ?? null;
 }
 
-function isObject(value: unknown): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function readPositiveInteger(value: unknown): number | null {
+  const integer = readSafeInteger(value);
+  return integer !== null && integer > 0 ? integer : null;
 }
 
-function isJson(value: unknown): value is Json {
-  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return true;
-  }
-  if (Array.isArray(value)) {
-    return value.every(isJson);
-  }
-  return isObject(value) && Object.values(value).every(isJson);
+function readIntegerInRange(value: unknown, minimum: number, maximum: number): number | null {
+  const integer = readSafeInteger(value);
+  return integer !== null && integer >= minimum && integer <= maximum ? integer : null;
 }
 
-function readInteger(value: unknown): number | null {
-  return typeof value === 'number' && Number.isSafeInteger(value) ? value : null;
+function readNullableIntegerInRange(value: unknown, minimum: number, maximum: number): number | null {
+  return value === null || value === undefined ? null : readIntegerInRange(value, minimum, maximum);
 }
 
-function readNullableInteger(value: unknown): number | null {
-  return value === null || value === undefined ? null : readInteger(value);
+function readNullableDatabaseInteger(value: unknown): number | null {
+  return readNullableIntegerInRange(value, -2_147_483_648, 2_147_483_647);
 }
 
 function readBoolean(value: unknown): boolean | null {

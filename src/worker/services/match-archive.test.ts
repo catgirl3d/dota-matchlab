@@ -209,6 +209,7 @@ describe('match archive sync', () => {
         owned: true,
         claimed: false,
         status: 'syncing',
+        dotaAccountId: 123456789,
       },
     });
     const loadOpenDotaPlayerMatchesPage = vi.fn();
@@ -226,6 +227,55 @@ describe('match archive sync', () => {
     ).rejects.toMatchObject({ statusCode: 409 });
 
     expect(loadOpenDotaPlayerMatchesPage).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed history claim responses before loading a provider', async () => {
+    const archiveClient = createArchiveClient({
+      claim: {
+        owned: true,
+        claimed: true,
+        status: 'syncing',
+        dotaAccountId: 123456789,
+        offset: 0,
+        backfillComplete: false,
+        leaseToken: 'missing-upper-bound-is-filled-by-helper',
+        historyProvider: 'opendota',
+      },
+    });
+    archiveClient.claimMatchSyncForProvider.mockResolvedValueOnce({
+      data: { owned: true, claimed: true, status: 'syncing' },
+      error: null,
+    });
+    const loadOpenDotaPlayerMatchesPage = vi.fn();
+
+    await expect(syncTrackedAccount(testEnv, 'sync-user-a', trackedAccountId, {
+      createClient: () => archiveClient,
+      loadOpenDotaPlayerMatchesPage,
+    })).rejects.toMatchObject({ code: 'MATCH_ARCHIVE_INVALID_FIELD' });
+    expect(loadOpenDotaPlayerMatchesPage).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed history apply responses after provider work', async () => {
+    const archiveClient = createArchiveClient({
+      claim: {
+        owned: true,
+        claimed: true,
+        dotaAccountId: 123456789,
+        offset: 0,
+        backfillComplete: false,
+        leaseToken: 'lease-token',
+      },
+      apply: { archivedMatches: 1, status: 'unexpected', backfillComplete: true, nextOffset: 0 },
+    });
+    const loadOpenDotaPlayerMatchesPage = vi.fn().mockResolvedValue({
+      accountId: 123456789, offset: 0, limit: 100, nextOffset: 0, hasMore: false,
+      matches: [createArchivedMatch('9000000201')],
+    } satisfies PlayerMatchesPage);
+
+    await expect(syncTrackedAccount(testEnv, 'sync-user-a', trackedAccountId, {
+      createClient: () => archiveClient,
+      loadOpenDotaPlayerMatchesPage,
+    })).rejects.toMatchObject({ code: 'MATCH_ARCHIVE_INVALID_FIELD' });
   });
 
   it('filters newly inserted matches above the backfill high-water mark', async () => {
@@ -322,6 +372,7 @@ describe('match archive sync', () => {
   });
 
   it('records an OpenDota failure against the active lease', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const archiveClient = createArchiveClient({
       claim: {
         owned: true,
@@ -355,16 +406,72 @@ describe('match archive sync', () => {
         p_error_message: 'OpenDota API limit exceeded',
       }),
     );
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('logs when the failure RPC reports recorded false but preserves the provider error', async () => {
+    const archiveClient = createArchiveClient({
+      claim: activeClaim(),
+      record: { recorded: false },
+    });
+    const providerError = new OpenDotaError('provider failed', 429, 'OPENDOTA_LIMIT_EXCEEDED');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await expect(syncTrackedAccount(testEnv, 'sync-user-a', trackedAccountId, {
+      createClient: () => archiveClient,
+      loadOpenDotaPlayerMatchesPage: vi.fn().mockRejectedValue(providerError),
+    })).rejects.toBe(providerError);
+
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('Match sync failure was not recorded'));
+    consoleError.mockRestore();
+  });
+
+  it('logs malformed failure RPC data but preserves the provider error', async () => {
+    const archiveClient = createArchiveClient({
+      claim: activeClaim(),
+      record: { recorded: 'yes' },
+    });
+    const providerError = new OpenDotaError('provider failed', 429, 'OPENDOTA_LIMIT_EXCEEDED');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await expect(syncTrackedAccount(testEnv, 'sync-user-a', trackedAccountId, {
+      createClient: () => archiveClient,
+      loadOpenDotaPlayerMatchesPage: vi.fn().mockRejectedValue(providerError),
+    })).rejects.toBe(providerError);
+
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('Archive returned invalid failure response'));
+    consoleError.mockRestore();
+  });
+
+  it('logs failure RPC transport errors but preserves the provider error', async () => {
+    const archiveClient = createArchiveClient({
+      claim: activeClaim(),
+      recordError: { message: 'failure RPC unavailable' },
+    });
+    const providerError = new OpenDotaError('provider failed', 429, 'OPENDOTA_LIMIT_EXCEEDED');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await expect(syncTrackedAccount(testEnv, 'sync-user-a', trackedAccountId, {
+      createClient: () => archiveClient,
+      loadOpenDotaPlayerMatchesPage: vi.fn().mockRejectedValue(providerError),
+    })).rejects.toBe(providerError);
+
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('failure RPC unavailable'));
+    consoleError.mockRestore();
   });
 });
 
 function createArchiveClient(options: {
   claim: Record<string, unknown>;
   apply?: Record<string, unknown>;
+  record?: Record<string, unknown>;
+  recordError?: { message: string } | null;
 }) {
+  const claim = normalizeClaim(options.claim);
   return {
     claimMatchSyncForProvider: vi.fn().mockResolvedValue({
-      data: options.claim,
+      data: claim,
       error: null,
     }),
     applyMatchSyncPageWithBoundarySourceAndPayloads: vi.fn().mockResolvedValue({
@@ -373,9 +480,28 @@ function createArchiveClient(options: {
     }),
     loadStratzPlayerMatchesBatch: vi.fn(),
     recordMatchSyncFailure: vi.fn().mockResolvedValue({
-      data: { recorded: true },
-      error: null,
+      data: options.record ?? { recorded: true },
+      error: options.recordError ?? null,
     }),
+  };
+}
+
+function normalizeClaim(claim: Record<string, unknown>) {
+  if (claim.owned === false) return claim;
+  if (claim.claimed === true) {
+    return { historyProvider: 'opendota', status: 'syncing', backfillUpperBoundMatchId: null, ...claim };
+  }
+  return { historyProvider: 'opendota', ...claim };
+}
+
+function activeClaim() {
+  return {
+    owned: true,
+    claimed: true,
+    dotaAccountId: 123456789,
+    offset: 0,
+    backfillComplete: false,
+    leaseToken: 'lease-token',
   };
 }
 

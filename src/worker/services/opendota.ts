@@ -3,7 +3,12 @@ import type {
   RecentDotaMatch,
   RecentMatchesResponse,
 } from '../../shared/dota';
-import type { Json } from '../../shared/database.types';
+import {
+  isJsonValue as isJson,
+  isShallowObject as isObject,
+  readNullableSafeInteger as readNullableInteger,
+  readSafeInteger as readInteger,
+} from '../../shared/contracts/json';
 import { steamId64ToAccountId } from './steam-id';
 import type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
 
@@ -61,8 +66,6 @@ const HISTORY_PROJECT_FIELDS = [
   'radiant_score',
   'dire_score',
 ] as const;
-
-type JsonObject = Record<string, unknown>;
 
 export class OpenDotaError extends Error {
   readonly statusCode: 400 | 404 | 429 | 502 | 504;
@@ -320,30 +323,8 @@ async function fetchOpenDotaJson(
   }
 }
 
-function isObject(value: unknown): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isJson(value: unknown): value is Json {
-  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return true;
-  }
-  if (Array.isArray(value)) {
-    return value.every(isJson);
-  }
-  return isObject(value) && Object.values(value).every(isJson);
-}
-
 function readString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
-function readInteger(value: unknown): number | null {
-  return typeof value === 'number' && Number.isSafeInteger(value) ? value : null;
-}
-
-function readNullableInteger(value: unknown): number | null {
-  return value === null || value === undefined ? null : readInteger(value);
 }
 
 function readBoolean(value: unknown): boolean | null {

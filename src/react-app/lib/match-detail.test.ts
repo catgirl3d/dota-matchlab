@@ -22,8 +22,10 @@ describe('match detail read model', () => {
       [],
       [
         {
+          provider: 'stratz',
           payload_kind: 'history',
           payload_section: 'match',
+          schema_version: 'stratz.match.history.v1',
           fetched_at: '2026-07-19T00:00:00.000Z',
           payload: {
             id: 9_000_000_001,
@@ -123,8 +125,10 @@ describe('match detail read model', () => {
       [],
       [
         {
+          provider: 'stratz',
           payload_kind: 'detail',
           payload_section: 'players',
+          schema_version: 'stratz.match.detail.v2',
           fetched_at: '2026-07-19T00:00:00.000Z',
           payload: {
             data: {
@@ -152,8 +156,10 @@ describe('match detail read model', () => {
           },
         },
         {
+          provider: 'stratz',
           payload_kind: 'detail',
           payload_section: 'player_stats',
+          schema_version: 'stratz.match.detail.v2',
           fetched_at: '2026-07-19T00:00:00.000Z',
           payload: {
             data: {
@@ -178,8 +184,10 @@ describe('match detail read model', () => {
           },
         },
         {
+          provider: 'stratz',
           payload_kind: 'detail',
           payload_section: 'match_playback',
+          schema_version: 'stratz.match.detail.v2',
           fetched_at: '2026-07-19T00:00:00.000Z',
           payload: {
             data: {
@@ -245,15 +253,15 @@ describe('match detail read model', () => {
       [],
       [
         {
-          payload_kind: 'detail', payload_section: 'players', fetched_at: '2026-07-19T00:00:00.000Z',
+          provider: 'stratz', payload_kind: 'detail', payload_section: 'players', schema_version: 'stratz.match.detail.v2', fetched_at: '2026-07-19T00:00:00.000Z',
           payload: { data: { match: { players: [{ steamAccountId: 444, playerSlot: 0, heroId: 4, abilities: [{ abilityId: 9, time: 90, level: 3 }] }] } } },
         },
         {
-          payload_kind: 'detail', payload_section: 'player_stats', fetched_at: '2026-07-19T00:00:00.000Z',
+          provider: 'stratz', payload_kind: 'detail', payload_section: 'player_stats', schema_version: 'stratz.match.detail.v2', fetched_at: '2026-07-19T00:00:00.000Z',
           payload: { data: { match: { players: [{ stats: { steamAccountId: 444, itemPurchases: [{ time: 40, itemId: 99 }] } }] } } },
         },
         {
-          payload_kind: 'detail', payload_section: 'player_playback', fetched_at: '2026-07-19T00:00:00.000Z',
+          provider: 'stratz', payload_kind: 'detail', payload_section: 'player_playback', schema_version: 'stratz.match.detail.v2', fetched_at: '2026-07-19T00:00:00.000Z',
           payload: { data: { match: { players: [{ steamAccountId: 444, playbackData: {
             abilityLearnEvents: [{ time: 30, abilityId: 8, levelObtained: 2 }, { time: 30, abilityId: 7, levelObtained: 1 }],
             purchaseEvents: [{ time: 20, itemId: 50 }, { time: 20, itemId: 29 }],
@@ -277,7 +285,7 @@ describe('match detail read model', () => {
       [],
       [
         {
-          payload_kind: 'history', payload_section: 'match', fetched_at: '2026-07-19T00:00:00.000Z',
+          provider: 'stratz', payload_kind: 'history', payload_section: 'match', schema_version: 'stratz.match.history.v1', fetched_at: '2026-07-19T00:00:00.000Z',
           payload: { players: [{ steamAccountId: 909, playerSlot: 0, heroId: 35 }] },
         },
         detailPayload('player_playback', { players: [{
@@ -302,8 +310,8 @@ describe('match detail read model', () => {
       },
       [],
       [
-        { payload_kind: 'detail', payload_section: 'players', fetched_at: '2026-07-19T00:00:00.000Z', payload: { data: { match: { players: [{ steamAccountId: 555, playerSlot: 0, abilities: [{ abilityId: 3, time: 20, level: 2 }, { abilityId: 2, time: 10, level: 1 }] }] } } } },
-        { payload_kind: 'detail', payload_section: 'player_stats', fetched_at: '2026-07-19T00:00:00.000Z', payload: { data: { match: { players: [{ stats: { steamAccountId: 555, itemPurchases: [{ time: 30, itemId: 50 }, { time: 10, itemId: 29 }] } }] } } } },
+        { provider: 'stratz', payload_kind: 'detail', payload_section: 'players', schema_version: 'stratz.match.detail.v2', fetched_at: '2026-07-19T00:00:00.000Z', payload: { data: { match: { players: [{ steamAccountId: 555, playerSlot: 0, abilities: [{ abilityId: 3, time: 20, level: 2 }, { abilityId: 2, time: 10, level: 1 }] }] } } } },
+        { provider: 'stratz', payload_kind: 'detail', payload_section: 'player_stats', schema_version: 'stratz.match.detail.v2', fetched_at: '2026-07-19T00:00:00.000Z', payload: { data: { match: { players: [{ stats: { steamAccountId: 555, itemPurchases: [{ time: 30, itemId: 50 }, { time: 10, itemId: 29 }] } }] } } } },
       ],
     );
 
@@ -421,7 +429,7 @@ describe('match detail read model', () => {
       baseMatch(9_000_000_008),
       [normalizedPlayer(903, 129)],
       [
-        { payload_kind: 'history', payload_section: 'match', fetched_at: '2026-07-19T00:00:00.000Z', payload: { players: [
+        { provider: 'stratz', payload_kind: 'history', payload_section: 'match', schema_version: 'stratz.match.history.v1', fetched_at: '2026-07-19T00:00:00.000Z', payload: { players: [
           { steamAccountId: 901, playerSlot: 0, heroId: 1 },
           { steamAccountId: 902, playerSlot: 128, heroId: 2 },
         ] } },
@@ -438,8 +446,10 @@ describe('match detail read model', () => {
       baseMatch(9_000_000_009),
       [],
       [{
+        provider: 'stratz',
         payload_kind: 'history',
         payload_section: 'match',
+        schema_version: 'stratz.match.history.v1',
         fetched_at: '2026-07-19T00:00:00.000Z',
         payload: {
           players: Array.from({ length: 10 }, (_, index) => ({
@@ -453,6 +463,56 @@ describe('match detail read model', () => {
 
     expect(snapshot.rosterStatus).toBe('complete');
   });
+
+  it('uses known schema versions and prevents same-section rows from other providers or kinds overwriting them', () => {
+    const snapshot = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_011),
+      [],
+      [
+        historyPayload({ players: [{ steamAccountId: 100, playerSlot: 0, heroId: 1 }] }),
+        detailPayload('players', { players: [{ steamAccountId: 200, playerSlot: 0, heroId: 2 }] }),
+        {
+          ...detailPayload('players', { players: [{ steamAccountId: 300, playerSlot: 0, heroId: 3 }] }),
+          provider: 'opendota',
+        },
+        {
+          provider: 'stratz', payload_kind: 'history' as const, payload_section: 'players',
+          schema_version: 'stratz.match.history.v1', fetched_at: '2026-07-19T00:00:00.000Z',
+          payload: { players: [{ steamAccountId: 400, playerSlot: 0, heroId: 4 }] },
+        },
+      ],
+    );
+
+    expect(snapshot.players).toHaveLength(2);
+    expect(snapshot.players.map((player) => player.accountId)).toEqual([100, 200]);
+    expect(snapshot.availableSections).toEqual(['players']);
+  });
+
+  it('supports nullable legacy versions but degrades unknown versions and malformed payloads', () => {
+    const legacy = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_012),
+      [],
+      [
+        { ...historyPayload({ players: [{ steamAccountId: 120, playerSlot: 0, heroId: 1 }] }), schema_version: null },
+        { ...detailPayload('players', { players: [{ steamAccountId: 121, playerSlot: 128, heroId: 2 }] }), schema_version: null },
+      ],
+    );
+    expect(legacy.players.map((player) => player.accountId)).toEqual([120, 121]);
+
+    const degraded = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_013),
+      [],
+      [
+        { ...detailPayload('players', { players: [{ steamAccountId: 130, playerSlot: 0, heroId: 3 }] }), schema_version: 'stratz.match.detail.v3' },
+        {
+          provider: 'stratz', payload_kind: 'detail' as const, payload_section: 'players',
+          schema_version: 'stratz.match.detail.v2', fetched_at: '2026-07-19T00:00:00.000Z', payload: ['malformed'],
+        },
+      ],
+    );
+    expect(degraded.players).toEqual([]);
+    expect(degraded.availableSections).toEqual([]);
+  });
 });
 
 function baseMatch(matchId: number) {
@@ -465,8 +525,15 @@ function baseMatch(matchId: number) {
 
 function detailPayload(section: string, match: Record<string, Json>): Parameters<typeof buildMatchDetailSnapshot>[2][number] {
   return {
-    payload_kind: 'detail' as const, payload_section: section, fetched_at: '2026-07-19T00:00:00.000Z',
+    provider: 'stratz', payload_kind: 'detail' as const, payload_section: section, schema_version: 'stratz.match.detail.v2', fetched_at: '2026-07-19T00:00:00.000Z',
     payload: { data: { match } },
+  };
+}
+
+function historyPayload(match: Record<string, Json>): Parameters<typeof buildMatchDetailSnapshot>[2][number] {
+  return {
+    provider: 'stratz', payload_kind: 'history', payload_section: 'match', schema_version: 'stratz.match.history.v1',
+    fetched_at: '2026-07-19T00:00:00.000Z', payload: match,
   };
 }
 

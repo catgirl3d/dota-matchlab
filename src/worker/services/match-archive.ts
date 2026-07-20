@@ -1,5 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Database, Json } from '../../shared/database.types';
+import { createClient, type PostgrestSingleResponse } from '@supabase/supabase-js';
+import * as v from 'valibot';
+import type { Json } from '../../shared/database.types';
+import type { AppDatabase } from '../../shared/app-database';
+import {
+  HistorySyncApplyResponseSchema,
+  HistorySyncClaimSchema,
+  RecordMatchSyncFailureResponseSchema,
+  type HistorySyncApplyResponse,
+  type HistorySyncClaim,
+  type RecordMatchSyncFailureResponse,
+} from '../../shared/contracts/history-rpc';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import {
   HISTORY_PAGE_SIZE,
@@ -16,46 +26,16 @@ import type {
   PlayerMatchesPage,
 } from './match-provider';
 
-type RpcResponse = {
-  data: Json | null;
-  error: { message: string } | null;
-};
-
-type ClaimMatchSyncArgs = {
-  p_actor_user_id: string;
-  p_tracked_account_id: string;
-  p_lease_seconds: number;
-  p_history_provider: MatchHistoryProvider;
-};
-
-type ApplyMatchSyncPageArgs = {
-  p_actor_user_id: string;
-  p_tracked_account_id: string;
-  p_dota_account_id: number;
-  p_lease_token: string;
-  p_matches: Json;
-  p_next_offset: number;
-  p_backfill_complete: boolean;
-  p_backfill_upper_bound_match_id: number;
-  p_source: MatchHistoryProvider;
-  p_payloads: Json;
-};
-
-type RecordMatchSyncFailureArgs = {
-  p_actor_user_id: string;
-  p_tracked_account_id: string;
-  p_dota_account_id: number;
-  p_lease_token: string;
-  p_error_code: string;
-  p_error_message: string;
-};
+type ClaimMatchSyncArgs = AppDatabase['public']['Functions']['claim_match_sync_for_provider']['Args'];
+type ApplyMatchSyncPageArgs = AppDatabase['public']['Functions']['apply_match_sync_page_with_boundary_source_and_payloads']['Args'];
+type RecordMatchSyncFailureArgs = AppDatabase['public']['Functions']['record_match_sync_failure']['Args'];
 
 type ArchiveRpcClient = {
-  claimMatchSyncForProvider(args: ClaimMatchSyncArgs): Promise<RpcResponse>;
+  claimMatchSyncForProvider(args: ClaimMatchSyncArgs): Promise<PostgrestSingleResponse<HistorySyncClaim>>;
   applyMatchSyncPageWithBoundarySourceAndPayloads(
     args: ApplyMatchSyncPageArgs,
-  ): Promise<RpcResponse>;
-  recordMatchSyncFailure(args: RecordMatchSyncFailureArgs): Promise<RpcResponse>;
+  ): Promise<PostgrestSingleResponse<HistorySyncApplyResponse>>;
+  recordMatchSyncFailure(args: RecordMatchSyncFailureArgs): Promise<PostgrestSingleResponse<RecordMatchSyncFailureResponse>>;
 };
 
 type MatchArchiveDependencies = {
@@ -102,18 +82,13 @@ export async function syncTrackedAccount(
     p_lease_seconds: 300,
     p_history_provider: preferredProvider,
   });
-  const claim = readRpcData(
-    claimResponse,
-    'Failed to initiate archive synchronization',
-    'MATCH_ARCHIVE_SYNC_INITIATION_FAILED',
-  );
+  const claim = readHistorySyncClaim(claimResponse);
 
-  if (!readBoolean(claim.owned)) {
+  if (!claim.owned) {
     throw new MatchArchiveError('Tracked account not found', 404, 'MATCH_ARCHIVE_ACCOUNT_NOT_FOUND');
   }
-  if (!readBoolean(claim.claimed)) {
-    const status = readString(claim.status);
-    if (status === 'failed') {
+  if (!claim.claimed) {
+    if (claim.status === 'failed') {
       throw new MatchArchiveError(
         'Synchronization is temporarily suspended due to provider error',
         409,
@@ -127,14 +102,11 @@ export async function syncTrackedAccount(
     );
   }
 
-  const accountId = readRequiredInteger(claim.dotaAccountId, 'accountId');
-  const offset = readRequiredInteger(claim.offset, 'offset');
-  const leaseToken = readRequiredString(claim.leaseToken, 'leaseToken');
-  const provider = readProvider(claim.historyProvider, preferredProvider);
-  const claimedUpperBound = readNullableInteger(
-    claim.backfillUpperBoundMatchId,
-    'backfillUpperBoundMatchId',
-  );
+  const accountId = claim.dotaAccountId;
+  const offset = claim.offset;
+  const leaseToken = claim.leaseToken;
+  const provider = claim.historyProvider;
+  const claimedUpperBound = claim.backfillUpperBoundMatchId;
 
   try {
     const page = await loadProviderPage(
@@ -164,23 +136,16 @@ export async function syncTrackedAccount(
       p_source: provider,
       p_payloads: boundedMatches.map((match) => toArchiveRpcPayload(match, provider)),
     });
-    const applied = readRpcData(
-      applyResponse,
-      'Failed to save archive page',
-      'MATCH_ARCHIVE_SAVE_PAGE_FAILED',
-    );
+    const applied = readHistorySyncApplyResponse(applyResponse);
 
     return {
       trackedAccountId,
       accountId,
       fetchedMatches: boundedMatches.length,
-      archivedMatches: readRequiredInteger(applied.archivedMatches, 'archivedMatches'),
-      status: readStatus(applied.status),
-      backfillComplete: readRequiredBoolean(
-        applied.backfillComplete,
-        'backfillComplete',
-      ),
-      nextOffset: readRequiredInteger(applied.nextOffset, 'nextOffset'),
+      archivedMatches: applied.archivedMatches,
+      status: applied.status,
+      backfillComplete: applied.backfillComplete,
+      nextOffset: applied.nextOffset,
     };
   } catch (error) {
     await recordSyncFailure(
@@ -205,7 +170,7 @@ export async function syncTrackedAccount(
 }
 
 function createArchiveRpcClient(env: Env): ArchiveRpcClient {
-  const client = createClient<Database>(
+  const client = createClient<AppDatabase>(
     env.SUPABASE_URL,
     env.SUPABASE_SERVICE_ROLE_KEY,
     {
@@ -248,6 +213,14 @@ async function recordSyncFailure(
     });
 
     if (!response.error) {
+      const recorded = readRecordMatchSyncFailureResponse(response);
+      if (!recorded.recorded) {
+        throw new MatchArchiveError(
+          'Match sync failure was not recorded',
+          502,
+          'MATCH_ARCHIVE_RECORD_FAILURE_FAILED',
+        );
+      }
       return;
     }
 
@@ -329,7 +302,38 @@ function toArchiveRpcPayload(
   };
 }
 
-function readRpcData(response: RpcResponse, fallbackMessage: string, errorCode: string): JsonObject {
+function readHistorySyncClaim(response: PostgrestSingleResponse<HistorySyncClaim>): HistorySyncClaim {
+  const data = readRpcData(response, 'Failed to initiate archive synchronization', 'MATCH_ARCHIVE_SYNC_INITIATION_FAILED');
+  const parsed = v.safeParse(HistorySyncClaimSchema, data);
+  if (!parsed.success) {
+    throw new MatchArchiveError('Archive returned invalid claim response', 502, 'MATCH_ARCHIVE_INVALID_FIELD');
+  }
+  return parsed.output;
+}
+
+function readHistorySyncApplyResponse(
+  response: PostgrestSingleResponse<HistorySyncApplyResponse>,
+): HistorySyncApplyResponse {
+  const data = readRpcData(response, 'Failed to save archive page', 'MATCH_ARCHIVE_SAVE_PAGE_FAILED');
+  const parsed = v.safeParse(HistorySyncApplyResponseSchema, data);
+  if (!parsed.success) {
+    throw new MatchArchiveError('Archive returned invalid apply response', 502, 'MATCH_ARCHIVE_INVALID_FIELD');
+  }
+  return parsed.output;
+}
+
+function readRecordMatchSyncFailureResponse(
+  response: PostgrestSingleResponse<RecordMatchSyncFailureResponse>,
+): RecordMatchSyncFailureResponse {
+  const data = readRpcData(response, 'Could not record match sync failure', 'MATCH_ARCHIVE_RECORD_FAILURE_FAILED');
+  const parsed = v.safeParse(RecordMatchSyncFailureResponseSchema, data);
+  if (!parsed.success) {
+    throw new MatchArchiveError('Archive returned invalid failure response', 502, 'MATCH_ARCHIVE_INVALID_FIELD');
+  }
+  return parsed.output;
+}
+
+function readRpcData<T>(response: PostgrestSingleResponse<T>, fallbackMessage: string, errorCode: string): T {
   if (response.error) {
     console.error(
       JSON.stringify({
@@ -340,59 +344,10 @@ function readRpcData(response: RpcResponse, fallbackMessage: string, errorCode: 
     );
     throw new MatchArchiveError(fallbackMessage, 502, errorCode);
   }
-  if (!isObject(response.data)) {
+  if (response.data === null) {
     throw new MatchArchiveError(fallbackMessage, 502, errorCode);
   }
   return response.data;
-}
-
-function readRequiredString(value: Json | undefined, fieldName: string): string {
-  if (typeof value !== 'string' || !value.trim()) {
-    throw new MatchArchiveError(`Archive returned invalid field ${fieldName}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
-  }
-  return value;
-}
-
-function readRequiredInteger(value: Json | undefined, fieldName: string): number {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
-    throw new MatchArchiveError(`Archive returned invalid field ${fieldName}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
-  }
-  return value;
-}
-
-function readNullableInteger(
-  value: Json | undefined,
-  fieldName: string,
-): number | null {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  return readRequiredInteger(value, fieldName);
-}
-
-function readBoolean(value: Json | undefined): boolean {
-  return value === true;
-}
-
-function readString(value: Json | undefined): string | null {
-  return typeof value === 'string' && value.trim() ? value : null;
-}
-
-function readRequiredBoolean(
-  value: Json | undefined,
-  fieldName: string,
-): boolean {
-  if (typeof value !== 'boolean') {
-    throw new MatchArchiveError(`Archive returned invalid field ${fieldName}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
-  }
-  return value;
-}
-
-function readStatus(value: Json | undefined): 'partial' | 'ready' {
-  if (value === 'partial' || value === 'ready') {
-    return value;
-  }
-  throw new MatchArchiveError('Archive returned invalid status', 502, 'MATCH_ARCHIVE_INVALID_STATUS');
 }
 
 function getSyncErrorCode(error: unknown): string {
@@ -445,12 +400,6 @@ async function loadProviderPage(
   );
 }
 
-function readProvider(
-  value: Json | undefined,
-  fallback: MatchHistoryProvider,
-): MatchHistoryProvider {
-  return value === 'stratz' || value === 'opendota' ? value : fallback;
-}
 
 function getPageUpperBound(page: { matches: ArchivedPlayerMatch[] }): number | null {
   let upperBound: number | null = null;
@@ -461,10 +410,4 @@ function getPageUpperBound(page: { matches: ArchivedPlayerMatch[] }): number | n
     }
   }
   return upperBound;
-}
-
-type JsonObject = { [key: string]: Json | undefined };
-
-function isObject(value: Json | null): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

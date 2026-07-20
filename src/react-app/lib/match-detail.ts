@@ -1,5 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json, Tables } from '../../shared/database.types';
+import type { Tables } from '../../shared/database.types';
+import type { AppDatabase } from '../../shared/app-database';
+import {
+  parseProviderPayloadRow,
+  routeStratzPayload,
+  type ProviderPayloadRow,
+} from '../../shared/contracts/provider-payload';
+import { isShallowObject, readSafeInteger as readInteger } from '../../shared/contracts/json';
 import { abilityIconSlugs } from './ability-icon-slugs';
 import { repairAbilityEvent, type AbilityEventSource } from './ability-event-repairs';
 
@@ -162,13 +169,10 @@ type PlayerStatsRow = Pick<
   | 'net_worth'
 >;
 
-type PayloadRow = Pick<
-  Tables<'match_provider_payloads'>,
-  'payload_kind' | 'payload_section' | 'payload' | 'fetched_at'
->;
+type PayloadRow = ProviderPayloadRow;
 
 export async function fetchMatchDetail(
-  client: SupabaseClient<Database>,
+  client: SupabaseClient<AppDatabase>,
   matchId: number,
 ): Promise<MatchDetailSnapshot | null> {
   const [matchResponse, playersResponse, payloadsResponse] = await Promise.all([
@@ -188,7 +192,7 @@ export async function fetchMatchDetail(
       .order('player_slot', { ascending: true }),
     client
       .from('match_provider_payloads')
-      .select('payload_kind,payload_section,payload,fetched_at')
+      .select('provider,payload_kind,payload_section,payload,schema_version,fetched_at')
       .eq('match_id', matchId)
       .eq('provider', 'stratz')
       .in('payload_section', [
@@ -215,7 +219,10 @@ export async function fetchMatchDetail(
   return buildMatchDetailSnapshot(
     matchResponse.data,
     playersResponse.data ?? [],
-    payloadsResponse.data ?? [],
+    (payloadsResponse.data ?? []).flatMap((row) => {
+      const payload = parseProviderPayloadRow(row);
+      return payload ? [payload] : [];
+    }),
   );
 }
 
@@ -224,15 +231,21 @@ export function buildMatchDetailSnapshot(
   normalizedPlayers: PlayerStatsRow[],
   payloadRows: PayloadRow[],
 ): MatchDetailSnapshot {
-  const payloadBySection = new Map(
-    payloadRows.map((row) => [row.payload_section, unwrapMatch(row.payload)]),
+  const routedPayloads = payloadRows.flatMap((row) => {
+    const routed = routeStratzPayload(row);
+    return routed ? [routed] : [];
+  });
+  const history = routedPayloads.find((payload) => payload.kind === 'history')?.match ?? null;
+  const detailBySection = new Map(
+    routedPayloads
+      .filter((payload) => payload.kind === 'detail')
+      .map((payload) => [payload.section, payload.match]),
   );
-  const history = payloadBySection.get('match') ?? null;
-  const metadata = payloadBySection.get('metadata') ?? history;
-  const detailPlayersPayload = payloadBySection.get('players');
-  const statsPayload = payloadBySection.get('player_stats');
-  const playerPlaybackPayload = payloadBySection.get('player_playback');
-  const playbackPayload = payloadBySection.get('match_playback');
+  const metadata = detailBySection.get('metadata') ?? history;
+  const detailPlayersPayload = detailBySection.get('players');
+  const statsPayload = detailBySection.get('player_stats');
+  const playerPlaybackPayload = detailBySection.get('player_playback');
+  const playbackPayload = detailBySection.get('match_playback');
   const historyPlayers = readObjectArray(history?.players);
   const detailPlayers = readObjectArray(detailPlayersPayload?.players);
   const rawPlayers = mergeRoster(detailPlayers, historyPlayers);
@@ -297,9 +310,9 @@ export function buildMatchDetailSnapshot(
     },
     chatMessages: buildChatMessages(statsPayload, rawPlayersByAccount),
     timelineEvents: buildTimelineEvents(metadata, statsPayload, rawPlayersByAccount),
-    availableSections: payloadRows
-      .filter((row) => row.payload_kind === 'detail')
-      .map((row) => row.payload_section)
+    availableSections: routedPayloads
+      .filter((payload) => payload.kind === 'detail')
+      .map((payload) => payload.section)
       .sort(),
     rosterStatus: players.length >= 10 ? 'complete' : 'incomplete',
   };
@@ -685,13 +698,6 @@ function readPurchaseEvents(value: unknown): MatchDetailPlayer['purchaseEvents']
     .sort((left, right) => left.time - right.time || left.itemId - right.itemId);
 }
 
-function unwrapMatch(payload: Json): Record<string, unknown> | null {
-  const root = readObject(payload);
-  if (!root) return null;
-  const data = readObject(root.data);
-  return readObject(data?.match) ?? root;
-}
-
 function readItemIds(value: Record<string, unknown>, keys: string[]): number[] {
   return keys.flatMap((key) => {
     const itemId = readInteger(value[key]);
@@ -732,15 +738,7 @@ function sumObjectField(values: Array<Record<string, unknown>>, field: string): 
 }
 
 function readObject(value: unknown): Record<string, unknown> | null {
-  return isRecord(value) ? value : null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function readInteger(value: unknown): number | null {
-  return typeof value === 'number' && Number.isSafeInteger(value) ? value : null;
+  return isShallowObject(value) ? value : null;
 }
 
 function readBoolean(value: unknown): boolean | null {

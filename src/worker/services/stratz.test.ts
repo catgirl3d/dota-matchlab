@@ -4,6 +4,7 @@ import {
   loadStratzMatchDetail,
   loadStratzPlayerMatchesPage,
   normalizeStratzDetailMatch,
+  normalizeStratzDetailPlayers,
 } from './stratz';
 import { PLAYER_PLAYBACK_SELECTION } from './stratz-detail-selections';
 
@@ -20,6 +21,57 @@ describe('STRATZ match provider', () => {
       radiant_team_id: 11, dire_team_id: 12, league_id: 13, series_id: 14, series_type: 2,
       radiant_score: 35, dire_score: 19,
     });
+  });
+  it('normalizes detail players into the canonical database DTO', () => {
+    expect(normalizeStratzDetailPlayers([{
+      section: 'players',
+      response: {
+        data: {
+          match: {
+            players: [{
+              matchId: 9_001,
+              steamAccountId: 77,
+              playerSlot: 128,
+              heroId: 2,
+              kills: 4,
+              deaths: 5,
+              assists: 6,
+              goldPerMinute: 700,
+              experiencePerMinute: 800,
+              numLastHits: 90,
+              numDenies: 3,
+              heroDamage: 10_000,
+              towerDamage: 2_000,
+              heroHealing: 50,
+              level: 18,
+              networth: 15_000,
+              leaverStatus: 'NONE',
+            }, {
+              matchId: 9_001,
+              steamAccountId: -1,
+            }],
+          },
+        },
+      },
+    }])).toEqual([{
+      match_id: 9_001,
+      account_id: 77,
+      player_slot: 128,
+      hero_id: 2,
+      kills: 4,
+      deaths: 5,
+      assists: 6,
+      gold_per_min: 700,
+      xp_per_min: 800,
+      last_hits: 90,
+      denies: 3,
+      hero_damage: 10_000,
+      tower_damage: 2_000,
+      hero_healing: 50,
+      level: 18,
+      net_worth: 15_000,
+      leaver_status: 0,
+    }]);
   });
   it('loads and normalizes the player row from a GraphQL match page', async () => {
     const fetcher = vi.fn().mockResolvedValue(

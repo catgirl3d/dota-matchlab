@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(19);
 
 select has_function(
   'public',
@@ -11,7 +11,7 @@ select has_function(
 
 select public.apply_public_match_import(
   8749050700,
-  '{"status":"available","normalized_match":{"match_id":8749050700,"duration":2100,"radiant_win":true,"game_mode":23,"radiant_score":31,"dire_score":20},"payloads":[{"payload_section":"players","schema_version":"stratz.match.detail.v2","payload":{"data":{"match":{"id":8749050700,"players":[{"matchId":8749050700,"steamAccountId":77,"playerSlot":0,"heroId":1,"kills":9}]}}}}]}'::jsonb
+  '{"status":"available","normalized_match":{"match_id":8749050700,"duration":2100,"radiant_win":true,"game_mode":23,"radiant_score":31,"dire_score":20},"normalized_players":[{"match_id":8749050700,"account_id":77,"player_slot":0,"hero_id":1,"kills":9,"leaver_status":0}],"payloads":[{"payload_section":"opaque_detail","schema_version":"stratz.match.detail.v2","payload":{"unrelated":{"provider":"opaque"}}}]}'::jsonb
 );
 
 select is(
@@ -30,8 +30,8 @@ select is(
   'import stores player stats'
 );
 select ok(
-  exists (select 1 from public.match_provider_payloads where match_id = 8749050700 and payload_section = 'players'),
-  'import stores provider payload'
+  exists (select 1 from public.match_provider_payloads where match_id = 8749050700 and payload_section = 'opaque_detail'),
+  'import stores opaque provider payload'
 );
 select is(
   (select count(*) from public.tracked_account_matches where match_id = 8749050700),
@@ -42,6 +42,48 @@ select throws_ok(
   $$select public.apply_public_match_import(8749050701, '{"status":"available","normalized_match":{"match_id":8749050702},"payloads":[]}'::jsonb)$$,
   'Invalid public match import',
   'mismatched match ID is rejected'
+);
+select throws_ok(
+  $$select public.apply_public_match_import(8749050703, '{"status":"available","normalized_match":{"match_id":8749050703},"payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}'::jsonb)$$,
+  'Available detail result requires projectable normalized players',
+  'public import without normalized players is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'match', exists (select 1 from public.dota_matches where match_id = 8749050703),
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 8749050703),
+    'players', (select count(*) from public.player_match_stats where match_id = 8749050703)
+  )),
+  '{"match":false,"payloads":0,"players":0}'::jsonb,
+  'public missing normalized players rejection leaves no partial import'
+);
+select throws_ok(
+  $$select public.apply_public_match_import(8749050704, '{"status":"available","normalized_match":{"match_id":8749050704},"normalized_players":[],"payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}'::jsonb)$$,
+  'Invalid public match import',
+  'public import with empty normalized players is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'match', exists (select 1 from public.dota_matches where match_id = 8749050704),
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 8749050704),
+    'players', (select count(*) from public.player_match_stats where match_id = 8749050704)
+  )),
+  '{"match":false,"payloads":0,"players":0}'::jsonb,
+  'public empty normalized players rejection leaves no partial import'
+);
+select throws_ok(
+  $$select public.apply_public_match_import(8749050705, '{"status":"available","normalized_match":{"match_id":8749050705},"normalized_players":[{"match_id":8749050705,"account_id":77,"player_slot":256}],"payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}'::jsonb)$$,
+  'Available detail result requires projectable normalized players',
+  'public import with malformed normalized players is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'match', exists (select 1 from public.dota_matches where match_id = 8749050705),
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 8749050705),
+    'players', (select count(*) from public.player_match_stats where match_id = 8749050705)
+  )),
+  '{"match":false,"payloads":0,"players":0}'::jsonb,
+  'public malformed normalized players rejection leaves no partial import'
 );
 select ok(
   not has_table_privilege('anon', 'public.tracked_account_matches', 'select'),

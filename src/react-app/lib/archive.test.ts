@@ -55,6 +55,28 @@ describe('archive RPC adapter', () => {
     const failingClient = createFakeClient(null, { message: 'forbidden' });
     await expect(resolveArchiveShowcase(failingClient, 'demo')).rejects.toThrow('Could not open public archive: forbidden');
   });
+
+  it('rejects malformed required overview fields including nested sync state', async () => {
+    const malformedSummary = archiveOverviewFixture();
+    (malformedSummary.summary as Record<string, unknown>).matches = 'one';
+    await expect(fetchArchiveOverview(createFakeClient(malformedSummary), 'account', DEFAULT_ARCHIVE_FILTERS)).rejects.toThrow('Invalid response overview');
+
+    const malformedSyncState = archiveOverviewFixture();
+    (malformedSyncState.syncState as Record<string, unknown>).consecutive_failures = 'none';
+    await expect(fetchArchiveOverview(createFakeClient(malformedSyncState), 'account', DEFAULT_ARCHIVE_FILTERS)).rejects.toThrow('Invalid response overview');
+  });
+
+  it('tolerates additive archive projection fields while preserving known fields', async () => {
+    const response = archiveOverviewFixture() as Record<string, unknown>;
+    response.server_added_field = { ignored: true };
+    const syncState = response.syncState as Record<string, unknown>;
+    syncState.future_field = 'ignored';
+
+    await expect(fetchArchiveOverview(createFakeClient(response), 'account', DEFAULT_ARCHIVE_FILTERS)).resolves.toMatchObject({
+      summary: { matches: 1 },
+      syncState: { status: 'ready' },
+    });
+  });
 });
 
 
@@ -62,4 +84,17 @@ function createFakeClient(data: unknown, error: { message: string } | null = nul
   const abortSignal = vi.fn().mockResolvedValue({ data, error });
   const rpc = vi.fn(() => ({ abortSignal }));
   return { rpc, abortSignal } as unknown as Parameters<typeof fetchArchiveOverview>[0] & { rpc: typeof rpc; abortSignal: typeof abortSignal };
+}
+
+function archiveOverviewFixture() {
+  return {
+    summary: { matches: 1, wins: 1, losses: 0, unknown_results: 0, win_rate: 100, average_kills: 10, average_deaths: 2, average_assists: 8, average_kda: 9, average_gpm: 600, average_xpm: 700, average_last_hits: 300, average_damage: 30000, average_duration_minutes: 40, first_match_at: 1, latest_match_at: 1 },
+    form: ['win'], modes: [], heroes: [], positions: [], lanes: [], party: [], tempo: [], heroOptions: [1],
+    syncState: {
+      status: 'ready', history_provider: 'stratz', backfill_offset: 500, backfill_complete: true,
+      last_attempt_at: '2026-07-20T10:00:00.000Z', last_success_at: '2026-07-20T10:00:00.000Z', next_retry_at: null,
+      consecutive_failures: 0, last_error_message: null, newest_match_id: 9, oldest_match_id: 9,
+    },
+    integrity: { linked: 2, complete: 1, missing_stats: 1, missing_match: 0 },
+  };
 }

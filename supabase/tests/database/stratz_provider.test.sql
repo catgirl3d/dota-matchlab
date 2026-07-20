@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(38);
 
 insert into public.tracked_accounts (id, user_id, steam_id64)
 values (
@@ -217,20 +217,17 @@ select public.apply_match_detail_batch(
   '[{
     "match_id": 9000000203,
     "status": "available",
+    "normalized_players": [{
+      "match_id": 9000000203, "account_id": 111, "player_slot": 128, "hero_id": 2,
+      "kills": 4, "deaths": 5, "assists": 6, "gold_per_min": 700,
+      "xp_per_min": 800, "last_hits": 90, "denies": 3,
+      "hero_damage": 10000, "tower_damage": 2000, "hero_healing": 50,
+      "level": 18, "net_worth": 15000, "leaver_status": 0
+    }],
     "payloads": [{
-      "payload_section": "match_playback",
+      "payload_section": "opaque_detail",
       "schema_version": "stratz.match.detail.v2",
-      "payload": {"data": {"match": {"id": 9000000203, "playbackData": {"runeEvents": [{"time": 120}]}}}}
-    }, {
-      "payload_section": "players",
-      "schema_version": "stratz.match.detail.v2",
-      "payload": {"data": {"match": {"id": 9000000203, "players": [{
-        "matchId": 9000000203, "steamAccountId": 111, "playerSlot": 128, "heroId": 2,
-        "kills": 4, "deaths": 5, "assists": 6, "goldPerMinute": 700,
-        "experiencePerMinute": 800, "numLastHits": 90, "numDenies": 3,
-        "heroDamage": 10000, "towerDamage": 2000, "heroHealing": 50,
-        "level": 18, "networth": 15000, "leaverStatus": "NONE"
-      }]}}}
+      "payload": {"opaque": {"preserved": true, "sourceShape": "unrelated"}}
     }]
   }]'::jsonb
 );
@@ -241,12 +238,12 @@ select is(
   'detail apply updates the normalized detail lifecycle'
 );
 select is(
-  (select payload #>> '{data,match,playbackData,runeEvents,0,time}'
+  (select payload #>> '{opaque,sourceShape}'
    from public.match_provider_payloads
    where match_id = 9000000203 and provider = 'stratz' and payload_kind = 'detail'
-     and payload_section = 'match_playback'),
-  '120',
-  'detail apply stores the raw nested STRATZ payload'
+      and payload_section = 'opaque_detail'),
+  'unrelated',
+  'detail apply stores opaque raw payload without inspecting its provider shape'
 );
 select is(
   (select status from public.account_match_detail_queue
@@ -263,6 +260,132 @@ select is(
   (select backfill_complete from public.account_match_sync_state where dota_account_id = 223344556),
   false,
   'detail processing does not mutate the history cursor completion state'
+);
+
+insert into public.dota_matches (match_id)
+values (9000000204), (9000000205), (9000000206), (9000000207), (9000000208), (9000000209), (9000000210), (9000000211);
+insert into public.account_match_detail_queue (
+  dota_account_id, match_id, status, lease_token, lease_expires_at
+)
+values
+  (223344556, 9000000204, 'syncing', '00000000-0000-0000-0000-000000000204', now() + interval '5 minutes'),
+  (223344556, 9000000205, 'syncing', '00000000-0000-0000-0000-000000000205', now() + interval '5 minutes'),
+  (223344556, 9000000206, 'syncing', '00000000-0000-0000-0000-000000000206', now() + interval '5 minutes'),
+  (223344556, 9000000207, 'syncing', '00000000-0000-0000-0000-000000000207', now() + interval '5 minutes'),
+  (223344556, 9000000208, 'syncing', '00000000-0000-0000-0000-000000000208', now() + interval '5 minutes'),
+  (223344556, 9000000209, 'syncing', '00000000-0000-0000-0000-000000000209', now() + interval '5 minutes'),
+  (223344556, 9000000210, 'syncing', '00000000-0000-0000-0000-000000000210', now() - interval '1 minute'),
+  (223344556, 9000000211, 'syncing', '00000000-0000-0000-0000-000000000211', now() + interval '5 minutes');
+
+select throws_ok(
+  $$select public.apply_match_detail_batch('sync-user-stratz', '00000000-0000-0000-0000-000000000203', 223344556, '00000000-0000-0000-0000-000000000204', '[{"match_id":9000000204,"status":"available","payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}]'::jsonb)$$,
+  'Available detail result requires projectable normalized players',
+  'tracked available result without normalized players is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'queueStatus', queue.status,
+    'detailStatus', match.detail_status,
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 9000000204),
+    'players', (select count(*) from public.player_match_stats where match_id = 9000000204)
+  ) from public.account_match_detail_queue as queue join public.dota_matches as match on match.match_id = queue.match_id where queue.dota_account_id = 223344556 and queue.match_id = 9000000204),
+  '{"queueStatus":"syncing","detailStatus":"not_requested","payloads":0,"players":0}'::jsonb,
+  'tracked missing normalized players rejection leaves lifecycle, raw payload, and stats unchanged'
+);
+
+select throws_ok(
+  $$select public.apply_match_detail_batch('sync-user-stratz', '00000000-0000-0000-0000-000000000203', 223344556, '00000000-0000-0000-0000-000000000205', '[{"match_id":9000000205,"status":"available","normalized_players":[],"payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}]'::jsonb)$$,
+  'Available detail result requires projectable normalized players',
+  'tracked available result with empty normalized players is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'queueStatus', queue.status,
+    'detailStatus', match.detail_status,
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 9000000205),
+    'players', (select count(*) from public.player_match_stats where match_id = 9000000205)
+  ) from public.account_match_detail_queue as queue join public.dota_matches as match on match.match_id = queue.match_id where queue.dota_account_id = 223344556 and queue.match_id = 9000000205),
+  '{"queueStatus":"syncing","detailStatus":"not_requested","payloads":0,"players":0}'::jsonb,
+  'tracked empty normalized players rejection leaves lifecycle, raw payload, and stats unchanged'
+);
+
+select throws_ok(
+  $$select public.apply_match_detail_batch('sync-user-stratz', '00000000-0000-0000-0000-000000000203', 223344556, '00000000-0000-0000-0000-000000000208', '[{"match_id":9000000208,"status":"available","normalized_players":[{"match_id":9000000208,"account_id":222,"player_slot":256}],"payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}]'::jsonb)$$,
+  'Available detail result requires projectable normalized players',
+  'tracked available result with malformed normalized players is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'queueStatus', queue.status,
+    'detailStatus', match.detail_status,
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 9000000208),
+    'players', (select count(*) from public.player_match_stats where match_id = 9000000208)
+  ) from public.account_match_detail_queue as queue join public.dota_matches as match on match.match_id = queue.match_id where queue.dota_account_id = 223344556 and queue.match_id = 9000000208),
+  '{"queueStatus":"syncing","detailStatus":"not_requested","payloads":0,"players":0}'::jsonb,
+  'tracked malformed normalized players rejection leaves lifecycle, raw payload, and stats unchanged'
+);
+
+select public.apply_match_detail_batch(
+  'sync-user-stratz',
+  '00000000-0000-0000-0000-000000000203',
+  223344556,
+  '00000000-0000-0000-0000-000000000206',
+  '[{"match_id":9000000206,"status":"unavailable"}]'::jsonb
+);
+select public.apply_match_detail_batch(
+  'sync-user-stratz',
+  '00000000-0000-0000-0000-000000000203',
+  223344556,
+  '00000000-0000-0000-0000-000000000207',
+  '[{"match_id":9000000207,"status":"failed","error_code":"STRATZ_502","error_message":"provider error"}]'::jsonb
+);
+select is(
+  (select jsonb_build_object(
+    'unavailableQueue', (select status from public.account_match_detail_queue where dota_account_id = 223344556 and match_id = 9000000206),
+    'unavailableMatch', (select detail_status from public.dota_matches where match_id = 9000000206),
+    'failedQueue', (select status from public.account_match_detail_queue where dota_account_id = 223344556 and match_id = 9000000207),
+    'failedMatch', (select detail_status from public.dota_matches where match_id = 9000000207)
+  )),
+  '{"failedMatch":"failed","failedQueue":"failed","unavailableMatch":"unavailable","unavailableQueue":"unavailable"}'::jsonb,
+  'tracked unavailable and failed results remain accepted without players'
+);
+
+select throws_ok(
+  $$select public.apply_match_detail_batch('sync-user-stratz', '00000000-0000-0000-0000-000000000203', 223344556, '00000000-0000-0000-0000-000000000999', '[{"match_id":9000000209,"status":"available","normalized_players":[{"match_id":9000000209,"account_id":333,"kills":1}],"payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}]'::jsonb)$$,
+  'Detail lease is no longer active',
+  'wrong tracked detail lease is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'queueStatus', queue.status,
+    'detailStatus', match.detail_status,
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 9000000209),
+    'players', (select count(*) from public.player_match_stats where match_id = 9000000209)
+  ) from public.account_match_detail_queue as queue join public.dota_matches as match on match.match_id = queue.match_id where queue.dota_account_id = 223344556 and queue.match_id = 9000000209),
+  '{"queueStatus":"syncing","detailStatus":"not_requested","payloads":0,"players":0}'::jsonb,
+  'wrong tracked detail lease cannot persist raw payloads, stats, or lifecycle state'
+);
+
+select throws_ok(
+  $$select public.apply_match_detail_batch('sync-user-stratz', '00000000-0000-0000-0000-000000000203', 223344556, '00000000-0000-0000-0000-000000000210', '[{"match_id":9000000210,"status":"available","normalized_players":[{"match_id":9000000210,"account_id":444,"kills":1}],"payloads":[{"payload_section":"opaque","payload":{"unrelated":true}}]}]'::jsonb)$$,
+  'Detail lease is no longer active',
+  'expired tracked detail lease is rejected'
+);
+select is(
+  (select jsonb_build_object(
+    'queueStatus', queue.status,
+    'detailStatus', match.detail_status,
+    'payloads', (select count(*) from public.match_provider_payloads where match_id = 9000000210),
+    'players', (select count(*) from public.player_match_stats where match_id = 9000000210)
+  ) from public.account_match_detail_queue as queue join public.dota_matches as match on match.match_id = queue.match_id where queue.dota_account_id = 223344556 and queue.match_id = 9000000210),
+  '{"queueStatus":"syncing","detailStatus":"not_requested","payloads":0,"players":0}'::jsonb,
+  'expired tracked detail lease cannot persist raw payloads, stats, or lifecycle state'
+);
+
+select throws_ok(
+  $$select public.apply_match_detail_batch('sync-user-stratz', '00000000-0000-0000-0000-000000000203', 223344556, '00000000-0000-0000-0000-000000000211', '[{"match_id":9000000211,"status":"failed"},{"match_id":9000000211,"status":"failed"}]'::jsonb)$$,
+  'Detail results must contain unique match IDs',
+  'duplicate detail result match IDs are rejected before writes'
 );
 
 create temp table completed_specific_detail_claim as
