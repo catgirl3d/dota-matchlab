@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json, Tables } from '../../shared/database.types';
 import { abilityIconSlugs } from './ability-icon-slugs';
+import { repairAbilityEvent, type AbilityEventSource } from './ability-event-repairs';
 
 export type MatchDetailPlayer = {
   key: string;
@@ -466,14 +467,19 @@ function buildPlayer(
 ): MatchDetailPlayer {
   const playerSlot = readInteger(raw.playerSlot) ?? normalized?.player_slot ?? index;
   const accountId = readInteger(raw.steamAccountId) ?? normalized?.account_id ?? null;
+  const heroId = readInteger(raw.heroId) ?? normalized?.hero_id ?? null;
   const steamAccount = readObject(raw.steamAccount);
   const playbackData = readObject(playerPlayback?.playbackData) ?? playerPlayback;
   const abilityNames = mergeAbilityNames(
     readAbilityNames(raw.abilities),
     readAbilityNames(playerPlayback?.abilities),
   );
-  const playbackAbilities = readAbilityEvents(playbackData?.abilityLearnEvents, abilityNames);
-  const fallbackAbilityBuild = readAbilityEvents(raw.abilities);
+  const playbackAbilities = readAbilityEvents(
+    playbackData?.abilityLearnEvents,
+    { source: 'playback', heroId },
+    abilityNames,
+  );
+  const fallbackAbilityBuild = readAbilityEvents(raw.abilities, { source: 'player-abilities', heroId });
   const playbackPurchases = readPurchaseEvents(playbackData?.purchaseEvents);
   const fallbackPurchases = readPurchaseEvents(detailStats?.itemPurchases);
   const hasPlaybackAbilities = Array.isArray(playbackData?.abilityLearnEvents);
@@ -488,7 +494,7 @@ function buildPlayer(
     playerSlot,
     isRadiant: readBoolean(raw.isRadiant) ?? playerSlot < 128,
     name: readString(steamAccount?.name),
-    heroId: readInteger(raw.heroId) ?? normalized?.hero_id ?? null,
+    heroId,
     kills: readInteger(raw.kills) ?? normalized?.kills ?? 0,
     deaths: readInteger(raw.deaths) ?? normalized?.deaths ?? 0,
     assists: readInteger(raw.assists) ?? normalized?.assists ?? 0,
@@ -566,22 +572,31 @@ function mapPlayerPlaybackData(
 
 function readAbilityEvents(
   value: unknown,
+  context: { source: AbilityEventSource; heroId: number | null },
   abilityNames: Map<number, string> = new Map(),
 ): MatchDetailPlayer['abilityBuild'] {
   return readObjectArray(value)
     .flatMap((ability) => {
       const abilityId = readInteger(ability.abilityId);
       if (abilityId === null) return [];
-      return [{
+      const isTalent = ability.isTalent === true;
+      const repairedAbility = repairAbilityEvent({
+        ...context,
         abilityId,
+        gameVersionId: readInteger(ability.gameVersionId),
+        isTalent,
+      });
+      return [{
+        abilityId: repairedAbility.abilityId,
         time: readInteger(ability.time) ?? 0,
         level: readInteger(ability.levelObtained) ?? readInteger(ability.level) ?? 0,
         name:
+          repairedAbility.name ??
           readString(readObject(ability.abilityType)?.name) ??
-          abilityNames.get(abilityId) ??
-          abilityIconSlugs[abilityId] ??
+          abilityNames.get(repairedAbility.abilityId) ??
+          abilityIconSlugs[repairedAbility.abilityId] ??
           null,
-        isTalent: ability.isTalent === true,
+        isTalent,
       }];
     })
     .sort((left, right) => left.time - right.time || left.abilityId - right.abilityId || left.level - right.level);

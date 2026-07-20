@@ -311,6 +311,27 @@ describe('match detail read model', () => {
     expect(snapshot.players[0].purchaseEvents).toEqual([{ time: 10, itemId: 29 }, { time: 30, itemId: 50 }]);
   });
 
+  it('repairs the known Venomancer Snakebite placeholders in player abilities', () => {
+    const snapshot = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_010),
+      [],
+      [detailPayload('players', { players: [{
+        steamAccountId: 910,
+        playerSlot: 0,
+        heroId: 40,
+        abilities: [
+          { abilityId: 0, time: 96, level: 0, isTalent: false, gameVersionId: 182, abilityType: null },
+          { abilityId: 0, time: 382, level: 0, isTalent: false, gameVersionId: 182, abilityType: null },
+        ],
+      }] })],
+    );
+
+    expect(snapshot.players[0].abilityBuild).toEqual([
+      { abilityId: 1_749, time: 96, level: 0, name: 'venomancer_snakebite', isTalent: false },
+      { abilityId: 1_749, time: 382, level: 0, name: 'venomancer_snakebite', isTalent: false },
+    ]);
+  });
+
   it('ignores legacy playback entries without an account ID instead of joining them by position', () => {
     const snapshot = buildMatchDetailSnapshot(
       baseMatch(9_000_000_005),
