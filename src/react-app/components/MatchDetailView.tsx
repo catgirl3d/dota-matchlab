@@ -13,6 +13,7 @@ import { HeroMark } from './HeroMark';
 import { HeroPortrait } from './HeroPortrait';
 import { PlayerSortControls, type PlayerSort } from './PlayerSortControls';
 import { AdvantageTimeline } from './AdvantageTimeline';
+import { PlayerMinuteCharts } from './PlayerMinuteCharts';
 
 type PerformanceRank = 1 | 2;
 type PlayerAchievement = 'mvp' | 'top-imp' | 'most-damage' | 'most-tower-damage';
@@ -202,7 +203,7 @@ export function MatchDetailView({
       </div>
 
       {hasPlayerStats && focusedPlayer ? (
-        <FullPlayerAnalysis player={focusedPlayer} heroNames={heroNames} />
+          <FullPlayerAnalysis player={focusedPlayer} heroNames={heroNames} durationSeconds={detail.durationSeconds} />
       ) : null}
 
       {detail.chatMessages.length > 0 ? (
@@ -810,9 +811,11 @@ function BuildTimeline<T extends { time: number }>({
 function FullPlayerAnalysis({
   player,
   heroNames,
+  durationSeconds,
 }: {
   player: MatchDetailPlayer;
   heroNames: Record<number, string>;
+  durationSeconds: number | null;
 }) {
   return (
     <section className="detail-panel full-analysis" aria-labelledby="full-analysis-title">
@@ -830,10 +833,7 @@ function FullPlayerAnalysis({
       <div className="full-analysis__body">
         <div className="full-analysis__timelines">
           <span className="micro-label">PER-MINUTE CURVES</span>
-          <MinuteSeries label="Gold" values={player.minuteSeries.gold} tone="gold" />
-          <MinuteSeries label="XP" values={player.minuteSeries.experience} tone="xp" />
-          <MinuteSeries label="Net worth" values={player.minuteSeries.netWorth} tone="net" />
-          <MinuteSeries label="Hero damage" values={player.minuteSeries.heroDamage} tone="damage" />
+          <PlayerMinuteCharts durationSeconds={durationSeconds} series={player.minuteSeries} />
         </div>
         <div className="full-analysis__events">
           <span className="micro-label">PLAYER EVENTS / SELECTED PLAYER</span>
@@ -900,36 +900,6 @@ function AnalysisMetric({ label, value }: { label: string; value: string }) {
       <span className="micro-label">{label}</span>
       <strong>{value}</strong>
     </article>
-  );
-}
-
-function MinuteSeries({
-  label,
-  values,
-  tone,
-}: {
-  label: string;
-  values: number[];
-  tone: 'gold' | 'xp' | 'net' | 'damage';
-}) {
-  const max = Math.max(1, ...values);
-  const points = values
-    .map((value, index) => {
-      const x = values.length <= 1 ? 0 : (index / (values.length - 1)) * 100;
-      return `${x.toFixed(2)},${(28 - (value / max) * 24).toFixed(2)}`;
-    })
-    .join(' ');
-  return (
-    <div className={`minute-series minute-series--${tone}`}>
-      <div><span>{label}</span><strong>{values.at(-1) ?? 0}</strong></div>
-      {values.length > 1 ? (
-        <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-label={`${label} по минутам`}>
-          <polyline points={points} />
-        </svg>
-      ) : (
-        <span className="minute-series__empty">No timeline</span>
-      )}
-    </div>
   );
 }
 

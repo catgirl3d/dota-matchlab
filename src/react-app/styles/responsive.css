@@ -367,10 +367,6 @@
       display: none;
     }
 
-    .advantage-chart svg {
-      height: 190px;
-    }
-
     .detail-builds__grid {
       grid-template-columns: 1fr;
     }

@@ -191,6 +191,7 @@ describe('MatchDetailView', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Sniper performance tape' })).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Gold per-minute chart' })).toBeVisible();
     expect(screen.getByText('+19')).toBeVisible();
     expect(screen.getByText('Top support')).toBeVisible();
     const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
