@@ -75,8 +75,8 @@ function ArchiveRoute({ clerkEnabled }: AppProps) {
       <Show when="signed-out">
         <section className="archive-gate" aria-labelledby="archive-gate-title">
           <p className="eyebrow">PRIVATE ARCHIVE / AUTH REQUIRED</p>
-          <h1 id="archive-gate-title">Ваш архив защищён входом</h1>
-          <p>Публичный поиск матчей доступен на главной. Войдите, чтобы привязать Steam-профиль и собирать личную историю.</p>
+          <h1 id="archive-gate-title">Требуется авторизация</h1>
+          <p>Войдите в аккаунт, чтобы разблокировать импорт новых матчей по ID и отслеживать свою статистику. Просмотр ранее загруженных разборов доступен без входа на главной.</p>
           <SignInButton mode="modal">
             <button className="archive-gate__button" type="button">Войти в архив</button>
           </SignInButton>
