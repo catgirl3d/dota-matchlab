@@ -128,7 +128,7 @@ def item_image(entry: Any) -> tuple[str, str] | None:
 
 def ability_assets(manifest: dict[str, Any]) -> list[Asset]:
     assets = []
-    base_url = STRATZ_BASE_URLS["abilities"]
+    stratz_base_url = STRATZ_BASE_URLS["abilities"]
 
     for slug, entry in manifest.items():
         if not SAFE_SLUG.fullmatch(slug) or not isinstance(entry, dict):
@@ -142,7 +142,8 @@ def ability_assets(manifest: dict[str, Any]) -> list[Asset]:
                 key=slug,
                 stem=slug,
                 sources=(
-                    Source("STRATZ", f"{base_url}/{quote(slug, safe='')}.png"),
+                    Source("STRATZ", f"{stratz_base_url}/{quote(slug, safe='')}.png"),
+                    Source("Valve", f"{VALVE_CDN_URL}{image_path}"),
                 ),
             )
         )

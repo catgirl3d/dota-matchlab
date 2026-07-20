@@ -30,8 +30,11 @@ Use `--force` to refresh existing images, `--output <directory>` to change a dow
 1. [STRATZ abilities CDN](https://cdn.stratz.com/images/dota2/abilities/)
    - Template: `https://cdn.stratz.com/images/dota2/abilities/<ability-slug>.png`
    - Example: [`necrolyte_death_pulse.png`](https://cdn.stratz.com/images/dota2/abilities/necrolyte_death_pulse.png)
+2. [Valve static Dota CDN](https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/abilities/)
+   - Template: `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/abilities/<ability-slug>.png`
+   - Example: [`abaddon_withering_mist.png`](https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/abilities/abaddon_withering_mist.png)
 
-Only STRATZ was used for ability images. A `404` means that the manifest entry does not have an icon in this CDN.
+Valve is the fallback for manifest entries that STRATZ does not mirror. It may serve WebP content for a `.png` URL; the downloader preserves the response's verified format.
 
 ### Item icons
 
