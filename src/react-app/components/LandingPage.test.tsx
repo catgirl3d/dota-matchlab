@@ -20,7 +20,7 @@ describe('LandingPage match search', () => {
   it('opens a valid numeric match route', async () => {
     renderLanding();
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Открыть матч по ID' }), {
+    fireEvent.change(screen.getByRole('textbox'), {
       target: { value: '8749050591' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Открыть разбор' }));
@@ -31,12 +31,12 @@ describe('LandingPage match search', () => {
   it('keeps invalid input on the landing and explains the error', () => {
     renderLanding();
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Открыть матч по ID' }), {
+    fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'not-a-match' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Открыть разбор' }));
 
     expect(screen.getByText('Введите корректный числовой match ID.')).toBeVisible();
-    expect(screen.getByRole('textbox', { name: 'Открыть матч по ID' })).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
   });
 });

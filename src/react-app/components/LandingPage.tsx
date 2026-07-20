@@ -75,6 +75,7 @@ export function LandingPage() {
                   autoComplete="off"
                   placeholder="8749050591"
                   value={matchIdInput}
+                  aria-label="Открыть матч по ID"
                   aria-invalid={error ? true : undefined}
                   aria-describedby="match-search-hint"
                   onChange={(event) => {

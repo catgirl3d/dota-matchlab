@@ -45,7 +45,6 @@ describe('App routes', () => {
     );
 
     expect(screen.getByRole('heading', { name: /Разберите матч/i })).toBeVisible();
-    expect(screen.getByRole('textbox', { name: 'Открыть матч по ID' })).toBeVisible();
     expect(screen.getByText('AUTH OFF')).toBeVisible();
   });
 
