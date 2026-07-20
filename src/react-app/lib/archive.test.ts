@@ -47,9 +47,10 @@ describe('archive RPC adapter', () => {
 
     await expect(resolveArchiveShowcase(createFakeClient(null), 'missing')).resolves.toBeNull();
     const failingClient = createFakeClient(null, { message: 'forbidden' });
-    await expect(resolveArchiveShowcase(failingClient, 'demo')).rejects.toThrow('Не удалось открыть публичный архив: forbidden');
+    await expect(resolveArchiveShowcase(failingClient, 'demo')).rejects.toThrow('Could not open public archive: forbidden');
   });
 });
+
 
 function createFakeClient(data: unknown, error: { message: string } | null = null) {
   const abortSignal = vi.fn().mockResolvedValue({ data, error });

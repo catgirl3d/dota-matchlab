@@ -23,7 +23,7 @@ describe('LandingPage match search', () => {
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: '8749050591' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Открыть разбор' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Analysis' }));
 
     expect(await screen.findByText('Public match route')).toBeVisible();
   });
@@ -34,9 +34,10 @@ describe('LandingPage match search', () => {
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'not-a-match' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Открыть разбор' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Analysis' }));
 
-    expect(screen.getByText('Введите корректный числовой match ID.')).toBeVisible();
+    expect(screen.getByText('Please enter a valid numeric match ID.')).toBeVisible();
     expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
   });
 });
+

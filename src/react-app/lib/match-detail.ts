@@ -202,13 +202,13 @@ export async function fetchMatchDetail(
   ]);
 
   if (matchResponse.error) {
-    throw new Error(`Не удалось загрузить матч: ${matchResponse.error.message}`);
+    throw new Error(`Failed to load match: ${matchResponse.error.message}`);
   }
   if (playersResponse.error) {
-    throw new Error(`Не удалось загрузить scoreboard: ${playersResponse.error.message}`);
+    throw new Error(`Failed to load scoreboard: ${playersResponse.error.message}`);
   }
   if (payloadsResponse.error) {
-    throw new Error(`Не удалось загрузить STRATZ payload: ${payloadsResponse.error.message}`);
+    throw new Error(`Failed to load STRATZ payload: ${payloadsResponse.error.message}`);
   }
   if (!matchResponse.data) return null;
 

@@ -44,7 +44,7 @@ describe('App routes', () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByRole('heading', { name: /Разберите матч/i })).toBeVisible();
+    expect(screen.getByRole('heading', { name: /Parse every match/i })).toBeVisible();
     expect(screen.getByText('AUTH OFF')).toBeVisible();
   });
 
@@ -58,10 +58,10 @@ describe('App routes', () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByRole('link', { name: 'Демо' })).toHaveAttribute('href', '/demo');
-    expect(screen.getByRole('button', { name: 'Войти' })).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'Требуется авторизация' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Войти в архив' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Demo' })).toHaveAttribute('href', '/demo');
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Authentication Required' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Sign in to Archive' })).toBeVisible();
   });
 
   it('links an authenticated user to the personal archive', () => {
@@ -74,7 +74,7 @@ describe('App routes', () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByRole('link', { name: 'Мой архив' })).toHaveAttribute('href', '/archive');
+    expect(screen.getByRole('link', { name: 'My Archive' })).toHaveAttribute('href', '/archive');
     expect(screen.getByText('User menu')).toBeVisible();
   });
 
@@ -82,14 +82,14 @@ describe('App routes', () => {
     window.history.replaceState({}, '', '/archive?player=77');
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><App clerkEnabled /></QueryClientProvider>);
     expect(screen.getByText('Public showcase 77')).toBeVisible();
-    expect(screen.queryByRole('heading', { name: 'Требуется авторизация' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Authentication Required' })).not.toBeInTheDocument();
   });
 
   it('keeps a valid showcase available when Clerk is disabled', () => {
     window.history.replaceState({}, '', '/archive?player=77');
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><App clerkEnabled={false} /></QueryClientProvider>);
     expect(screen.getByText('Public showcase 77')).toBeVisible();
-    expect(screen.queryByText('Вход не настроен для этого окружения.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Authentication is not configured for this environment.')).not.toBeInTheDocument();
   });
 
   it('wires /demo to the public showcase alias without a player ID', () => {
@@ -101,6 +101,6 @@ describe('App routes', () => {
   it('shows the Clerk gate when an explicit showcase is unavailable', () => {
     window.history.replaceState({}, '', '/archive?player=78');
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><App clerkEnabled /></QueryClientProvider>);
-    expect(screen.getByRole('heading', { name: 'Требуется авторизация' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Authentication Required' })).toBeVisible();
   });
 });

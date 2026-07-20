@@ -60,7 +60,7 @@ function renderRoute(path = '/matches/8749050591', authEnabled = true) {
     <Route path="/" element={<div>Landing route</div>} />
     <Route path="/archive" element={<ArchiveRoute />} />
     <Route path="/matches/:matchId" element={<MatchRouteLayout authEnabled={authEnabled} />}><Route index element={<><MatchDetailRoute /><RouteNavigationControl /></>} /></Route>
-    <Route path="*" element={<RouteError text="Страница не найдена." />} />
+    <Route path="*" element={<RouteError text="Page not found." />} />
   </Routes></MemoryRouter></QueryClientProvider>);
   return { ...view, queryClient };
 }
@@ -98,7 +98,7 @@ afterEach(cleanup);
 describe('match router', () => {
   it('loads a direct detail route without importing until the explicit action', async () => {
     renderRoute();
-    const importButton = await screen.findByRole('button', { name: 'Загрузить матч из STRATZ' });
+    const importButton = await screen.findByRole('button', { name: 'Load match from STRATZ' });
     expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_591);
     expect(mocks.fetchHeroNames).toHaveBeenCalledWith();
     expect(mocks.importMatch).not.toHaveBeenCalled();
@@ -120,25 +120,25 @@ describe('match router', () => {
   it('does not leak a public import result when navigating to another match', async () => {
     mocks.importMatch.mockResolvedValue({ matchId: 8_749_050_591, status: 'unavailable', imported: false });
     renderRoute();
-    fireEvent.click(await screen.findByRole('button', { name: 'Загрузить матч из STRATZ' }));
-    expect(await screen.findByText('Матч недоступен у STRATZ.')).toBeVisible();
+    fireEvent.click(await screen.findByRole('button', { name: 'Load match from STRATZ' }));
+    expect(await screen.findByText('Match is unavailable on STRATZ.')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
     await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_592));
-    expect(await screen.findByText('Матч ещё не загружен.')).toBeVisible();
-    expect(screen.queryByText('Матч недоступен у STRATZ.')).not.toBeInTheDocument();
+    expect(await screen.findByText('Match has not been loaded yet.')).toBeVisible();
+    expect(screen.queryByText('Match is unavailable on STRATZ.')).not.toBeInTheDocument();
   });
 
   it('does not leak public import loading or errors when navigating to another match', async () => {
     mocks.importMatch.mockRejectedValueOnce(new Error('import failed'));
     renderRoute();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Загрузить матч из STRATZ' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Load match from STRATZ' }));
     expect(await screen.findByText('import failed')).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
     await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_592));
     expect(screen.queryByText('import failed')).not.toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Загрузить матч из STRATZ' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Load match from STRATZ' })).toBeEnabled();
   });
 
   it('retries a failed ownership lookup instead of falling back to public import', async () => {
@@ -154,19 +154,19 @@ describe('match router', () => {
 
   it('renders invalid match IDs and unknown paths as errors', async () => {
     renderRoute('/matches/not-a-match');
-    expect(await screen.findByText('Некорректный match ID в URL.')).toBeVisible();
+    expect(await screen.findByText('Invalid match ID in URL.')).toBeVisible();
     cleanup();
     renderRoute('/matches/9007199254740992');
-    expect(await screen.findByText('Некорректный match ID в URL.')).toBeVisible();
+    expect(await screen.findByText('Invalid match ID in URL.')).toBeVisible();
     cleanup();
     renderRoute('/unknown');
-    expect(await screen.findByText('Страница не найдена.')).toBeVisible();
+    expect(await screen.findByText('Page not found.')).toBeVisible();
   });
 
   it('uses router navigation to return to the archive', async () => {
     mocks.fetchMatchDetail.mockResolvedValue({ players: [] });
     renderRoute();
-    fireEvent.click(await screen.findByRole('button', { name: 'Назад к архиву' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to archive' }));
     expect(await screen.findByText(/Archive route/)).toHaveTextContent('REPLACE');
   });
 
@@ -180,13 +180,13 @@ describe('match router', () => {
       id: 'tracked-1',
       dota_account_id: 77,
     });
-    fireEvent.click(await screen.findByRole('button', { name: 'Назад к архиву' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to archive' }));
     expect(await screen.findByText(/Archive route \?player=77/)).toHaveTextContent('REPLACE');
   });
 
   it('does not query player perspective for absent or malformed player values', async () => {
     renderRoute();
-    await screen.findByRole('button', { name: 'Загрузить матч из STRATZ' });
+    await screen.findByRole('button', { name: 'Load match from STRATZ' });
     expect(mocks.readPerspectiveAccount).not.toHaveBeenCalled();
 
     cleanup();
@@ -203,8 +203,8 @@ describe('match router', () => {
     renderRoute('/matches/8749050591?player=77');
 
     await waitFor(() => expect(mocks.readPerspectiveAccount).toHaveBeenCalledWith(77));
-    await screen.findByText('Матч ещё не загружен.');
-    fireEvent.click(screen.getByRole('button', { name: 'Назад к архиву' }));
+    await screen.findByText('Match has not been loaded yet.');
+    fireEvent.click(screen.getByRole('button', { name: 'Back to archive' }));
     expect(await screen.findByText(/Archive route \?player=77/)).toHaveTextContent('REPLACE');
     resolvePerspective?.();
   });
@@ -214,9 +214,9 @@ describe('match router', () => {
     mocks.fetchMatchDetail.mockResolvedValue({ players: [{ accountId: 77 }] });
     renderRoute('/matches/8749050591?player=78');
 
-    await screen.findByRole('button', { name: 'Назад к архиву' });
+    await screen.findByRole('button', { name: 'Back to archive' });
     expect(document.querySelector('[data-player]')).toHaveAttribute('data-player', '');
-    fireEvent.click(screen.getByRole('button', { name: 'Назад к архиву' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to archive' }));
     expect(await screen.findByText(/Archive route/)).toHaveTextContent('REPLACE');
   });
 
@@ -227,8 +227,8 @@ describe('match router', () => {
 
     renderRoute();
 
-    expect(await screen.findByRole('button', { name: 'На главную' })).toBeVisible();
-    expect(screen.getByText('Войдите, чтобы загрузить недостающие данные.')).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Back to home' })).toBeVisible();
+    expect(screen.getByText('Sign in to load missing data.')).toBeVisible();
     expect(mocks.fetchMatchDetail).toHaveBeenCalledWith({ scope: 'public' }, 8_749_050_591);
     expect(mocks.readPerspectiveAccount).not.toHaveBeenCalled();
     expect(mocks.readLinkedAccount).not.toHaveBeenCalled();
@@ -241,7 +241,7 @@ describe('match router', () => {
     mocks.fetchMatchDetail.mockResolvedValue({ players: [] });
     renderRoute('/matches/8749050591?player=77');
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Назад к публичному архиву' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to public archive' }));
     expect(await screen.findByText(/Archive route \?player=77/)).toHaveTextContent('REPLACE');
   });
 
@@ -251,8 +251,9 @@ describe('match router', () => {
 
     renderRoute();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Войти, чтобы загрузить матч' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Sign in to load match' }));
     expect(mocks.importMatch).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Загрузить матч из STRATZ' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Load match from STRATZ' })).not.toBeInTheDocument();
   });
 });
+

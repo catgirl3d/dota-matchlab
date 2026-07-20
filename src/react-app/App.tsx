@@ -6,15 +6,18 @@ import { LandingPage } from './components/LandingPage';
 import { MatchDetailRoute, MatchRouteLayout, RouteError } from './components/MatchRoute';
 import { MatchWorkspace } from './components/MatchWorkspace';
 import { parseMatchId } from './lib/match-id';
+import { useTranslation } from './lib/i18n';
+
 
 type AppProps = {
   clerkEnabled: boolean;
 };
 
 export default function App({ clerkEnabled }: AppProps) {
+  const { t } = useTranslation();
   return <BrowserRouter><div className="app-shell">
       <header className="topbar">
-        <Link className="wordmark" to="/" aria-label="Dota MatchLab, главная">
+        <Link className="wordmark" to="/" aria-label={t('homeAriaLabel')}>
           <span className="wordmark__mark" aria-hidden="true">
             M/L
           </span>
@@ -31,7 +34,7 @@ export default function App({ clerkEnabled }: AppProps) {
           <Route path="/matches/:matchId" element={<MatchRouteLayout authEnabled={clerkEnabled} />}>
             <Route index element={<MatchDetailRoute />} />
           </Route>
-          <Route path="*" element={<RouteError text="Страница не найдена." />} />
+          <Route path="*" element={<RouteError text={t('pageNotFound')} />} />
         </Routes>
       </main>
 
@@ -43,6 +46,7 @@ export default function App({ clerkEnabled }: AppProps) {
 }
 
 function HeaderActions({ clerkEnabled }: AppProps) {
+  const { t } = useTranslation();
   return (
     <div className="topbar__actions">
       <div className="release-tag">
@@ -52,13 +56,13 @@ function HeaderActions({ clerkEnabled }: AppProps) {
       {clerkEnabled ? (
         <>
           <Show when="signed-out">
-            <Link className="topbar__archive-link" to="/demo">Демо</Link>
+            <Link className="topbar__archive-link" to="/demo">{t('demo')}</Link>
             <SignInButton mode="modal">
-              <button className="topbar__auth-button" type="button">Войти</button>
+              <button className="topbar__auth-button" type="button">{t('signInBtn')}</button>
             </SignInButton>
           </Show>
           <Show when="signed-in">
-            <Link className="topbar__archive-link" to="/archive">Мой архив</Link>
+            <Link className="topbar__archive-link" to="/archive">{t('myArchive')}</Link>
             <UserButton />
           </Show>
         </>
@@ -73,6 +77,7 @@ function ArchiveRoute({ clerkEnabled }: AppProps) {
   const [searchParams] = useSearchParams();
   const playerId = parseMatchId(searchParams.get('player'));
   const gate = <ArchiveGate clerkEnabled={clerkEnabled} />;
+  const { t } = useTranslation();
 
   if (playerId !== null) {
     return clerkEnabled ? (
@@ -83,7 +88,7 @@ function ArchiveRoute({ clerkEnabled }: AppProps) {
     ) : <ArchiveShowcase key={playerId} dotaAccountId={playerId} fallback={gate} />;
   }
   if (!clerkEnabled) {
-    return <RouteError text="Вход не настроен для этого окружения." />;
+    return <RouteError text={t('authNotConfigured')} />;
   }
 
   return (
@@ -95,11 +100,12 @@ function ArchiveRoute({ clerkEnabled }: AppProps) {
 }
 
 export function ArchiveGate({ clerkEnabled }: AppProps) {
-  if (!clerkEnabled) return <RouteError text="Вход не настроен для этого окружения." />;
+  const { t } = useTranslation();
+  if (!clerkEnabled) return <RouteError text={t('authNotConfigured')} />;
   return <section className="archive-gate" aria-labelledby="archive-gate-title">
     <p className="eyebrow">PRIVATE ARCHIVE / AUTH REQUIRED</p>
-    <h1 id="archive-gate-title">Требуется авторизация</h1>
-    <p>Войдите в аккаунт, чтобы разблокировать импорт новых матчей по ID и отслеживать свою статистику. Просмотр ранее загруженных разборов доступен без входа на главной.</p>
-    <SignInButton mode="modal"><button className="archive-gate__button" type="button">Войти в архив</button></SignInButton>
+    <h1 id="archive-gate-title">{t('authRequired')}</h1>
+    <p>{t('authRequiredDesc')}</p>
+    <SignInButton mode="modal"><button className="archive-gate__button" type="button">{t('signInToArchive')}</button></SignInButton>
   </section>;
 }

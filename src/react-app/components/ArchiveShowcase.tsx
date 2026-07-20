@@ -12,6 +12,7 @@ import { archiveShowcaseQueryKeys } from '../lib/archive-query-keys';
 import { fetchHeroNames } from '../lib/dota-api';
 import { createPublicSupabaseClient } from '../lib/supabase';
 import { PlayerDashboard } from './PlayerDashboard';
+import { useTranslation } from '../lib/i18n';
 
 type ArchiveShowcaseProps = {
   dotaAccountId: number;
@@ -27,6 +28,7 @@ function keepShowcaseData<T>(
 }
 
 export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProps) {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState<ArchiveFilters>(DEFAULT_ARCHIVE_FILTERS);
   const [cursors, setCursors] = useState<ArchiveCursor[]>([]);
   const cursor = cursors.at(-1) ?? null;
@@ -52,7 +54,7 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
   });
 
   if (overviewQuery.isPending || pageQuery.isPending) {
-    return <div className="workspace-message workspace-message--neutral"><span aria-hidden="true">+</span><p>Загружаем публичный архив…</p></div>;
+    return <div className="workspace-message workspace-message--neutral"><span aria-hidden="true">+</span><p>{t('loadingPublicArchive')}</p></div>;
   }
   if (overviewQuery.error || pageQuery.error) {
     return <div className="workspace-message workspace-message--error"><span aria-hidden="true">!</span><p>{(overviewQuery.error ?? pageQuery.error)?.message}</p></div>;
@@ -60,7 +62,7 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
   if (!overviewQuery.data || !pageQuery.data) return <>{fallback}</>;
 
   const { account, overview } = overviewQuery.data;
-  return <section className="match-workspace match-workspace--showcase" aria-label="Публичный архив игрока">
+  return <section className="match-workspace match-workspace--showcase" aria-label={t('publicArchiveAriaLabel')}>
     <PlayerDashboard
       account={{ dota_account_id: account.dotaAccountId, persona_name: account.personaName, avatar_url: account.avatarUrl, rank_tier: account.rankTier }}
       overview={overview}
@@ -78,3 +80,4 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
     />
   </section>;
 }
+

@@ -43,12 +43,12 @@ describe('Dota API client', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        Response.json({ error: 'Введите корректный SteamID64' }, { status: 400 }),
+        Response.json({ error: 'Please enter a valid SteamID64' }, { status: 400 }),
       ),
     );
 
     await expect(resolveSteamProfile('token', 'bad')).rejects.toThrow(
-      'Введите корректный SteamID64',
+      'Please enter a valid SteamID64',
     );
   });
 

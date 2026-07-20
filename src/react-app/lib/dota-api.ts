@@ -104,7 +104,7 @@ export async function syncAllTrackedAccount(
     }
   }
 
-  throw new Error(`Полная синхронизация превысила лимит ${maxBatches} пакетов`);
+  throw new Error(`Full synchronization exceeded limit of ${maxBatches} batches`);
 }
 
 export async function fetchHeroNames(): Promise<Record<number, string>> {
@@ -144,7 +144,7 @@ async function requestJson<T>(
     const message =
       typeof errorPayload.error === 'string'
         ? errorPayload.error
-        : 'Не удалось выполнить запрос';
+        : 'Failed to complete request';
     throw new Error(message);
   }
 

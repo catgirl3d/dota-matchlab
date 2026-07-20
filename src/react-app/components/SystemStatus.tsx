@@ -1,4 +1,5 @@
 import type { ServiceHealthStatus, SystemHealth } from '../../shared/health';
+import { useTranslation } from '../lib/i18n';
 
 type SystemStatusProps = {
   health?: SystemHealth;
@@ -8,12 +9,6 @@ type SystemStatusProps = {
   onRefresh: () => void;
 };
 
-const statusLabels: Record<ServiceHealthStatus, string> = {
-  ok: 'в сети',
-  error: 'ошибка',
-  not_configured: 'не настроено',
-};
-
 export function SystemStatus({
   health,
   isLoading,
@@ -21,13 +16,20 @@ export function SystemStatus({
   hasError,
   onRefresh,
 }: SystemStatusProps) {
+  const { t } = useTranslation();
   const supabaseStatus = health?.services.supabase.status;
+
+  const statusLabels: Record<ServiceHealthStatus, string> = {
+    ok: t('statusOnline'),
+    error: t('statusError'),
+    not_configured: t('statusNotConfigured'),
+  };
 
   return (
     <section className="status-panel" aria-labelledby="status-heading">
       <div className="section-heading">
         <p className="eyebrow">SYSTEM / 00</p>
-        <h2 id="status-heading">Контур запуска</h2>
+        <h2 id="status-heading">{t('diagnosticHeading')}</h2>
       </div>
 
       <div className="status-list">
@@ -35,11 +37,15 @@ export function SystemStatus({
           label="Cloudflare Worker"
           status={hasError ? 'error' : health?.services.worker}
           pending={isLoading}
+          statusLabels={statusLabels}
+          checkingLabel={t('statusChecking')}
         />
         <StatusRow
           label="Supabase RPC"
           status={hasError ? 'error' : supabaseStatus}
           pending={isLoading}
+          statusLabels={statusLabels}
+          checkingLabel={t('statusChecking')}
           detail={
             health && supabaseStatus === 'ok'
               ? `${health.services.supabase.latencyMs} ms`
@@ -54,7 +60,7 @@ export function SystemStatus({
         onClick={onRefresh}
         disabled={isRefreshing}
       >
-        {isRefreshing ? 'Проверяем…' : 'Повторить диагностику'}
+        {isRefreshing ? t('diagnosticChecking') : t('diagnosticRetry')}
       </button>
     </section>
   );
@@ -65,13 +71,15 @@ type StatusRowProps = {
   status?: ServiceHealthStatus | 'ok';
   pending: boolean;
   detail?: string;
+  statusLabels: Record<ServiceHealthStatus, string>;
+  checkingLabel: string;
 };
 
-function StatusRow({ label, status, pending, detail }: StatusRowProps) {
+function StatusRow({ label, status, pending, detail, statusLabels, checkingLabel }: StatusRowProps) {
   const normalizedStatus = pending ? undefined : status;
   const labelText = normalizedStatus
     ? statusLabels[normalizedStatus]
-    : 'проверка';
+    : checkingLabel;
 
   return (
     <div className="status-row">
@@ -84,3 +92,4 @@ function StatusRow({ label, status, pending, detail }: StatusRowProps) {
     </div>
   );
 }
+

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { MatchChatMessage } from '../../lib/match-detail';
 import { HeroMark } from '../HeroMark';
 import { formatAccount, formatEventTime, heroLabel, heroMark } from './match-detail-display';
+import { useTranslation } from '../../lib/i18n';
 
 type MatchChatPanelProps = {
   messages: MatchChatMessage[];
@@ -9,6 +10,7 @@ type MatchChatPanelProps = {
 };
 
 export function MatchChatPanel({ messages, heroNames }: MatchChatPanelProps) {
+  const { t } = useTranslation();
   const textCount = messages.filter((message) => message.type === 'text').length;
   const wheelCount = messages.length - textCount;
   const [isOpen, setIsOpen] = useState(false);
@@ -26,13 +28,13 @@ export function MatchChatPanel({ messages, heroNames }: MatchChatPanelProps) {
           <p>{textCount} messages · {wheelCount} chat-wheel events</p>
         </div>
         <button type="button" onClick={() => setIsOpen((current) => !current)} aria-expanded={isOpen}>
-          {isOpen ? 'Скрыть чат' : 'Показать чат'}
+          {isOpen ? t('chatHide') : t('chatShow')}
         </button>
       </div>
       {isOpen ? (
         <div className="match-chat__body">
           <div className="match-chat__controls">
-            <span>Необработанный игровой чат может содержать оскорбления.</span>
+            <span>{t('chatWarning')}</span>
             <div>
               <button
                 className={filter === 'text' ? 'is-active' : ''}
@@ -40,18 +42,18 @@ export function MatchChatPanel({ messages, heroNames }: MatchChatPanelProps) {
                 onClick={() => setFilter('text')}
                 disabled={textCount === 0}
               >
-                Только текст
+                {t('chatTextOnly')}
               </button>
               <button
                 className={filter === 'all' ? 'is-active' : ''}
                 type="button"
                 onClick={() => setFilter('all')}
               >
-                Всё
+                {t('chatAll')}
               </button>
             </div>
           </div>
-          <div className="match-chat__transcript" role="log" aria-label="Чат матча">
+          <div className="match-chat__transcript" role="log" aria-label={t('chatAriaLabel')}>
             {visibleMessages.map((message) => (
               <ChatMessage key={message.key} message={message} heroNames={heroNames} />
             ))}
@@ -86,3 +88,4 @@ function MatchChatHeroMark({ heroId, heroNames }: { heroId: number | null; heroN
   const label = heroLabel(heroId, heroNames);
   return <HeroMark heroId={heroId} label={label} fallback={heroMark(heroId, heroNames)} className="scoreboard-player__hero" />;
 }
+

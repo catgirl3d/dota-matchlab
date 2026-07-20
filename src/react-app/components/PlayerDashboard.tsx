@@ -13,6 +13,7 @@ import {
 import { ArchiveSyncPanel } from './ArchiveSyncPanel';
 import { FilterDropdown } from './FilterDropdown';
 import { PeriodFilter } from './PeriodFilter';
+import { useTranslation } from '../lib/i18n';
 
 type PlayerAccount = Pick<
   Tables<'tracked_accounts'>,
@@ -60,6 +61,7 @@ export function PlayerDashboard({
   hasPreviousPage,
   syncControls,
 }: PlayerDashboardProps) {
+  const { t, locale } = useTranslation();
   const [heroSort, setHeroSort] = useState<'played' | 'winrate' | 'lossrate'>('played');
   const [minGames, setMinGames] = useState<number>(10);
   const analytics = overview?.summary;
@@ -87,16 +89,16 @@ export function PlayerDashboard({
   });
 
   if (isLoading && !overview) {
-    return <WorkspaceMessage text="Читаем личный архив из Supabase…" />;
+    return <WorkspaceMessage text={t('loadingPersonalArchive')} />;
   }
   if (error) {
     return <WorkspaceMessage text={error.message} tone="error" />;
   }
   if (!account) {
-    return <WorkspaceMessage text="Профиль игрока не выбран." />;
+    return <WorkspaceMessage text={t('profileNotSelected')} />;
   }
   if (!overview || !analytics) {
-    return <WorkspaceMessage text="Архив пока не содержит доступного обзора." />;
+    return <WorkspaceMessage text={t('archiveNoOverview')} />;
   }
 
   return (
@@ -120,13 +122,13 @@ export function PlayerDashboard({
         <div className="player-identity__copy">
           <p className="eyebrow">PLAYER DOSSIER / ARCHIVE</p>
           <h2 id="player-dashboard-title">
-            {account.persona_name ?? 'Unknown player'}
+            {account.persona_name ?? t('unknownPlayerName')}
             <span className="player-identity__tag">#{account.dota_account_id}</span>
           </h2>
           <div className="player-identity__meta">
-            <span>{formatRank(account.rank_tier)}</span>
+            <span>{formatRank(account.rank_tier, t)}</span>
             <span>{syncControls ? 'Personal match archive' : 'Public read-only showcase'}</span>
-            <span>{overview.integrity.linked.toLocaleString('ru-RU')} indexed</span>
+            <span>{overview.integrity.linked.toLocaleString(locale)}{t('indexedSuffix')}</span>
             <span>{overview.integrity.complete} complete · {overview.integrity.missingStats} missing stats · {overview.integrity.missingMatch} missing match</span>
           </div>
         </div>
@@ -136,7 +138,7 @@ export function PlayerDashboard({
             type="button"
             onClick={onRefresh}
             disabled={isRefreshing}
-            aria-label="Обновить архив"
+            aria-label={t('refreshArchiveAriaLabel')}
           >
             {isRefreshing ? '…' : '↻'}
           </button>
@@ -147,7 +149,7 @@ export function PlayerDashboard({
       <div className="archive-control-bar">
         <div className="filter-heading">
           <span className="micro-label">FILTER THE SIGNAL</span>
-          <strong>{analytics.matches.toLocaleString('ru-RU')} matches in view</strong>
+          <strong>{formatNumber(analytics.matches, locale)} matches in view</strong>
         </div>
         <PeriodFilter
           period={filters.period}
@@ -203,8 +205,8 @@ export function PlayerDashboard({
       <div className="dashboard-metrics">
         <MetricCard
           label="Indexed matches"
-          value={formatNumber(analytics.matches)}
-          detail={`${formatDate(analytics.firstMatchAt)} → ${formatDate(analytics.latestMatchAt)}`}
+          value={formatNumber(analytics.matches, locale)}
+          detail={`${formatDate(analytics.firstMatchAt, locale)} → ${formatDate(analytics.latestMatchAt, locale)}`}
           tone="acid"
         />
         <MetricCard
@@ -239,10 +241,10 @@ export function PlayerDashboard({
               </div>
               <span className="card-heading__count">{analytics.matches} / {overview.integrity.complete}</span>
             </div>
-            <FormStrip form={overview.form} />
+            <FormStrip form={overview.form} t={t} />
             <div className="form-card__footer">
-              <span>{analytics.wins} wins in current view</span>
-              <span>{analytics.averageDurationMinutes} min average match</span>
+              <span>{analytics.wins}{t('winsInView')}</span>
+              <span>{analytics.averageDurationMinutes}{t('durationSuffix')}</span>
             </div>
           </section>
 
@@ -252,20 +254,22 @@ export function PlayerDashboard({
                 <span className="micro-label">ARCHIVE / MATCH LOG</span>
                 <h3 id="matches-title">Matches</h3>
               </div>
-              <span className="card-heading__count">{overview.integrity.complete.toLocaleString('ru-RU')} complete</span>
+              <span className="card-heading__count">{overview.integrity.complete.toLocaleString(locale)} complete</span>
             </div>
             {isLoading && !page ? (
-              <div className="empty-state">Загружаем страницу матчей…</div>
+              <div className="empty-state">{t('loadingMatchesList')}</div>
             ) : matches.length === 0 ? (
-              <div className="empty-state">Нет матчей под выбранные фильтры.</div>
+              <div className="empty-state">{t('noMatchesForFilters')}</div>
             ) : (
-              <ul className="archive-match-table" aria-label="Архив матчей">
+              <ul className="archive-match-table" aria-label={t('matchArchiveAriaLabel')}>
                 {matches.map((match) => (
                   <ArchiveMatchRow
                     key={match.matchId}
                     match={match}
                     heroNames={heroNames}
                     playerId={account.dota_account_id}
+                    t={t}
+                    locale={locale}
                   />
                 ))}
               </ul>
@@ -318,8 +322,8 @@ export function PlayerDashboard({
                 <button
                   className="hero-pool__reset"
                   type="button"
-                  aria-label="Сбросить фильтр героя"
-                  title="Сбросить фильтр героя"
+                  aria-label={t('resetHeroFilterAriaLabel')}
+                  title={t('resetHeroFilterAriaLabel')}
                   onClick={() => onFiltersChange({ ...filters, heroId: null })}
                 >
                   <span aria-hidden="true">×</span>
@@ -384,7 +388,7 @@ export function PlayerDashboard({
           </section>
 
           {syncControls ? <ArchiveSyncPanel
-            accountName={account.persona_name ?? 'Dota player'}
+            accountName={account.persona_name ?? t('unknownPlayerName')}
             result={syncControls.archiveSyncResult}
             syncState={overview.syncState}
             archivedCount={overview.integrity.linked}
@@ -430,6 +434,15 @@ function HeroFilter({
   );
 }
 
+type MetricCardProps = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: 'acid' | 'red' | 'violet' | 'blue';
+  progress?: number;
+  status?: string;
+};
+
 function MetricCard({
   label,
   value,
@@ -437,14 +450,7 @@ function MetricCard({
   tone,
   progress,
   status,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  tone: 'acid' | 'red' | 'violet' | 'blue';
-  progress?: number;
-  status?: string;
-}) {
+}: MetricCardProps) {
   return (
     <article className={`metric-card metric-card--${tone}`}>
       <div className="metric-card__header">
@@ -463,9 +469,9 @@ function MetricCard({
   );
 }
 
-function FormStrip({ form }: { form: Array<'win' | 'loss' | 'unknown'> }) {
+function FormStrip({ form, t }: { form: Array<'win' | 'loss' | 'unknown'>; t: (key: any) => string }) {
   return (
-    <div className="form-strip" aria-label="Результаты последних матчей">
+    <div className="form-strip" aria-label={t('recentFormAriaLabel')}>
       {form.length === 0 ? (
         <span className="form-strip__empty">No data yet</span>
       ) : (
@@ -473,7 +479,7 @@ function FormStrip({ form }: { form: Array<'win' | 'loss' | 'unknown'> }) {
           <span
             key={`${result}-${index}`}
             className={`form-strip__cell form-strip__cell--${result}`}
-            title={result === 'win' ? 'Победа' : result === 'loss' ? 'Поражение' : 'Неизвестно'}
+            title={result === 'win' ? t('recentFormTooltipWin') : result === 'loss' ? t('recentFormTooltipLoss') : t('recentFormTooltipUnknown')}
           />
         ))
       )}
@@ -553,10 +559,14 @@ function ArchiveMatchRow({
   match,
   heroNames,
   playerId,
+  t,
+  locale,
 }: {
   match: ArchivePage['matches'][number];
   heroNames: Record<number, string>;
   playerId: number;
+  t: (key: any, reqs?: any) => string;
+  locale: string;
 }) {
   const isMissingStats = match.dataStatus === 'missing_player_stats';
   const result = isMissingStats ? 'DATA' : match.won === true ? 'WIN' : match.won === false ? 'LOSS' : '—';
@@ -568,14 +578,14 @@ function ArchiveMatchRow({
       <Link
         className={`archive-match-row__link ${resultClass}`}
         to={`/matches/${match.matchId}?player=${playerId}`}
-        aria-label={`Открыть матч ${match.matchId}`}
+        aria-label={t('openMatchAriaLabel', { matchId: match.matchId })}
       >
         <span className="archive-match-row__result">{result}</span>
         <HeroMark heroId={match.heroId} label={heroLabel} fallback={heroFallback} className="archive-match-row__hero-mark" />
         <div className="archive-match-row__identity">
           <strong>{heroLabel}</strong>
           <span>
-            {formatMatchDate(match.startTime)} · {formatMode(match.gameMode)}
+            {formatMatchDate(match.startTime, locale)} · {formatMode(match.gameMode)}
             {isMissingStats ? ' · Missing player stats' : ''}
           </span>
         </div>
@@ -601,27 +611,27 @@ function WorkspaceMessage({ text, tone = 'neutral' }: { text: string; tone?: 'ne
   );
 }
 
-function formatRank(rankTier: number | null): string {
-  if (rankTier === null) return 'Rank uncalibrated';
+function formatRank(rankTier: number | null, t: (key: any) => string): string {
+  if (rankTier === null) return t('rankUncalibrated');
   const medal = Math.floor(rankTier / 10);
   const stars = rankTier % 10;
-  return `Rank ${medal}.${stars}`;
+  return `${t('rankPrefix')} ${medal}.${stars}`;
 }
 
-function formatNumber(value: number): string {
-  return value.toLocaleString('ru-RU');
+function formatNumber(value: number, locale: string): string {
+  return value.toLocaleString(locale);
 }
 
-function formatDate(timestamp: number | null): string {
+function formatDate(timestamp: number | null, locale: string): string {
   if (timestamp === null) return 'No matches';
-  return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' }).format(
     new Date(timestamp * 1_000),
   );
 }
 
-function formatMatchDate(timestamp: number | null): string {
+function formatMatchDate(timestamp: number | null, locale: string): string {
   if (timestamp === null) return 'Unknown date';
-  return new Intl.DateTimeFormat('ru-RU', {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',

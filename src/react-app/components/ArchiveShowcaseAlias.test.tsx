@@ -31,7 +31,7 @@ describe('ArchiveShowcaseAlias', () => {
   it('shows a loading state while resolving the alias', () => {
     mocks.query.mockReturnValue({ isPending: true, error: null, data: undefined });
     renderAlias();
-    expect(screen.getByText('Открываем публичный архив…')).toBeVisible();
+    expect(screen.getByText('Opening public archive...')).toBeVisible();
   });
 
   it('replaces the alias with the resolved archive player target', async () => {
@@ -43,8 +43,9 @@ describe('ArchiveShowcaseAlias', () => {
   it('shows a missing state when the alias is not curated', async () => {
     mocks.query.mockReturnValue({ isPending: false, error: null, data: null });
     renderAlias();
-    expect(await screen.findByText('Публичный архив не найден.')).toBeVisible();
+    expect(await screen.findByText('Public archive not found.')).toBeVisible();
   });
+
 
   it('shows resolver errors', async () => {
     mocks.query.mockReturnValue({ isPending: false, error: new Error('RPC unavailable'), data: undefined });

@@ -9,6 +9,8 @@ import { fetchMatchDetail } from '../lib/match-detail';
 import { createPublicSupabaseClient, createUserSupabaseClient } from '../lib/supabase';
 import { archiveQueryKeys } from '../lib/archive-query-keys';
 import { MatchDetailView } from './MatchDetailView';
+import { useTranslation } from '../lib/i18n';
+
 
 type TrackedAccount = Pick<Tables<'tracked_accounts'>, 'id' | 'dota_account_id'>;
 
@@ -38,9 +40,10 @@ type MatchRouteDataProps = {
 export function MatchRouteLayout({ authEnabled = true }: MatchRouteLayoutProps) {
   const { matchId: matchIdParam } = useParams();
   const matchId = parseMatchId(matchIdParam);
+  const { t } = useTranslation();
 
   if (matchId === null) {
-    return <RouteError text="Некорректный match ID в URL." />;
+    return <RouteError text={t('invalidMatchId')} />;
   }
 
   return authEnabled
@@ -117,7 +120,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
     mutationFn: async ({ trackedAccountId, detailMatchId }: { trackedAccountId: string; detailMatchId: number }) => {
       if (!getToken) throw new Error('Clerk session is not ready');
       const token = await getToken();
-      if (!token) throw new Error('Не удалось получить Clerk JWT');
+      if (!token) throw new Error('Failed to retrieve Clerk JWT');
       return syncTrackedMatchDetail(token, trackedAccountId, detailMatchId);
     },
     onSuccess: (_result, variables) => {
@@ -129,7 +132,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
     mutationFn: async (detailMatchId: number) => {
       if (!getToken) throw new Error('Clerk session is not ready');
       const token = await getToken();
-      if (!token) throw new Error('Не удалось получить Clerk JWT');
+      if (!token) throw new Error('Failed to retrieve Clerk JWT');
       return importMatch(token, detailMatchId);
     },
     onSuccess: (_result, detailMatchId) => {
@@ -139,6 +142,8 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
       }
     },
   });
+
+  const { t } = useTranslation();
 
   const isPublicImportForMatch = publicImport.variables === matchId;
   const isTrackedSyncForMatch = matchDetailSync.variables?.detailMatchId === matchId;
@@ -160,8 +165,8 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
     isParsing: (isTrackedSyncForMatch && matchDetailSync.isPending)
       || (isPublicImportForMatch && publicImport.isPending)
       || (isSignedIn && Boolean(matchDetailQuery.data) && linkedAccountQuery.isFetching),
-    parseDisabledReason: isSignedIn ? null : 'Войдите, чтобы загрузить недостающие данные.',
-    backLabel: isSignedIn ? 'Назад к архиву' : playerId === null ? 'На главную' : 'Назад к публичному архиву',
+    parseDisabledReason: isSignedIn ? null : t('parseDisabledReason'),
+    backLabel: isSignedIn ? t('backToArchive') : playerId === null ? t('backToHome') : t('backToPublicArchive'),
     onBack: () => undefined,
     onRefresh: () => void matchDetailQuery.refetch(),
     onParse: () => {
@@ -187,7 +192,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
       archivePath: isSignedIn
         ? playerId === null ? '/archive' : `/archive?player=${playerId}`
         : playerId === null ? '/' : `/archive?player=${playerId}`,
-      backLabel: isSignedIn ? 'Назад к архиву' : playerId === null ? 'На главную' : 'Назад к публичному архиву',
+      backLabel: isSignedIn ? t('backToArchive') : playerId === null ? t('backToHome') : t('backToPublicArchive'),
     } satisfies MatchRouteContext}
     />
   );
@@ -197,6 +202,7 @@ export function MatchDetailRoute() {
   const navigate = useNavigate();
   const { detailProps, onImport, canImport, canSignIn, isUnavailable, archivePath, backLabel } = useOutletContext<MatchRouteContext>();
   const navigateToArchive = () => navigate(archivePath, { replace: true });
+  const { t } = useTranslation();
 
   if (detailProps.isLoading || detailProps.detail || detailProps.error) {
     return <MatchDetailView {...detailProps} onBack={navigateToArchive} />;
@@ -204,16 +210,16 @@ export function MatchDetailRoute() {
   return (
     <section className="workspace-message workspace-message--neutral">
       <span aria-hidden="true">+</span>
-      <p>{isUnavailable ? 'Матч недоступен у STRATZ.' : 'Матч ещё не загружен.'}</p>
+      <p>{isUnavailable ? t('matchUnavailable') : t('matchNotLoaded')}</p>
       <div className="workspace-message__actions">
         {canImport ? (
           <button className="workspace-message__button workspace-message__button--primary" type="button" onClick={onImport} disabled={detailProps.isParsing}>
-            {detailProps.isParsing ? 'Загружаем…' : 'Загрузить матч из STRATZ'}
+            {detailProps.isParsing ? t('loadingMatchDetails') : t('loadMatchFromStratz')}
           </button>
         ) : canSignIn ? (
           <SignInButton mode="modal">
             <button className="workspace-message__button workspace-message__button--primary" type="button">
-              Войти, чтобы загрузить матч
+              {t('signInToLoadMatch')}
             </button>
           </SignInButton>
         ) : null}

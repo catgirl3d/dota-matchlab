@@ -6,6 +6,8 @@ import { MatchDetailHeader } from './match-detail/MatchDetailHeader';
 import { MatchInsightsPanel } from './match-detail/MatchInsightsPanel';
 import { MatchScoreboard } from './match-detail/MatchScoreboard';
 import { TeamBuildsPanel } from './match-detail/TeamBuildsPanel';
+import { useTranslation } from '../lib/i18n';
+
 
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
@@ -31,19 +33,22 @@ export function MatchDetailView({
   parseError,
   isParsing,
   parseDisabledReason = null,
-  backLabel = 'Назад к архиву',
+  backLabel,
   onBack,
   onRefresh,
   onParse,
 }: MatchDetailViewProps) {
+  const { t } = useTranslation();
+  const effectiveBackLabel = backLabel ?? t('backToArchive');
+
   if (isLoading) {
-    return <DetailMessage text="Собираем разбор матча…" backLabel={backLabel} onBack={onBack} />;
+    return <DetailMessage text={t('loadingMatch')} backLabel={effectiveBackLabel} onBack={onBack} />;
   }
   if (error) {
-    return <DetailMessage text={error.message} tone="error" backLabel={backLabel} onBack={onBack} />;
+    return <DetailMessage text={error.message} tone="error" backLabel={effectiveBackLabel} onBack={onBack} />;
   }
   if (!detail) {
-    return <DetailMessage text="Матч не найден." backLabel={backLabel} onBack={onBack} />;
+    return <DetailMessage text={t('matchNotFound')} backLabel={effectiveBackLabel} onBack={onBack} />;
   }
 
   const radiantPlayers = detail.players.filter((player) => player.isRadiant);
@@ -60,7 +65,7 @@ export function MatchDetailView({
         parseError={parseError}
         isParsing={isParsing}
         parseDisabledReason={parseDisabledReason}
-        backLabel={backLabel}
+        backLabel={effectiveBackLabel}
         onBack={onBack}
         onRefresh={onRefresh}
         onParse={onParse}

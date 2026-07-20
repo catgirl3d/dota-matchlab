@@ -24,6 +24,7 @@ import { parseMatchId } from '../lib/match-id';
 import { createUserSupabaseClient } from '../lib/supabase';
 import { ArchiveShowcase } from './ArchiveShowcase';
 import { PlayerDashboard } from './PlayerDashboard';
+import { useTranslation } from '../lib/i18n';
 
 type TrackedAccount = Pick<
   Tables<'tracked_accounts'>,
@@ -47,6 +48,7 @@ function keepArchiveDataForSameAccount<T>(
 }
 
 export function MatchWorkspace() {
+  const { t } = useTranslation();
   const { session } = useSession();
   const { userId } = useAuth();
   const queryClient = useQueryClient();
@@ -92,7 +94,7 @@ export function MatchWorkspace() {
 
       const token = await session.getToken();
       if (!token) {
-        throw new Error('Не удалось получить Clerk JWT');
+        throw new Error('Failed to retrieve Clerk JWT.');
       }
 
       const profile = await resolveSteamProfile(token, value);
@@ -117,7 +119,7 @@ export function MatchWorkspace() {
         throw new Error(error.message);
       }
       if (data.dota_account_id === null) {
-        throw new Error('Supabase не рассчитала Dota account ID');
+        throw new Error('Supabase failed to resolve Dota account ID');
       }
 
       return { ...data, dota_account_id: data.dota_account_id };
@@ -138,7 +140,7 @@ export function MatchWorkspace() {
 
       const token = await session.getToken();
       if (!token) {
-        throw new Error('Не удалось получить Clerk JWT');
+        throw new Error('Failed to retrieve Clerk JWT.');
       }
 
       const supabase = createUserSupabaseClient(async () => token);
@@ -162,7 +164,7 @@ export function MatchWorkspace() {
   function handleDeleteAccount(account: TrackedAccount) {
     if (
       window.confirm(
-        `Вы действительно хотите удалить профиль "${account.persona_name ?? 'Неизвестный игрок'}" из списка?`
+        t('removeProfileConfirm', { name: account.persona_name ?? t('unknownPlayerName') })
       )
     ) {
       deleteAccount.mutate(account);
@@ -198,12 +200,12 @@ export function MatchWorkspace() {
       keepArchiveDataForSameAccount<ArchiveOverview>(previousData, previousQuery, activeAccount?.id),
     queryFn: async ({ signal }) => {
       if (!session || !activeAccount) {
-        throw new Error('Профиль не выбран');
+        throw new Error('Profile not selected');
       }
 
       const token = await session.getToken();
       if (!token) {
-        throw new Error('Не удалось получить Clerk JWT');
+        throw new Error('Failed to retrieve Clerk JWT.');
       }
 
       const supabase = createUserSupabaseClient(async () => token);
@@ -219,9 +221,9 @@ export function MatchWorkspace() {
     placeholderData: (previousData, previousQuery) =>
       keepArchiveDataForSameAccount<ArchivePage>(previousData, previousQuery, activeAccount?.id),
     queryFn: async ({ signal }) => {
-      if (!session || !activeAccount) throw new Error('Профиль не выбран');
+      if (!session || !activeAccount) throw new Error('Profile not selected');
       const token = await session.getToken();
-      if (!token) throw new Error('Не удалось получить Clerk JWT');
+      if (!token) throw new Error('Failed to retrieve Clerk JWT.');
       const supabase = createUserSupabaseClient(async () => token);
       return fetchArchivePage(supabase, activeAccount.id, archiveFilters, archiveCursor, signal);
     },
@@ -242,7 +244,7 @@ export function MatchWorkspace() {
 
       const token = await session.getToken();
       if (!token) {
-        throw new Error('Не удалось получить Clerk JWT');
+        throw new Error('Failed to retrieve Clerk JWT.');
       }
 
       return syncTrackedAccount(token, trackedAccountId);
@@ -264,7 +266,7 @@ export function MatchWorkspace() {
 
       const token = await session.getToken();
       if (!token) {
-        throw new Error('Не удалось получить Clerk JWT');
+        throw new Error('Failed to retrieve Clerk JWT.');
       }
 
       return syncAllTrackedAccount(token, trackedAccountId, {
@@ -323,7 +325,7 @@ export function MatchWorkspace() {
     return <ArchiveShowcase
       key={requestedAccountId}
       dotaAccountId={requestedAccountId}
-      fallback={<WorkspaceMessage text="Этот публичный архив недоступен." />}
+      fallback={<WorkspaceMessage text={t('publicArchiveUnavailable')} />}
     />;
   }
 
@@ -332,10 +334,10 @@ export function MatchWorkspace() {
       <div className="workspace-header">
         <div>
           <p className="eyebrow">WORKSPACE / PLAYER</p>
-          <h2 id="workspace-title">Профиль игрока</h2>
+          <h2 id="workspace-title">{t('playerProfileTitle')}</h2>
         </div>
         <form className="steam-form" onSubmit={handleSubmit}>
-          <label htmlFor="steam-id">Steam-профиль</label>
+          <label htmlFor="steam-id">{t('vanitySteamLabel')}</label>
           <div className="steam-form__controls">
             <input
               id="steam-id"
@@ -347,11 +349,11 @@ export function MatchWorkspace() {
               aria-describedby="steam-id-hint"
             />
             <button type="submit" disabled={!steamProfile.trim() || addAccount.isPending}>
-              {addAccount.isPending ? 'Проверяем…' : 'Добавить профиль'}
+              {addAccount.isPending ? t('statusChecking') : t('addProfileBtn')}
             </button>
           </div>
           <span id="steam-id-hint">
-            Ссылка Steam, vanity name или SteamID64.
+            {t('vanitySteamHint')}
           </span>
           {addAccount.isError ? (
             <span className="form-error">{addAccount.error.message}</span>
@@ -360,11 +362,11 @@ export function MatchWorkspace() {
       </div>
 
       {accountsQuery.isPending ? (
-        <WorkspaceMessage text="Загружаем профили…" />
+        <WorkspaceMessage text={t('loadingProfilesMsg')} />
       ) : accountsQuery.isError ? (
         <WorkspaceMessage text={accountsQuery.error.message} tone="error" />
       ) : accounts.length === 0 ? (
-        <WorkspaceMessage text="Добавьте ссылку Steam-профиля, чтобы собрать личный архив." />
+        <WorkspaceMessage text={t('addSteamHintMsg')} />
       ) : (
         <>
           <AccountRail
@@ -372,6 +374,7 @@ export function MatchWorkspace() {
             activeAccountId={activeAccountId}
             onSelect={handleSelectAccount}
             onDelete={handleDeleteAccount}
+            t={t}
           />
           <PlayerDashboard
               account={activeAccount}
@@ -385,7 +388,7 @@ export function MatchWorkspace() {
                 void archiveOverviewQuery.refetch();
                 void archivePageQuery.refetch();
               }}
-                isRefreshing={archiveOverviewQuery.isFetching || archivePageQuery.isFetching}
+              isRefreshing={archiveOverviewQuery.isFetching || archivePageQuery.isFetching}
               onFiltersChange={(filters) => {
                 setArchiveFilters(filters);
                 setArchiveCursors([]);
@@ -414,14 +417,16 @@ function AccountRail({
   activeAccountId,
   onSelect,
   onDelete,
+  t,
 }: {
   accounts: TrackedAccount[];
   activeAccountId: number | null;
   onSelect: (accountId: number) => void;
   onDelete: (account: TrackedAccount) => void;
+  t: (key: any, options?: any) => string;
 }) {
   return (
-    <div className="account-rail" aria-label="Отслеживаемые профили">
+    <div className="account-rail" aria-label={t('trackedProfilesAriaLabel')}>
       {accounts.map((account) => (
         <div
           key={account.id}
@@ -448,7 +453,7 @@ function AccountRail({
               <span className="account-chip__fallback" aria-hidden="true" />
             )}
             <span>
-              <strong>{account.persona_name ?? 'Неизвестный игрок'}</strong>
+              <strong>{account.persona_name ?? t('unknownPlayerName')}</strong>
               <small>ID {account.dota_account_id}</small>
             </span>
           </button>
@@ -459,8 +464,8 @@ function AccountRail({
               e.stopPropagation();
               onDelete(account);
             }}
-            title="Удалить профиль из списка"
-            aria-label={`Удалить профиль ${account.persona_name ?? 'Неизвестный игрок'} из списка`}
+            title={t('removeProfileTitle')}
+            aria-label={t('removeProfileAriaLabel', { name: account.persona_name ?? t('unknownPlayerName') })}
           >
             ✕
           </button>
@@ -484,3 +489,4 @@ function WorkspaceMessage({
     </div>
   );
 }
+

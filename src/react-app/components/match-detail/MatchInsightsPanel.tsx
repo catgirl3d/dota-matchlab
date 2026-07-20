@@ -2,6 +2,7 @@ import type { MatchDetailSnapshot } from '../../lib/match-detail';
 import { AdvantageTimeline } from '../AdvantageTimeline';
 import { formatEnum } from './match-detail-display';
 import { DetailHeading } from './match-detail-primitives';
+import { useTranslation } from '../../lib/i18n';
 
 type MatchInsightsPanelProps = {
   networth: number[];
@@ -20,6 +21,7 @@ export function MatchInsightsPanel({
   laneOutcomes,
   eventCounts,
 }: MatchInsightsPanelProps) {
+  const { t } = useTranslation();
   return (
     <div className="detail-analysis-grid">
       <section className="detail-panel detail-advantage" aria-labelledby="advantage-title">
@@ -48,7 +50,7 @@ export function MatchInsightsPanel({
         <div className="detail-events">
           <span className="detail-events__scope">MATCH EVENTS / ALL PLAYERS</span>
           {Object.entries(eventCounts).map(([label, count]) => (
-            <span key={label} title={matchEventDescription(label)} className={count === null ? 'is-empty' : 'has-values'}>
+            <span key={label} title={matchEventDescription(label, t)} className={count === null ? 'is-empty' : 'has-values'}>
               <strong>{count === null ? 'N/A' : count}</strong>{label}
             </span>
           ))}
@@ -58,13 +60,16 @@ export function MatchInsightsPanel({
   );
 }
 
-function matchEventDescription(label: string): string {
-  return {
-    chat: 'Сообщения и chat-wheel события всего матча',
-    towers: 'События разрушения башен всего матча',
-    runes: 'Глобальные события рун из match playback',
-    wards: 'Глобальные события установки и уничтожения вардов',
-    buildings: 'Изменения состояния строений из match playback',
-    roshan: 'События Roshan из match playback',
-  }[label] ?? label;
+function matchEventDescription(label: string, t: (key: any) => string): string {
+  const keys: Record<string, any> = {
+    chat: 'insightChat',
+    towers: 'insightTowers',
+    runes: 'insightRunes',
+    wards: 'insightWards',
+    buildings: 'insightBuildings',
+    roshan: 'insightRoshan',
+  };
+  const key = keys[label];
+  return key ? t(key) : label;
 }
+

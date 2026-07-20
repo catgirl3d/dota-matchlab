@@ -2,6 +2,7 @@ import direCrest from '../../../../assets/icons/dire_square.webp?url';
 import radiantCrest from '../../../../assets/icons/radiant_square.webp?url';
 import type { MatchDetailSnapshot } from '../../lib/match-detail';
 import { formatEnum } from './match-detail-display';
+import { useTranslation, type TranslationKey } from '../../lib/i18n';
 
 type MatchDetailHeaderProps = {
   detail: MatchDetailSnapshot;
@@ -24,17 +25,18 @@ export function MatchDetailHeader({
   onRefresh,
   onParse,
 }: MatchDetailHeaderProps) {
+  const { t, locale } = useTranslation();
   const hasDetailSections = detail.availableSections.length > 0;
   const detailNotice = detail.detailStatus === 'available'
     ? null
     : hasDetailSections
       ? {
-          title: 'Частичный разбор',
-          message: 'Сохранённые данные уже показаны. Недостающие разделы можно дозагрузить или повторить загрузку полного разбора.',
+          title: t('headerPartialTitle'),
+          message: t('headerPartialDesc'),
         }
       : {
-          title: 'Базовый разбор',
-          message: 'Основная статистика уже доступна. Загрузите расширенный разбор для playback, abilities и подробных событий.',
+          title: t('headerBaseTitle'),
+          message: t('headerBaseDesc'),
         };
   const radiantLabel = detail.radiantWin === true ? 'WON' : detail.radiantWin === false ? 'LOST' : '—';
   const direLabel = detail.radiantWin === false ? 'WON' : detail.radiantWin === true ? 'LOST' : '—';
@@ -47,11 +49,11 @@ export function MatchDetailHeader({
           {backLabel}
         </button>
         <div className="match-detail__signals">
-          <span>Источник: {detail.source.toUpperCase()}</span>
+          <span>{t('headerSource')} {detail.source.toUpperCase()}</span>
           <span className={`detail-status detail-status--${detail.detailStatus}`}>
-            {formatDetailStatus(detail.detailStatus)}
+            {formatDetailStatus(detail.detailStatus, t)}
           </span>
-          <button type="button" onClick={onRefresh}>Обновить</button>
+          <button type="button" onClick={onRefresh}>{t('headerRefresh')}</button>
         </div>
       </div>
 
@@ -66,7 +68,7 @@ export function MatchDetailHeader({
         <div className="match-detail__clock">
           <span className="micro-label">MATCH / {detail.matchId}</span>
           <strong>{formatDuration(detail.durationSeconds)}</strong>
-          <span>{formatMode(detail.gameMode)} · {formatDate(detail.startTime)}</span>
+          <span>{formatMode(detail.gameMode)} · {formatDate(detail.startTime, locale)}</span>
         </div>
         <TeamOutcome
           side="dire"
@@ -87,7 +89,7 @@ export function MatchDetailHeader({
             <span className="match-detail__parse-restriction">{parseDisabledReason}</span>
           ) : (
             <button type="button" onClick={onParse} disabled={isParsing}>
-              {isParsing ? 'Загружаем детали…' : 'Загрузить полный разбор'}
+              {isParsing ? t('headerLoadDetails') : t('headerLoadFullParse')}
             </button>
           )}
           {parseError ? <span className="match-detail__parse-error">{parseError.message}</span> : null}
@@ -126,23 +128,25 @@ function TeamOutcome({
   );
 }
 
-function formatDetailStatus(status: string): string {
-  return {
-    not_requested: 'Базовые данные',
-    pending: 'В очереди',
-    available: 'Полный разбор',
-    unavailable: 'Детали недоступны',
-    failed: 'Ошибка деталей',
-  }[status] ?? formatEnum(status);
+function formatDetailStatus(status: string, t: (key: TranslationKey) => string): string {
+  const mapping: Record<string, TranslationKey> = {
+    not_requested: 'headerBaseData',
+    pending: 'headerQueue',
+    available: 'headerFullParse',
+    unavailable: 'headerDetailsUnavailable',
+    failed: 'headerFailed',
+  };
+  const key = mapping[status];
+  return key ? t(key) : formatEnum(status);
 }
 
 function formatMode(mode: number | null): string {
   return { 1: 'All Pick', 22: 'Ranked All Pick', 23: 'Turbo' }[mode ?? -1] ?? 'Dota 2';
 }
 
-function formatDate(timestamp: number | null): string {
+function formatDate(timestamp: number | null, locale: string): string {
   if (timestamp === null) return 'Unknown date';
-  return new Intl.DateTimeFormat('ru-RU', {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -157,3 +161,4 @@ function formatDuration(seconds: number | null): string {
   const remainder = seconds % 60;
   return `${minutes}:${remainder.toString().padStart(2, '0')}`;
 }
+

@@ -85,10 +85,10 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('46')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
     expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
+    const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
     const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
     expect(currentBuild.querySelector('img[src*="antimage_horz_gMtz"]')).toBeInTheDocument();
     expect(currentBuild.querySelector('.player-build__portrait img[src*="_icon_"]')).not.toBeInTheDocument();
-    const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
     expect(scoreboardPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     const scoreboardEntry = screen.getByRole('article', { name: 'Scoreboard entry for Player #111' });
     expect(within(scoreboardEntry).getByRole('group', { name: '22 kills, 2 deaths, 8 assists' })).toBeVisible();
@@ -99,14 +99,14 @@ describe('MatchDetailView', () => {
     expect(advantageChart).toHaveClass('advantage-timeline__canvas');
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
     expect(draftPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
-    expect(screen.getByText('Базовый разбор')).toBeVisible();
+    expect(screen.getByText('Base Parse')).toBeVisible();
     expect(screen.getByText('2/10 players captured')).toBeVisible();
     expect(screen.getAllByText('N/A')).toHaveLength(4);
     expect(screen.getAllByRole('img', { name: 'Phase Boots' })).toHaveLength(2);
     expect(screen.getAllByRole('img', { name: 'Power Treads' })).toHaveLength(2);
     expect(screen.getAllByRole('img', { name: 'Keen Optic' })).toHaveLength(2);
 
-    fireEvent.click(screen.getByRole('button', { name: /Назад к архиву/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Back to archive/i }));
     expect(onBack).toHaveBeenCalledOnce();
   });
 
@@ -198,15 +198,15 @@ describe('MatchDetailView', () => {
     expect(within(currentBuild).getByRole('img', { name: 'Shrapnel, 1:48 · level 2' })).toBeVisible();
     expect(currentBuild.querySelector('img[src*="sniper_shrapnel"]')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Boots' })).toBeVisible();
-    expect(screen.queryByText('Базовый разбор')).not.toBeInTheDocument();
+    expect(screen.queryByText('Base Parse')).not.toBeInTheDocument();
 
     expect(screen.queryByText('gg')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Показать чат' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show chat' }));
     expect(screen.getByText('gg')).toBeVisible();
     expect(screen.queryByText('Chat wheel #71')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Всё' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
     expect(screen.getByText('Chat wheel #71')).toBeVisible();
-    const chatTranscript = screen.getByRole('log', { name: 'Чат матча' });
+    const chatTranscript = screen.getByRole('log', { name: 'Match chat log' });
     expect(chatTranscript.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
     expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
   });
@@ -324,11 +324,11 @@ describe('MatchDetailView', () => {
 
   it('shows a read-only notice instead of the detail import action', () => {
     const onParse = vi.fn();
-    render(<MatchDetailView detail={detail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} parseDisabledReason="Войдите, чтобы загрузить недостающие данные." backLabel="На главную" onBack={vi.fn()} onRefresh={vi.fn()} onParse={onParse} />);
+    render(<MatchDetailView detail={detail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} parseDisabledReason="Sign in to load missing data." backLabel="Back to home" onBack={vi.fn()} onRefresh={vi.fn()} onParse={onParse} />);
 
-    expect(screen.getByText('Войдите, чтобы загрузить недостающие данные.')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Загрузить полный разбор' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /На главную/ })).toBeVisible();
+    expect(screen.getByText('Sign in to load missing data.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Load Full Parse' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Back to home/ })).toBeVisible();
     expect(onParse).not.toHaveBeenCalled();
   });
 
@@ -350,13 +350,14 @@ describe('MatchDetailView', () => {
     };
     render(<MatchDetailView detail={partialDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
-    expect(screen.getByText('Частичный разбор')).toBeVisible();
-    expect(screen.queryByText('Базовый разбор')).not.toBeInTheDocument();
+    expect(screen.getByText('Partial Parse')).toBeVisible();
+    expect(screen.queryByText('Base Parse')).not.toBeInTheDocument();
     expect(screen.getByText('No ability events')).toBeVisible();
     expect(screen.getByText('No purchase events')).toBeVisible();
     expect(screen.getByText('Ability progression unavailable.')).toBeVisible();
     expect(screen.getByText('Purchase progression unavailable.')).toBeVisible();
   });
+
 
   it('does not show a roster warning for a complete ten-player roster', () => {
     const completeRosterDetail: MatchDetailSnapshot = {

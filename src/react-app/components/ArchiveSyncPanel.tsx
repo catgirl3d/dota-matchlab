@@ -1,6 +1,7 @@
 import type { MatchSyncResult } from '../../shared/match-archive';
 import type { ArchiveSyncState } from '../lib/archive';
 import type { MatchSyncProgress } from '../lib/dota-api';
+import { useTranslation } from '../lib/i18n';
 
 type ArchiveSyncPanelProps = {
   accountName: string;
@@ -27,6 +28,7 @@ export function ArchiveSyncPanel({
   onSync,
   onSyncAll,
 }: ArchiveSyncPanelProps) {
+  const { t, locale } = useTranslation();
   const isBusy = isPending || isSyncingAll;
   const status = result?.status ?? syncState?.status;
   const statusLabel =
@@ -57,10 +59,9 @@ export function ArchiveSyncPanel({
           </span>
         ) : null}
       </div>
-        <h3 id="archive-sync-title">Собрать историю матчей</h3>
+      <h3 id="archive-sync-title">{t('syncMatchesHeading')}</h3>
       <p>
-        История загружается пакетами до 500 матчей <strong>{accountName}</strong>.
-        Detail загружается вручную из выбранного матча.
+        History is loaded in batches of up to 500 matches for <strong>{accountName}</strong>. Match details are loaded manually from the selected match.
       </p>
       <div className="archive-sync__actions">
         <button
@@ -69,7 +70,7 @@ export function ArchiveSyncPanel({
           onClick={onSyncAll}
           disabled={isBusy}
         >
-          <span>{isSyncingAll ? 'Парсим всю историю…' : 'Запарсить все'}</span>
+          <span>{isSyncingAll ? t('parsingAllHistory') : t('parseAllBtn')}</span>
           <span aria-hidden="true">↗</span>
         </button>
         <button
@@ -78,27 +79,27 @@ export function ArchiveSyncPanel({
           onClick={onSync}
           disabled={isBusy}
         >
-          <span>{isPending ? 'Синхронизируем…' : 'Загрузить один пакет'}</span>
+          <span>{isPending ? t('syncingBtn') : t('loadOneBatchBtn')}</span>
           <span aria-hidden="true">+500</span>
         </button>
       </div>
       {isSyncingAll && fullSyncProgress ? (
         <p className="archive-sync__progress" aria-live="polite">
-          Пакетов: <strong>{fullSyncProgress.completedBatches}</strong>
-          {' · '}получено: <strong>{fullSyncProgress.fetchedMatches}</strong>
-          {' · '}offset: <strong>{fullSyncProgress.nextOffset}</strong>
+          {t('progressBatches')} <strong>{fullSyncProgress.completedBatches}</strong>
+          {' · '}{t('progressFetched')} <strong>{fullSyncProgress.fetchedMatches}</strong>
+          {' · '}{t('progressOffset')} <strong>{fullSyncProgress.nextOffset}</strong>
         </p>
       ) : null}
       {result || syncState ? (
         <p className="archive-sync__result" aria-live="polite">
-          В архиве: <strong>{archivedCount || result?.archivedMatches || 0}</strong>
+          {t('historyInArchive')} <strong>{archivedCount || result?.archivedMatches || 0}</strong>
           {syncState?.history_provider ? ` · ${syncState.history_provider.toUpperCase()}` : ''}
           {status === 'ready'
-            ? ' · достигнут конец доступной истории'
+            ? t('historyEndReached')
             : status === 'partial'
-              ? ' · есть следующая страница'
-              : ' · синхронизация ещё не запускалась'}
-          {syncState?.last_success_at ? ` · обновлён ${formatSyncDate(syncState.last_success_at)}` : ''}
+              ? t('historyNextAvailable')
+              : t('historyNotStarted')}
+          {syncState?.last_success_at ? t('historyUpdated', { date: formatSyncDate(syncState.last_success_at, locale) }) : ''}
         </p>
       ) : null}
       {error ? (
@@ -110,11 +111,12 @@ export function ArchiveSyncPanel({
   );
 }
 
-function formatSyncDate(value: string): string {
-  return new Intl.DateTimeFormat('ru-RU', {
+function formatSyncDate(value: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
 }
+

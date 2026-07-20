@@ -34,11 +34,11 @@ describe('ArchiveSyncPanel', () => {
 
     expect(screen.getByText('PARTIAL')).toBeInTheDocument();
     expect(screen.getByText('98')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Собрать историю матчей' })).toBeVisible();
-    expect(screen.getByText(/Detail загружается вручную из выбранного матча/)).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: /Загрузить один пакет/i }));
+    expect(screen.getByRole('heading', { name: 'Gather Match History' })).toBeVisible();
+    expect(screen.getByText(/details are loaded manually/i)).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: /Load one batch/i }));
     expect(onSync).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: /Запарсить все/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Parse all/i }));
     expect(onSyncAll).toHaveBeenCalledOnce();
   });
 
@@ -65,9 +65,9 @@ describe('ArchiveSyncPanel', () => {
     );
 
     expect(screen.getByText('READY')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Синхронизируем/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Запарсить все/i })).toBeDisabled();
-    expect(screen.getByText(/достигнут конец доступной истории/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Syncing.../i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Parse all/i })).toBeDisabled();
+    expect(screen.getByText(/reached the end of available history/i)).toBeInTheDocument();
   });
 
   it('shows aggregate progress while parsing the full history', () => {
@@ -83,9 +83,10 @@ describe('ArchiveSyncPanel', () => {
       />,
     );
 
-    expect(screen.getByText(/Пакетов:/)).toHaveTextContent(
-      'Пакетов: 3 · получено: 1500 · offset: 1500',
+    expect(screen.getByText(/Batches:/i)).toHaveTextContent(
+      'Batches: 3 · fetched: 1500 · offset: 1500',
     );
-    expect(screen.getByRole('button', { name: /Парсим всю историю/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Parsing history.../i })).toBeDisabled();
   });
 });
+

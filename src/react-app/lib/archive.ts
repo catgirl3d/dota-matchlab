@@ -120,7 +120,7 @@ export async function fetchArchiveOverview(
   const { data, error } = await client
     .rpc('get_match_archive_overview', archiveFilterArgs(trackedAccountId, filters))
     .abortSignal(signal ?? new AbortController().signal);
-  if (error) throw new Error(`Не удалось загрузить обзор архива: ${error.message}`);
+  if (error) throw new Error(`Failed to load archive overview: ${error.message}`);
   return mapOverview(data);
 }
 
@@ -139,7 +139,7 @@ export async function fetchArchivePage(
       p_limit: 100,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  if (error) throw new Error(`Не удалось загрузить страницу архива: ${error.message}`);
+  if (error) throw new Error(`Failed to load archive page: ${error.message}`);
   return mapPage(data);
 }
 
@@ -152,7 +152,7 @@ export async function fetchArchiveShowcaseOverview(
   const { data, error } = await client
     .rpc('get_archive_showcase_overview', archiveShowcaseFilterArgs(dotaAccountId, filters))
     .abortSignal(signal ?? new AbortController().signal);
-  if (error) throw new Error(`Не удалось загрузить публичный архив: ${error.message}`);
+  if (error) throw new Error(`Failed to load public archive: ${error.message}`);
   if (data === null) return null;
   const record = asRecord(data, 'showcase overview');
   const account = asRecord(record.account, 'showcase account');
@@ -183,7 +183,7 @@ export async function fetchArchiveShowcasePage(
       p_limit: 100,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  if (error) throw new Error(`Не удалось загрузить страницу публичного архива: ${error.message}`);
+  if (error) throw new Error(`Failed to load public showcase page: ${error.message}`);
   return data === null ? null : mapPage(data);
 }
 
@@ -195,7 +195,7 @@ export async function resolveArchiveShowcase(
   const { data, error } = await client
     .rpc('resolve_archive_showcase', { p_slug: slug })
     .abortSignal(signal ?? new AbortController().signal);
-  if (error) throw new Error(`Не удалось открыть публичный архив: ${error.message}`);
+  if (error) throw new Error(`Could not open public archive: ${error.message}`);
   return data === null ? null : numberValue(data);
 }
 
@@ -289,20 +289,20 @@ function mapHeroBreakdowns(value: unknown): ArchiveHeroBreakdown[] {
 }
 
 function asRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Некорректный ответ ${label}`);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Invalid response ${label}`);
   return value as Record<string, unknown>;
 }
-function arrayValue(value: unknown): unknown[] { if (!Array.isArray(value)) throw new Error('Некорректный массив архива'); return value; }
-function numberValue(value: unknown): number { if (typeof value !== 'number') throw new Error('Некорректное число архива'); return value; }
+function arrayValue(value: unknown): unknown[] { if (!Array.isArray(value)) throw new Error('Invalid archive array'); return value; }
+function numberValue(value: unknown): number { if (typeof value !== 'number') throw new Error('Invalid archive number'); return value; }
 function nullableNumber(value: unknown): number | null { return value === null ? null : numberValue(value); }
-function stringValue(value: unknown): string { if (typeof value !== 'string') throw new Error('Некорректная строка архива'); return value; }
+function stringValue(value: unknown): string { if (typeof value !== 'string') throw new Error('Invalid archive string'); return value; }
 function nullableString(value: unknown): string | null { return value === null ? null : stringValue(value); }
-function nullableBoolean(value: unknown): boolean | null { if (value === null) return null; if (typeof value !== 'boolean') throw new Error('Некорректный флаг архива'); return value; }
+function nullableBoolean(value: unknown): boolean | null { if (value === null) return null; if (typeof value !== 'boolean') throw new Error('Invalid archive boolean'); return value; }
 function formValue(value: unknown): ArchiveOverview['form'][number] {
   if (value === 'win' || value === 'loss' || value === 'unknown') return value;
-  throw new Error('Некорректный результат формы архива');
+  throw new Error('Invalid archive form result');
 }
 function dataStatusValue(value: unknown): ArchiveMatch['dataStatus'] {
   if (value === 'complete' || value === 'missing_player_stats') return value;
-  throw new Error('Некорректный статус данных матча');
+  throw new Error('Invalid match data status');
 }

@@ -4,11 +4,12 @@ import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchArchiveOverview, fetchArchivePage } from '../lib/archive';
 import { MatchWorkspace } from './MatchWorkspace';
+import { I18nProvider } from '../lib/i18n';
 
 const mocks = vi.hoisted(() => ({
   accounts: [] as Array<Record<string, unknown>>,
 }));
-
+// ... rest of the mocks
 vi.mock('@clerk/react', () => ({
   useAuth: () => ({ userId: 'user-1' }),
   useSession: () => ({ session: { getToken: vi.fn().mockResolvedValue('clerk-token') } }),
@@ -77,8 +78,10 @@ function renderWorkspace(path: string) {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[path]}>
-        <LocationProbe />
-        <MatchWorkspace />
+        <I18nProvider>
+          <LocationProbe />
+          <MatchWorkspace />
+        </I18nProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );

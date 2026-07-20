@@ -106,7 +106,7 @@ const snapshot = {
 
 const overview: ArchiveOverview = {
   summary: { matches: 2, wins: 1, losses: 1, unknownResults: 0, winRate: 50, averageKills: 6.5, averageDeaths: 4.5, averageAssists: 9.5, averageKda: 2.5, averageGpm: 500, averageXpm: 625, averageLastHits: 220, averageDamage: 21000, averageDurationMinutes: 35, firstMatchAt: 1_799_000_000, latestMatchAt: 1_800_000_000 },
-  form: ['win', 'loss'], modes: [], heroes: [{ key: '1', heroId: 1, matches: 1, wins: 1, winRate: 100, averageKda: 9, averageGpm: 600 }], positions: [], lanes: [], party: [], tempo: [], heroOptions: [1, 2], syncState: snapshot.syncState, integrity: { linked: 2, complete: 2, missingStats: 0, missingMatch: 0 },
+  form: ['win', 'loss'], modes: [], heroes: [{ key: '1', heroId: 1, matches: 10, wins: 10, winRate: 100, averageKda: 9, averageGpm: 600 }], positions: [], lanes: [], party: [], tempo: [], heroOptions: [1, 2], syncState: snapshot.syncState, integrity: { linked: 2, complete: 2, missingStats: 0, missingMatch: 0 },
 };
 
 const page: ArchivePage = { matches: snapshot.matches, nextCursor: null };
@@ -165,7 +165,7 @@ describe('PlayerDashboard', () => {
     expect(screen.getByText('Above even')).toBeVisible();
     expect(screen.getByText('2 complete · 0 missing stats · 0 missing match')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
-    const knownHeroLink = screen.getByRole('link', { name: /Открыть матч 2/i });
+    const knownHeroLink = screen.getByRole('link', { name: /Open match 2/i });
     expect(knownHeroLink.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByText('PARTIAL')).toBeVisible();
@@ -228,7 +228,7 @@ describe('PlayerDashboard', () => {
       /></MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Сбросить фильтр героя' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset hero filter' }));
     expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, heroId: null });
   });
 
@@ -236,9 +236,9 @@ describe('PlayerDashboard', () => {
     const overviewWithMultipleHeroes: ArchiveOverview = {
       ...overview,
       heroes: [
-        { key: '1', heroId: 1, matches: 10, wins: 5, winRate: 50, averageKda: 3, averageGpm: 400 },
-        { key: '2', heroId: 2, matches: 5, wins: 4, winRate: 80, averageKda: 4, averageGpm: 500 },
-        { key: '3', heroId: 3, matches: 2, wins: 0, winRate: 0, averageKda: 1, averageGpm: 300 },
+        { key: '1', heroId: 1, matches: 12, wins: 6, winRate: 50, averageKda: 3, averageGpm: 400 },
+        { key: '2', heroId: 2, matches: 11, wins: 8.8, winRate: 80, averageKda: 4, averageGpm: 500 },
+        { key: '3', heroId: 3, matches: 10, wins: 0, winRate: 0, averageKda: 1, averageGpm: 300 },
       ],
     };
 
@@ -362,7 +362,7 @@ describe('PlayerDashboard', () => {
       /></MemoryRouter>,
     );
 
-    const unknownHeroLink = screen.getByRole('link', { name: /Открыть матч 2/i });
+    const unknownHeroLink = screen.getByRole('link', { name: /Open match 2/i });
     expect(within(unknownHeroLink).getByText('HE')).toBeVisible();
     expect(unknownHeroLink.querySelector('img')).not.toBeInTheDocument();
   });
@@ -403,7 +403,7 @@ describe('PlayerDashboard', () => {
       /></MemoryRouter>,
     );
 
-    const link = screen.getByRole('link', { name: /Открыть матч 2/i });
+    const link = screen.getByRole('link', { name: /Open match 2/i });
     expect(within(link).getByText('DATA')).toBeVisible();
     expect(within(link).getByText(/Missing player stats/)).toBeVisible();
     expect(within(link).getByText('— / — / —')).toBeVisible();

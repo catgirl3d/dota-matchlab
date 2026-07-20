@@ -1,35 +1,37 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { parseMatchId } from '../lib/match-id';
-
-const workflow = [
-  {
-    number: '01',
-    title: 'Найдите',
-    text: 'Введите match ID и откройте уже загруженный разбор без регистрации.',
-  },
-  {
-    number: '02',
-    title: 'Разберите',
-    text: 'Изучите составы, темп, экономику, способности и ключевые события.',
-  },
-  {
-    number: '03',
-    title: 'Соберите архив',
-    text: 'Войдите, чтобы привязать профиль и отслеживать серии матчей на дистанции.',
-  },
-] as const;
+import { useTranslation } from '../lib/i18n';
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [matchIdInput, setMatchIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const workflow = [
+    {
+      number: '01',
+      title: t('step01Title'),
+      text: t('step01Text'),
+    },
+    {
+      number: '02',
+      title: t('step02Title'),
+      text: t('step02Text'),
+    },
+    {
+      number: '03',
+      title: t('step03Title'),
+      text: t('step03Text'),
+    },
+  ] as const;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const matchId = parseMatchId(matchIdInput);
     if (matchId === null) {
-      setError('Введите корректный числовой match ID.');
+      setError(t('invalidMatchIdInput'));
       return;
     }
 
@@ -52,12 +54,11 @@ export function LandingPage() {
           </div>
 
           <h1 id="hero-title">
-            Разберите матч
-            <span>до последнего тайминга.</span>
+            {t('heroTitlePart1')}
+            <span>{t('heroTitlePart2')}</span>
           </h1>
           <p className="hero__lede">
-            Scoreboard, темп, сборки и события матча в одном техническом отчёте.
-            Уже загруженные матчи доступны без регистрации.
+            {t('heroLede')}
           </p>
 
           <form className="match-search" onSubmit={handleSubmit} noValidate>
@@ -75,7 +76,7 @@ export function LandingPage() {
                   autoComplete="off"
                   placeholder="8749050591"
                   value={matchIdInput}
-                  aria-label="Открыть матч по ID"
+                  aria-label={t('openMatchByIdAriaLabel')}
                   aria-invalid={error ? true : undefined}
                   aria-describedby="match-search-hint"
                   onChange={(event) => {
@@ -83,11 +84,11 @@ export function LandingPage() {
                     if (error) setError(null);
                   }}
                 />
-                <button type="submit">Открыть разбор</button>
+                <button type="submit">{t('openAnalysisBtn')}</button>
               </div>
               <div className="match-search__footer">
                 <p id="match-search-hint" className={error ? 'match-search__hint match-search__hint--error' : 'match-search__hint'}>
-                  {error ?? '// Новый матч можно загрузить после входа.'}
+                  {error ?? t('newMatchHintAfterSignIn')}
                 </p>
                 <div className="match-search__example">
                   SYS_DEMO:{' '}
@@ -138,7 +139,7 @@ export function LandingPage() {
             <span className="instrument__time">MATCHLAB_SYS // 00:00</span>
             <span className="instrument__label">INTELLIGENCE RADAR</span>
             <span className="instrument__coordinate">MATCH DATA // LIVE INDEX</span>
-
+            
             <div className="instrument__hud-card instrument__hud-card--top-right">
               <span className="hud-metric">NET_SURGE: +2.4K</span>
               <span className="hud-metric-label">SYS_ALERT / MIN_12</span>
@@ -154,7 +155,7 @@ export function LandingPage() {
       <section className="workflow" aria-labelledby="workflow-title">
         <div className="workflow__intro">
           <p className="eyebrow">PIPELINE / THREE STEPS</p>
-          <h2 id="workflow-title">От match ID до вывода</h2>
+          <h2 id="workflow-title">{t('workflowHeader')}</h2>
         </div>
         <ol className="workflow__steps">
           {workflow.map((step) => (
@@ -169,3 +170,4 @@ export function LandingPage() {
     </>
   );
 }
+

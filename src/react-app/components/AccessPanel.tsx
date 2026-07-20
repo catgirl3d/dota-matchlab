@@ -7,17 +7,19 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { hasSupabaseConfig } from '../lib/config';
 import { createUserSupabaseClient } from '../lib/supabase';
+import { useTranslation } from '../lib/i18n';
 
 type AccessPanelProps = {
   clerkEnabled: boolean;
 };
 
 export function AccessPanel({ clerkEnabled }: AccessPanelProps) {
+  const { t } = useTranslation();
   return (
     <section className="access-panel" aria-labelledby="access-heading">
       <div className="section-heading">
         <p className="eyebrow">ACCESS / 01</p>
-        <h2 id="access-heading">Закрытая лаборатория</h2>
+        <h2 id="access-heading">{t('accessHeading')}</h2>
       </div>
 
       {!clerkEnabled ? <MissingClerkConfiguration /> : <ConfiguredAccess />}
@@ -26,28 +28,29 @@ export function AccessPanel({ clerkEnabled }: AccessPanelProps) {
 }
 
 function MissingClerkConfiguration() {
+  const { t } = useTranslation();
   return (
     <div className="setup-message">
-      <p className="setup-message__title">Каркас готов</p>
+      <p className="setup-message__title">{t('setupTitle')}</p>
       <p>
-        Добавьте ключи Clerk и Supabase в <code>.env.local</code> и{' '}
-        <code>.dev.vars</code>, чтобы включить реальный вход.
+        Add Clerk and Supabase keys to <code>.env.local</code> and{' '}
+        <code>.dev.vars</code> to enable sign in.
       </p>
     </div>
   );
 }
 
 function ConfiguredAccess() {
+  const { t } = useTranslation();
   return (
     <>
       <Show when="signed-out">
         <p className="access-copy">
-          Вход открыт только участникам теста. Матчи и настройки каждого
-          пользователя отделены политиками RLS.
+          {t('accessCopy')}
         </p>
         <SignInButton mode="modal">
           <button className="primary-button" type="button">
-            Войти в лабораторию
+            {t('signInToLab')}
             <span aria-hidden="true">↗</span>
           </button>
         </SignInButton>
@@ -62,6 +65,7 @@ function ConfiguredAccess() {
 
 function SignedInAccess() {
   const { session } = useSession();
+  const { t } = useTranslation();
   const databaseProbe = useQuery({
     queryKey: ['supabase', 'rls', session?.id],
     enabled: false,
@@ -91,7 +95,7 @@ function SignedInAccess() {
         <UserButton />
         <div>
           <span className="micro-label">CLERK SESSION</span>
-          <strong>Доступ подтверждён</strong>
+          <strong>{t('accessApproved')}</strong>
         </div>
       </div>
 
@@ -101,11 +105,11 @@ function SignedInAccess() {
         disabled={!hasSupabaseConfig || databaseProbe.isFetching}
         onClick={() => databaseProbe.refetch()}
       >
-        {databaseProbe.isFetching ? 'Проверяем RLS…' : 'Проверить доступ к данным'}
+        {databaseProbe.isFetching ? t('checkingRls') : t('checkDataAccess')}
       </button>
 
       {databaseProbe.isSuccess ? (
-        <p className="probe-result probe-result--ok">RLS запрос выполнен</p>
+        <p className="probe-result probe-result--ok">{t('rlsQuerySuccess')}</p>
       ) : null}
       {databaseProbe.isError ? (
         <p className="probe-result probe-result--error">
@@ -115,3 +119,4 @@ function SignedInAccess() {
     </div>
   );
 }
+
