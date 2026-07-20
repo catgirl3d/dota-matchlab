@@ -252,8 +252,22 @@ export function PlayerDashboard({
               </ul>
             )}
             <div className="table-note">
-              <button type="button" onClick={onPreviousPage} disabled={!hasPreviousPage || isRefreshing}>Previous</button>
-              <button type="button" onClick={() => page?.nextCursor && onNextPage(page.nextCursor)} disabled={!page?.nextCursor || isRefreshing}>Next</button>
+              <button
+                className="table-note__button"
+                type="button"
+                onClick={onPreviousPage}
+                disabled={!hasPreviousPage || isRefreshing}
+              >
+                Previous
+              </button>
+              <button
+                className="table-note__button"
+                type="button"
+                onClick={() => page?.nextCursor && onNextPage(page.nextCursor)}
+                disabled={!page?.nextCursor || isRefreshing}
+              >
+                Next
+              </button>
             </div>
           </section>
         </div>
