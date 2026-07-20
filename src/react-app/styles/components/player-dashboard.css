@@ -901,11 +901,11 @@
     font-weight: 700;
   }
 
-  .archive-match-row.is-win .archive-match-row__result {
+  .archive-match-row__link.is-win .archive-match-row__result {
     color: var(--acid);
   }
 
-  .archive-match-row.is-unknown .archive-match-row__result {
+  .archive-match-row__link.is-unknown .archive-match-row__result {
     color: var(--muted);
   }
 
