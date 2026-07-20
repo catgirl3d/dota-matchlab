@@ -10,6 +10,8 @@ type FocusedPlayerAnalysisProps = {
 };
 
 export function FocusedPlayerAnalysis({ player, heroNames, durationSeconds }: FocusedPlayerAnalysisProps) {
+  const levelCapReached = player.level >= MAX_PLAYER_LEVEL && hasTrailingZeroTail(player.minuteSeries.experience);
+
   return (
     <section className="detail-panel full-analysis" aria-labelledby="full-analysis-title">
       <DetailHeading
@@ -26,7 +28,11 @@ export function FocusedPlayerAnalysis({ player, heroNames, durationSeconds }: Fo
       <div className="full-analysis__body">
         <div className="full-analysis__timelines">
           <span className="micro-label">PER-MINUTE CURVES</span>
-          <PlayerMinuteCharts durationSeconds={durationSeconds} series={player.minuteSeries} />
+          <PlayerMinuteCharts
+            durationSeconds={durationSeconds}
+            levelCapReached={levelCapReached}
+            series={player.minuteSeries}
+          />
         </div>
         <div className="full-analysis__events">
           <span className="micro-label">PLAYER EVENTS / SELECTED PLAYER</span>
@@ -39,6 +45,18 @@ export function FocusedPlayerAnalysis({ player, heroNames, durationSeconds }: Fo
       </div>
     </section>
   );
+}
+
+const MAX_PLAYER_LEVEL = 30;
+
+function hasTrailingZeroTail(values: number[]): boolean {
+  let lastPositiveIndex = -1;
+  for (const [index, value] of values.entries()) {
+    if (value > 0) lastPositiveIndex = index;
+  }
+
+  return lastPositiveIndex >= 0
+    && values.slice(lastPositiveIndex + 1).every((value) => value === 0);
 }
 
 function AnalysisMetric({ label, value }: { label: string; value: string }) {

@@ -211,6 +211,55 @@ describe('MatchDetailView', () => {
     expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
   });
 
+  it('marks the XP tail as level cap only for a max-level player', () => {
+    const levelCapDetail: MatchDetailSnapshot = {
+      ...detail,
+      detailStatus: 'available',
+      availableSections: ['player_stats'],
+      players: [createPlayer({
+        key: '111',
+        accountId: 111,
+        heroId: 1,
+        level: 30,
+        minuteSeries: {
+          gold: [0, 400, 700],
+          experience: [0, 500, 15_206, 0, 0],
+          netWorth: [600, 2_000, 5_000],
+          lastHits: [0, 10, 30],
+          heroDamage: [0, 500, 2_000],
+          imp: [0, 5, 19],
+        },
+      })],
+    };
+
+    const viewProps = {
+      heroNames: { 1: 'Sniper' },
+      currentAccountId: 111,
+      isLoading: false,
+      error: null,
+      parseError: null,
+      isParsing: false,
+      onBack: vi.fn(),
+      onRefresh: vi.fn(),
+      onParse: vi.fn(),
+    };
+    const { rerender } = render(<MatchDetailView detail={levelCapDetail} {...viewProps} />);
+
+    expect(screen.getByText('LEVEL CAP')).toBeVisible();
+
+    rerender(
+      <MatchDetailView
+        detail={{
+          ...levelCapDetail,
+          players: [{ ...levelCapDetail.players[0], level: 29 }],
+        }}
+        {...viewProps}
+      />,
+    );
+
+    expect(screen.queryByText('LEVEL CAP')).not.toBeInTheDocument();
+  });
+
   it('groups builds by team, highlights the current account, and renders full timelines', () => {
     const longPurchases = Array.from({ length: 14 }, (_, index) => ({ time: index * 30, itemId: index === 13 ? 99_999 : 29 }));
     const longAbilities = [

@@ -5,6 +5,7 @@ import type { MatchDetailPlayer } from '../lib/match-detail';
 
 type PlayerMinuteChartsProps = {
   durationSeconds: number | null;
+  levelCapReached: boolean;
   series: MatchDetailPlayer['minuteSeries'];
 };
 
@@ -29,7 +30,7 @@ const METRICS: MetricConfig[] = [
   { key: 'heroDamage', label: 'Hero damage', colorToken: '--signal-red', fallbackColor: '#ff365f' },
 ];
 
-export function PlayerMinuteCharts({ durationSeconds, series }: PlayerMinuteChartsProps) {
+export function PlayerMinuteCharts({ durationSeconds, levelCapReached, series }: PlayerMinuteChartsProps) {
   return (
     <div className="player-minute-charts" aria-label="Per-minute player performance charts">
       {METRICS.map((metric, index) => (
@@ -37,6 +38,7 @@ export function PlayerMinuteCharts({ durationSeconds, series }: PlayerMinuteChar
           config={metric}
           durationSeconds={durationSeconds}
           key={metric.key}
+          levelCapReached={metric.key === 'experience' && levelCapReached}
           showXAxis={index === METRICS.length - 1}
           values={series[metric.key]}
         />
@@ -48,11 +50,13 @@ export function PlayerMinuteCharts({ durationSeconds, series }: PlayerMinuteChar
 function PlayerMinuteChart({
   config,
   durationSeconds,
+  levelCapReached,
   showXAxis,
   values,
 }: {
   config: MetricConfig;
   durationSeconds: number | null;
+  levelCapReached: boolean;
   showXAxis: boolean;
   values: number[];
 }) {
@@ -164,7 +168,10 @@ function PlayerMinuteChart({
   return (
     <section className="player-minute-chart">
       <div className="player-minute-chart__header">
-        <span>{config.label}</span>
+        <div className="player-minute-chart__header-label">
+          <span>{config.label}</span>
+          {levelCapReached ? <span className="player-minute-chart__level-cap">LEVEL CAP</span> : null}
+        </div>
         <strong>{formatCompact(values.at(-1) ?? 0)}</strong>
       </div>
       {values.length < 2 ? <span className="player-minute-chart__empty">No timeline</span> : (

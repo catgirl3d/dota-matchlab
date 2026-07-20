@@ -25,6 +25,22 @@
     color: var(--muted);
   }
 
+  .player-minute-chart__header-label {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .player-minute-chart__header .player-minute-chart__level-cap {
+    border: 1px solid rgba(198, 242, 74, 0.48);
+    padding: 1px 3px;
+    color: var(--acid);
+    font-size: 0.52rem;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+  }
+
   .player-minute-chart__header strong {
     color: var(--paper);
   }
