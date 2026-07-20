@@ -538,8 +538,16 @@ function BuildTeamColumn({
   return (
     <section className={`build-team build-team--${side}`} aria-labelledby={`build-team-${side}`}>
       <header className="build-team__header">
-        <span className="micro-label">{side.toUpperCase()} / {orderedPlayers.length} PLAYERS</span>
-        <h4 id={`build-team-${side}`}>{side === 'radiant' ? 'Radiant builds' : 'Dire builds'}</h4>
+        <div className="build-team__header-title">
+          <span className="micro-label">
+            {side === 'radiant' ? 'Radiant Faction' : 'Dire Faction'}
+          </span>
+          <h4 id={`build-team-${side}`}>{side === 'radiant' ? 'Radiant builds' : 'Dire builds'}</h4>
+        </div>
+        <div className="build-team__badge">
+          <span className="build-team__badge-count">{orderedPlayers.length}</span>
+          <span className="build-team__badge-label">Players</span>
+        </div>
       </header>
       {orderedPlayers.length === 0 ? (
         <p className="build-team__empty">Roster is incomplete. No {side} player data was stored.</p>
