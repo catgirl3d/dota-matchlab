@@ -15,7 +15,7 @@ import { FilterDropdown } from './FilterDropdown';
 
 type PlayerAccount = Pick<
   Tables<'tracked_accounts'>,
-  'id' | 'avatar_url' | 'persona_name' | 'rank_tier'
+  'avatar_url' | 'persona_name' | 'rank_tier'
 > & { dota_account_id: number };
 
 type PlayerDashboardProps = {
@@ -32,13 +32,15 @@ type PlayerDashboardProps = {
   onNextPage: (cursor: ArchiveCursor) => void;
   onPreviousPage: () => void;
   hasPreviousPage: boolean;
-  onSyncArchive: () => void;
-  onSyncAllArchive: () => void;
-  archiveSyncResult?: MatchSyncResult;
-  archiveSyncError: Error | null;
-  isArchiveSyncing: boolean;
-  isArchiveSyncingAll: boolean;
-  archiveSyncProgress: MatchSyncProgress | null;
+  syncControls?: {
+    onSyncArchive: () => void;
+    onSyncAllArchive: () => void;
+    archiveSyncResult?: MatchSyncResult;
+    archiveSyncError: Error | null;
+    isArchiveSyncing: boolean;
+    isArchiveSyncingAll: boolean;
+    archiveSyncProgress: MatchSyncProgress | null;
+  };
 };
 
 export function PlayerDashboard({
@@ -55,13 +57,7 @@ export function PlayerDashboard({
   onNextPage,
   onPreviousPage,
   hasPreviousPage,
-  onSyncArchive,
-  onSyncAllArchive,
-  archiveSyncResult,
-  archiveSyncError,
-  isArchiveSyncing,
-  isArchiveSyncingAll,
-  archiveSyncProgress,
+  syncControls,
 }: PlayerDashboardProps) {
   const analytics = overview?.summary;
   const matches = page?.matches ?? [];
@@ -105,7 +101,7 @@ export function PlayerDashboard({
           </h2>
           <div className="player-identity__meta">
             <span>{formatRank(account.rank_tier)}</span>
-            <span>Personal match archive</span>
+            <span>{syncControls ? 'Personal match archive' : 'Public read-only showcase'}</span>
             <span>{overview.integrity.linked.toLocaleString('ru-RU')} indexed</span>
             <span>{overview.integrity.complete} complete · {overview.integrity.missingStats} missing stats · {overview.integrity.missingMatch} missing match</span>
           </div>
@@ -313,18 +309,18 @@ export function PlayerDashboard({
             <BreakdownList items={overview.lanes} compact />
           </section>
 
-          <ArchiveSyncPanel
+          {syncControls ? <ArchiveSyncPanel
             accountName={account.persona_name ?? 'Dota player'}
-            result={archiveSyncResult}
+            result={syncControls.archiveSyncResult}
             syncState={overview.syncState}
             archivedCount={overview.integrity.linked}
-            isPending={isArchiveSyncing}
-            isSyncingAll={isArchiveSyncingAll}
-            fullSyncProgress={archiveSyncProgress}
-            error={archiveSyncError}
-            onSync={onSyncArchive}
-            onSyncAll={onSyncAllArchive}
-          />
+            isPending={syncControls.isArchiveSyncing}
+            isSyncingAll={syncControls.isArchiveSyncingAll}
+            fullSyncProgress={syncControls.archiveSyncProgress}
+            error={syncControls.archiveSyncError}
+            onSync={syncControls.onSyncArchive}
+            onSyncAll={syncControls.onSyncAllArchive}
+          /> : null}
         </aside>
       </div>
     </section>
@@ -450,7 +446,6 @@ function HeroPool({
   selectedHeroId: number | null;
   onSelectHero: (heroId: number) => void;
 }) {
-  const maxMatches = heroes[0]?.matches ?? 1;
   return (
     <div className="hero-pool">
       {heroes.length === 0 ? <span className="breakdown-list__empty">No hero data</span> : null}
@@ -473,11 +468,7 @@ function HeroPool({
             <strong>{hero.label}</strong>
             <span>{hero.matches} games · {hero.averageKda.toFixed(1)} KDA</span>
           </div>
-          <strong className="hero-pool__rate">{hero.winRate}%</strong>
-          <span
-            className="hero-pool__bar"
-            style={{ '--hero-share': `${(hero.matches / maxMatches) * 100}%` } as CSSProperties}
-          />
+          <strong className={`hero-pool__rate${hero.winRate < 50 ? ' is-loss' : ''}`}>{hero.winRate}%</strong>
         </button>
       ))}
     </div>

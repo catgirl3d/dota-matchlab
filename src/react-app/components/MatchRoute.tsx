@@ -161,7 +161,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
       || (isPublicImportForMatch && publicImport.isPending)
       || (isSignedIn && Boolean(matchDetailQuery.data) && linkedAccountQuery.isFetching),
     parseDisabledReason: isSignedIn ? null : 'Войдите, чтобы загрузить недостающие данные.',
-    backLabel: isSignedIn ? 'Назад к архиву' : 'На главную',
+    backLabel: isSignedIn ? 'Назад к архиву' : playerId === null ? 'На главную' : 'Назад к публичному архиву',
     onBack: () => undefined,
     onRefresh: () => void matchDetailQuery.refetch(),
     onParse: () => {
@@ -186,8 +186,8 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
       isUnavailable: isPublicImportForMatch && publicImport.data?.status === 'unavailable',
       archivePath: isSignedIn
         ? playerId === null ? '/archive' : `/archive?player=${playerId}`
-        : '/',
-      backLabel: isSignedIn ? 'Назад к архиву' : 'На главную',
+        : playerId === null ? '/' : `/archive?player=${playerId}`,
+      backLabel: isSignedIn ? 'Назад к архиву' : playerId === null ? 'На главную' : 'Назад к публичному архиву',
     } satisfies MatchRouteContext}
     />
   );

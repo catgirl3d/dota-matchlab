@@ -20,7 +20,9 @@ import {
   syncTrackedAccount,
   type MatchSyncProgress,
 } from '../lib/dota-api';
+import { parseMatchId } from '../lib/match-id';
 import { createUserSupabaseClient } from '../lib/supabase';
+import { ArchiveShowcase } from './ArchiveShowcase';
 import { PlayerDashboard } from './PlayerDashboard';
 
 type TrackedAccount = Pick<
@@ -168,23 +170,23 @@ export function MatchWorkspace() {
   }
 
   const accounts = accountsQuery.data ?? [];
-  const requestedAccountId = parsePositiveId(searchParams.get('player'));
+  const requestedAccountId = parseMatchId(searchParams.get('player'));
   const isRequestedAccountOwned = requestedAccountId !== null
     && accounts.some((account) => account.dota_account_id === requestedAccountId);
-  const activeAccountId = isRequestedAccountOwned
-    ? requestedAccountId
-    : accounts[0]?.dota_account_id ?? null;
+  const isExternalRequestedAccount = requestedAccountId !== null && !isRequestedAccountOwned;
+  const activeAccountId = isExternalRequestedAccount ? null : isRequestedAccountOwned
+    ? requestedAccountId : accounts[0]?.dota_account_id ?? null;
   const activeAccount =
     accounts.find((account) => account.dota_account_id === activeAccountId) ?? null;
 
   useEffect(() => {
     const playerParam = searchParams.get('player');
-    if (!accountsQuery.isSuccess || !playerParam || isRequestedAccountOwned) return;
+    if (!accountsQuery.isSuccess || !playerParam || isRequestedAccountOwned || requestedAccountId !== null) return;
 
     const normalizedSearchParams = new URLSearchParams(searchParams);
     normalizedSearchParams.delete('player');
     setSearchParams(normalizedSearchParams, { replace: true });
-  }, [accountsQuery.isSuccess, isRequestedAccountOwned, searchParams, setSearchParams]);
+  }, [accountsQuery.isSuccess, isRequestedAccountOwned, requestedAccountId, searchParams, setSearchParams]);
 
   const archiveCursor = archiveCursors.at(-1) ?? null;
   const archiveOverviewQuery = useQuery<ArchiveOverview>({
@@ -316,6 +318,15 @@ export function MatchWorkspace() {
     : archiveSyncMode === 'page' && isArchiveSyncForActiveAccount
       ? archiveSync.error
       : null;
+
+  if (accountsQuery.isSuccess && isExternalRequestedAccount) {
+    return <ArchiveShowcase
+      key={requestedAccountId}
+      dotaAccountId={requestedAccountId}
+      fallback={<WorkspaceMessage text="Этот публичный архив недоступен." />}
+    />;
+  }
+
   return (
     <section className="match-workspace" aria-labelledby="workspace-title">
       <div className="workspace-header">
@@ -382,32 +393,20 @@ export function MatchWorkspace() {
               onNextPage={(cursor) => setArchiveCursors((current) => [...current, cursor])}
               onPreviousPage={() => setArchiveCursors((current) => current.slice(0, -1))}
               hasPreviousPage={archiveCursors.length > 0}
-              onSyncArchive={() => {
-                if (activeAccount) {
-                  archiveSync.mutate(activeAccount.id);
-                }
-              }}
-              onSyncAllArchive={() => {
-                if (activeAccount) {
-                  archiveSyncAll.mutate(activeAccount.id);
-                }
-              }}
-              archiveSyncResult={archiveSyncResult}
-              archiveSyncError={archiveSyncError}
-              isArchiveSyncing={archiveSync.isPending}
-              isArchiveSyncingAll={archiveSyncAll.isPending}
-              archiveSyncProgress={archiveSyncProgress}
-            />
+               syncControls={{
+                 onSyncArchive: () => { if (activeAccount) archiveSync.mutate(activeAccount.id); },
+                 onSyncAllArchive: () => { if (activeAccount) archiveSyncAll.mutate(activeAccount.id); },
+                 archiveSyncResult,
+                 archiveSyncError,
+                 isArchiveSyncing: archiveSync.isPending,
+                 isArchiveSyncingAll: archiveSyncAll.isPending,
+                 archiveSyncProgress,
+               }}
+             />
         </>
       )}
     </section>
   );
-}
-
-function parsePositiveId(value: string | null): number | null {
-  if (!value || !/^\d+$/.test(value)) return null;
-  const id = Number(value);
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 function AccountRail({

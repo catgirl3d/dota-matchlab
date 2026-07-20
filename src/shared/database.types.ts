@@ -125,6 +125,32 @@ export type Database = {
         }
         Relationships: []
       }
+      archive_showcases: {
+        Row: {
+          dota_account_id: number
+          slug: string
+          tracked_account_id: string
+        }
+        Insert: {
+          dota_account_id: number
+          slug: string
+          tracked_account_id: string
+        }
+        Update: {
+          dota_account_id?: number
+          slug?: string
+          tracked_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_showcases_account_pair_fkey"
+            columns: ["tracked_account_id", "dota_account_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_accounts"
+            referencedColumns: ["id", "dota_account_id"]
+          },
+        ]
+      }
       dota_matches: {
         Row: {
           average_rank: number | null
@@ -560,6 +586,39 @@ export type Database = {
           p_limit?: number
         }
         Returns: Json
+      }
+      get_archive_showcase_overview: {
+        Args: {
+          p_dota_account_id: number
+          p_period?: string
+          p_mode?: string
+          p_result?: string
+          p_party?: string
+          p_position?: string
+          p_hero_id?: number | null
+        }
+        Returns: Json
+      }
+      get_archive_showcase_page: {
+        Args: {
+          p_dota_account_id: number
+          p_period?: string
+          p_mode?: string
+          p_result?: string
+          p_party?: string
+          p_position?: string
+          p_hero_id?: number | null
+          p_cursor_start_time?: number | null
+          p_cursor_match_id?: number | null
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      resolve_archive_showcase: {
+        Args: {
+          p_slug: string
+        }
+        Returns: number | null
       }
       record_match_sync_failure: {
         Args: {

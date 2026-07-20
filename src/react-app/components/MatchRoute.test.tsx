@@ -235,6 +235,16 @@ describe('match router', () => {
     expect(mocks.importMatch).not.toHaveBeenCalled();
   });
 
+  it('returns a signed-out showcase detail to its public archive', async () => {
+    mocks.userId = null;
+    mocks.session = null;
+    mocks.fetchMatchDetail.mockResolvedValue({ players: [] });
+    renderRoute('/matches/8749050591?player=77');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Назад к публичному архиву' }));
+    expect(await screen.findByText(/Archive route \?player=77/)).toHaveTextContent('REPLACE');
+  });
+
   it('requires sign-in before importing a missing match', async () => {
     mocks.userId = null;
     mocks.session = null;

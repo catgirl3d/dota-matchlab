@@ -62,6 +62,9 @@ vi.mock('./PlayerDashboard', () => ({
     </div>
   ),
 }));
+vi.mock('./ArchiveShowcase', () => ({
+  ArchiveShowcase: ({ dotaAccountId }: { dotaAccountId: number }) => <div>Public showcase {dotaAccountId}</div>,
+}));
 
 function LocationProbe() {
   const location = useLocation();
@@ -113,12 +116,12 @@ describe('MatchWorkspace player query', () => {
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('?view=matches REPLACE'));
   });
 
-  it('replaces an unowned player parameter', async () => {
+  it('keeps an explicit unowned player parameter for the public showcase', async () => {
     renderWorkspace('/?player=78');
 
-    expect(await screen.findByText('Active account 77')).toBeVisible();
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('REPLACE'));
-    expect(screen.getByTestId('location')).not.toHaveTextContent('player=');
+    expect(await screen.findByText('Public showcase 78')).toBeVisible();
+    expect(screen.getByTestId('location')).toHaveTextContent('?player=78 POP');
+    expect(fetchArchiveOverview).not.toHaveBeenCalled();
   });
 
   it('keeps an absent player parameter as the default account route', async () => {

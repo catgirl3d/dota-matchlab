@@ -112,6 +112,29 @@ const overview: ArchiveOverview = {
 const page: ArchivePage = { matches: snapshot.matches, nextCursor: null };
 
 describe('PlayerDashboard', () => {
+  it('renders a public label and no sync controls when mutations are omitted', () => {
+    render(
+      <MemoryRouter><PlayerDashboard
+        account={account}
+        overview={overview}
+        page={page}
+        filters={DEFAULT_ARCHIVE_FILTERS}
+        heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }}
+        isLoading={false}
+        isRefreshing={false}
+        error={null}
+        onRefresh={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
+        hasPreviousPage={false}
+      /></MemoryRouter>,
+    );
+
+    expect(screen.getByText('Public read-only showcase')).toBeVisible();
+    expect(screen.queryByText('PARTIAL')).not.toBeInTheDocument();
+  });
+
   it('renders archive metrics and filters the match log by result', () => {
     const onFiltersChange = vi.fn();
     const onNextPage = vi.fn();
@@ -132,12 +155,7 @@ describe('PlayerDashboard', () => {
         onNextPage={onNextPage}
         onPreviousPage={onPreviousPage}
         hasPreviousPage
-        onSyncArchive={vi.fn()}
-        onSyncAllArchive={vi.fn()}
-        archiveSyncError={null}
-        isArchiveSyncing={false}
-        isArchiveSyncingAll={false}
-        archiveSyncProgress={null}
+        syncControls={{ onSyncArchive: vi.fn(), onSyncAllArchive: vi.fn(), archiveSyncError: null, isArchiveSyncing: false, isArchiveSyncingAll: false, archiveSyncProgress: null }}
       /></MemoryRouter>,
     );
 
@@ -206,17 +224,17 @@ describe('PlayerDashboard', () => {
         onNextPage={vi.fn()}
         onPreviousPage={vi.fn()}
         hasPreviousPage={false}
-        onSyncArchive={vi.fn()}
-        onSyncAllArchive={vi.fn()}
-        archiveSyncError={null}
-        isArchiveSyncing={false}
-        isArchiveSyncingAll={false}
-        archiveSyncProgress={null}
+        syncControls={{ onSyncArchive: vi.fn(), onSyncAllArchive: vi.fn(), archiveSyncError: null, isArchiveSyncing: false, isArchiveSyncingAll: false, archiveSyncProgress: null }}
       /></MemoryRouter>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Сбросить фильтр героя' }));
     expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, heroId: null });
+  });
+
+  it('hides synchronization controls in a read-only dashboard', () => {
+    render(<MemoryRouter><PlayerDashboard account={account} overview={overview} page={page} filters={DEFAULT_ARCHIVE_FILTERS} heroNames={{}} isLoading={false} isRefreshing={false} error={null} onRefresh={vi.fn()} onFiltersChange={vi.fn()} onNextPage={vi.fn()} onPreviousPage={vi.fn()} hasPreviousPage={false} /></MemoryRouter>);
+    expect(screen.queryByText('PARTIAL')).not.toBeInTheDocument();
   });
 
   it('keeps the textual hero mark when an archive hero has no local icon', () => {
@@ -240,12 +258,7 @@ describe('PlayerDashboard', () => {
         onNextPage={vi.fn()}
         onPreviousPage={vi.fn()}
         hasPreviousPage={false}
-        onSyncArchive={vi.fn()}
-        onSyncAllArchive={vi.fn()}
-        archiveSyncError={null}
-        isArchiveSyncing={false}
-        isArchiveSyncingAll={false}
-        archiveSyncProgress={null}
+        syncControls={{ onSyncArchive: vi.fn(), onSyncAllArchive: vi.fn(), archiveSyncError: null, isArchiveSyncing: false, isArchiveSyncingAll: false, archiveSyncProgress: null }}
       /></MemoryRouter>,
     );
 
@@ -286,12 +299,7 @@ describe('PlayerDashboard', () => {
         onNextPage={vi.fn()}
         onPreviousPage={vi.fn()}
         hasPreviousPage={false}
-        onSyncArchive={vi.fn()}
-        onSyncAllArchive={vi.fn()}
-        archiveSyncError={null}
-        isArchiveSyncing={false}
-        isArchiveSyncingAll={false}
-        archiveSyncProgress={null}
+        syncControls={{ onSyncArchive: vi.fn(), onSyncAllArchive: vi.fn(), archiveSyncError: null, isArchiveSyncing: false, isArchiveSyncingAll: false, archiveSyncProgress: null }}
       /></MemoryRouter>,
     );
 

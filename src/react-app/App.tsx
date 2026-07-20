@@ -1,8 +1,11 @@
 import { Show, SignInButton, UserButton } from '@clerk/react';
-import { BrowserRouter, Link, Route, Routes } from 'react-router';
+import { BrowserRouter, Link, Route, Routes, useSearchParams } from 'react-router';
+import { ArchiveShowcaseAlias } from './components/ArchiveShowcaseAlias';
+import { ArchiveShowcase } from './components/ArchiveShowcase';
 import { LandingPage } from './components/LandingPage';
 import { MatchDetailRoute, MatchRouteLayout, RouteError } from './components/MatchRoute';
 import { MatchWorkspace } from './components/MatchWorkspace';
+import { parseMatchId } from './lib/match-id';
 
 type AppProps = {
   clerkEnabled: boolean;
@@ -23,6 +26,7 @@ export default function App({ clerkEnabled }: AppProps) {
       <main>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/demo" element={<ArchiveShowcaseAlias slug="demo" />} />
           <Route path="/archive" element={<ArchiveRoute clerkEnabled={clerkEnabled} />} />
           <Route path="/matches/:matchId" element={<MatchRouteLayout authEnabled={clerkEnabled} />}>
             <Route index element={<MatchDetailRoute />} />
@@ -65,6 +69,18 @@ function HeaderActions({ clerkEnabled }: AppProps) {
 }
 
 function ArchiveRoute({ clerkEnabled }: AppProps) {
+  const [searchParams] = useSearchParams();
+  const playerId = parseMatchId(searchParams.get('player'));
+  const gate = <ArchiveGate clerkEnabled={clerkEnabled} />;
+
+  if (playerId !== null) {
+    return clerkEnabled ? (
+      <>
+        <Show when="signed-in"><MatchWorkspace /></Show>
+        <Show when="signed-out"><ArchiveShowcase key={playerId} dotaAccountId={playerId} fallback={gate} /></Show>
+      </>
+    ) : <ArchiveShowcase key={playerId} dotaAccountId={playerId} fallback={gate} />;
+  }
   if (!clerkEnabled) {
     return <RouteError text="Вход не настроен для этого окружения." />;
   }
@@ -72,16 +88,17 @@ function ArchiveRoute({ clerkEnabled }: AppProps) {
   return (
     <>
       <Show when="signed-in"><MatchWorkspace /></Show>
-      <Show when="signed-out">
-        <section className="archive-gate" aria-labelledby="archive-gate-title">
-          <p className="eyebrow">PRIVATE ARCHIVE / AUTH REQUIRED</p>
-          <h1 id="archive-gate-title">Требуется авторизация</h1>
-          <p>Войдите в аккаунт, чтобы разблокировать импорт новых матчей по ID и отслеживать свою статистику. Просмотр ранее загруженных разборов доступен без входа на главной.</p>
-          <SignInButton mode="modal">
-            <button className="archive-gate__button" type="button">Войти в архив</button>
-          </SignInButton>
-        </section>
-      </Show>
+      <Show when="signed-out">{gate}</Show>
     </>
   );
+}
+
+export function ArchiveGate({ clerkEnabled }: AppProps) {
+  if (!clerkEnabled) return <RouteError text="Вход не настроен для этого окружения." />;
+  return <section className="archive-gate" aria-labelledby="archive-gate-title">
+    <p className="eyebrow">PRIVATE ARCHIVE / AUTH REQUIRED</p>
+    <h1 id="archive-gate-title">Требуется авторизация</h1>
+    <p>Войдите в аккаунт, чтобы разблокировать импорт новых матчей по ID и отслеживать свою статистику. Просмотр ранее загруженных разборов доступен без входа на главной.</p>
+    <SignInButton mode="modal"><button className="archive-gate__button" type="button">Войти в архив</button></SignInButton>
+  </section>;
 }

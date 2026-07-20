@@ -8,3 +8,12 @@ export const archiveQueryKeys = {
   page: (trackedAccountId: string | undefined, filters: ArchiveFilters, cursor: ArchiveCursor | null) =>
     [...archiveQueryKeys.root(trackedAccountId), 'page', filters, cursor] as const,
 };
+
+export const archiveShowcaseQueryKeys = {
+  root: (dotaAccountId: number | null) => ['archive-showcase', dotaAccountId] as const,
+  resolve: (slug: string) => ['archive-showcase-alias', slug] as const,
+  overview: (dotaAccountId: number | null, filters: ArchiveFilters) =>
+    [...archiveShowcaseQueryKeys.root(dotaAccountId), 'overview', filters] as const,
+  page: (dotaAccountId: number | null, filters: ArchiveFilters, cursor: ArchiveCursor | null) =>
+    [...archiveShowcaseQueryKeys.root(dotaAccountId), 'page', filters, cursor] as const,
+};

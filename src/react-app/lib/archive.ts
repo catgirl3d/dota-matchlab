@@ -98,6 +98,16 @@ export type ArchiveOverview = {
 
 export type ArchiveCursor = { startTime: number | null; matchId: number };
 export type ArchivePage = { matches: ArchiveMatch[]; nextCursor: ArchiveCursor | null };
+export type ArchiveShowcaseOverview = {
+  account: {
+    dotaAccountId: number;
+    personaName: string | null;
+    avatarUrl: string | null;
+    rankTier: number | null;
+    profileRefreshedAt: string | null;
+  };
+  overview: ArchiveOverview;
+};
 
 type UserSupabaseClient = SupabaseClient<Database>;
 
@@ -133,9 +143,71 @@ export async function fetchArchivePage(
   return mapPage(data);
 }
 
+export async function fetchArchiveShowcaseOverview(
+  client: UserSupabaseClient,
+  dotaAccountId: number,
+  filters: ArchiveFilters,
+  signal?: AbortSignal,
+): Promise<ArchiveShowcaseOverview | null> {
+  const { data, error } = await client
+    .rpc('get_archive_showcase_overview', archiveShowcaseFilterArgs(dotaAccountId, filters))
+    .abortSignal(signal ?? new AbortController().signal);
+  if (error) throw new Error(`Не удалось загрузить публичный архив: ${error.message}`);
+  if (data === null) return null;
+  const record = asRecord(data, 'showcase overview');
+  const account = asRecord(record.account, 'showcase account');
+  return {
+    account: {
+      dotaAccountId: numberValue(account.dotaAccountId),
+      personaName: nullableString(account.personaName),
+      avatarUrl: nullableString(account.avatarUrl),
+      rankTier: nullableNumber(account.rankTier),
+      profileRefreshedAt: nullableString(account.profileRefreshedAt),
+    },
+    overview: mapOverview(record.overview),
+  };
+}
+
+export async function fetchArchiveShowcasePage(
+  client: UserSupabaseClient,
+  dotaAccountId: number,
+  filters: ArchiveFilters,
+  cursor: ArchiveCursor | null,
+  signal?: AbortSignal,
+): Promise<ArchivePage | null> {
+  const { data, error } = await client
+    .rpc('get_archive_showcase_page', {
+      ...archiveShowcaseFilterArgs(dotaAccountId, filters),
+      p_cursor_start_time: cursor?.startTime ?? null,
+      p_cursor_match_id: cursor?.matchId ?? null,
+      p_limit: 100,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  if (error) throw new Error(`Не удалось загрузить страницу публичного архива: ${error.message}`);
+  return data === null ? null : mapPage(data);
+}
+
+export async function resolveArchiveShowcase(
+  client: UserSupabaseClient,
+  slug: string,
+  signal?: AbortSignal,
+): Promise<number | null> {
+  const { data, error } = await client
+    .rpc('resolve_archive_showcase', { p_slug: slug })
+    .abortSignal(signal ?? new AbortController().signal);
+  if (error) throw new Error(`Не удалось открыть публичный архив: ${error.message}`);
+  return data === null ? null : numberValue(data);
+}
+
 export function archiveFilterArgs(trackedAccountId: string, filters: ArchiveFilters) {
   return {
     p_tracked_account_id: trackedAccountId,
+    ...archiveFilterValues(filters),
+  };
+}
+
+function archiveFilterValues(filters: ArchiveFilters) {
+  return {
     p_period: filters.period,
     p_mode: filters.mode,
     p_result: filters.result,
@@ -143,6 +215,10 @@ export function archiveFilterArgs(trackedAccountId: string, filters: ArchiveFilt
     p_position: filters.position,
     p_hero_id: filters.heroId,
   };
+}
+
+export function archiveShowcaseFilterArgs(dotaAccountId: number, filters: ArchiveFilters) {
+  return { p_dota_account_id: dotaAccountId, ...archiveFilterValues(filters) };
 }
 
 function mapOverview(value: unknown): ArchiveOverview {
@@ -218,6 +294,7 @@ function arrayValue(value: unknown): unknown[] { if (!Array.isArray(value)) thro
 function numberValue(value: unknown): number { if (typeof value !== 'number') throw new Error('Некорректное число архива'); return value; }
 function nullableNumber(value: unknown): number | null { return value === null ? null : numberValue(value); }
 function stringValue(value: unknown): string { if (typeof value !== 'string') throw new Error('Некорректная строка архива'); return value; }
+function nullableString(value: unknown): string | null { return value === null ? null : stringValue(value); }
 function nullableBoolean(value: unknown): boolean | null { if (value === null) return null; if (typeof value !== 'boolean') throw new Error('Некорректный флаг архива'); return value; }
 function formValue(value: unknown): ArchiveOverview['form'][number] {
   if (value === 'win' || value === 'loss' || value === 'unknown') return value;
