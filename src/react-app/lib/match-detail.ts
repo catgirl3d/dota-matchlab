@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json, Tables } from '../../shared/database.types';
+import { abilityIconSlugs } from './ability-icon-slugs';
 
 export type MatchDetailPlayer = {
   key: string;
@@ -454,7 +455,11 @@ function readAbilityEvents(
         abilityId,
         time: readInteger(ability.time) ?? 0,
         level: readInteger(ability.levelObtained) ?? readInteger(ability.level) ?? 0,
-        name: readString(readObject(ability.abilityType)?.name) ?? abilityNames.get(abilityId) ?? null,
+        name:
+          readString(readObject(ability.abilityType)?.name) ??
+          abilityNames.get(abilityId) ??
+          abilityIconSlugs[abilityId] ??
+          null,
         isTalent: ability.isTalent === true,
       }];
     })

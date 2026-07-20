@@ -589,12 +589,12 @@ function TeamBuildHeroPortrait({ heroId, heroNames }: { heroId: number | null; h
 function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][number] }) {
   const abilityIcon = ability.isTalent ? null : getAbilityIcon(ability.name);
   const label = ability.isTalent ? 'Talent' : abilityIcon ? formatAbilityName(ability.name, ability.abilityId) : `Ability #${ability.abilityId}`;
-  const timing = `${formatEventTime(ability.time)} · level ${ability.level + 1}`;
+  const timing = ability.isTalent ? formatEventTime(ability.time) : `${formatEventTime(ability.time)} · level ${ability.level + 1}`;
 
   return (
     <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : abilityIcon ? ' build-timeline__token--ability' : ''}`} role="img" aria-label={`${label}, ${timing}`} title={label}>
       {ability.isTalent ? <strong>TALENT</strong> : abilityIcon ? <img className="build-timeline__ability-icon" src={abilityIcon.src} alt="" /> : <strong>{label}</strong>}
-      <small>{formatEventTime(ability.time)} · L{ability.level + 1}</small>
+      <small>{formatEventTime(ability.time)}{ability.isTalent ? '' : ` · L${ability.level + 1}`}</small>
     </span>
   );
 }

@@ -976,6 +976,11 @@
   .build-timeline__token small,
   .build-timeline__empty,
   .player-build__expand {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    text-align: center;
     overflow: hidden;
     color: var(--muted);
     font-family: var(--font-mono);
