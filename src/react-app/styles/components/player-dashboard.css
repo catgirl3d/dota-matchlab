@@ -1156,22 +1156,10 @@
     z-index: 1;
     color: var(--acid);
   }
-
-  .hero-pool__bar {
-    position: absolute;
-    right: 20px;
-    bottom: 0;
-    left: 74px;
-    height: 2px;
-    background: linear-gradient(
-      to right,
-      var(--signal-violet) 0,
-      var(--signal-violet) var(--hero-share),
-      transparent var(--hero-share),
-      transparent 100%
-    );
-    opacity: 0.7;
+  .hero-pool__rate.is-loss {
+    color: var(--signal-red);
   }
+
 
   .dashboard-side-column > .archive-sync {
     margin-top: 0;
