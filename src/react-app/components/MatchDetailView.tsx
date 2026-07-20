@@ -1,6 +1,4 @@
 import { useState, type ReactNode } from 'react';
-import direCrest from '../../../assets/icons/dire_square.webp?url';
-import radiantCrest from '../../../assets/icons/radiant_square.webp?url';
 import type {
   MatchChatMessage,
   MatchDetailPlayer,
@@ -14,16 +12,11 @@ import { HeroPortrait } from './HeroPortrait';
 import { PlayerSortControls, type PlayerSort } from './PlayerSortControls';
 import { AdvantageTimeline } from './AdvantageTimeline';
 import { PlayerMinuteCharts } from './PlayerMinuteCharts';
-
-type PerformanceRank = 1 | 2;
-type PlayerAchievement = 'mvp' | 'top-imp' | 'most-damage' | 'most-tower-damage';
-
-const PLAYER_ACHIEVEMENTS: Record<PlayerAchievement, { label: string; title: string }> = {
-  mvp: { label: 'MVP', title: 'Highest Individual Match Performance' },
-  'top-imp': { label: 'TOP 2 IMP', title: 'Second-highest Individual Match Performance' },
-  'most-damage': { label: 'MOST DMG', title: 'Highest hero damage' },
-  'most-tower-damage': { label: 'MOST TD', title: 'Highest tower damage' },
-};
+import { MatchDetailHeader } from './match-detail/MatchDetailHeader';
+import { MatchScoreboard } from './match-detail/MatchScoreboard';
+import { formatAccount, formatCompact, formatEnum, heroLabel, heroMark } from './match-detail/match-detail-display';
+import { sortPlayers } from './match-detail/match-detail-player';
+import { DetailHeading } from './match-detail/match-detail-primitives';
 
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
@@ -90,77 +83,20 @@ export function MatchDetailView({
     ? null
     : detail.players.find((player) => player.accountId === currentAccountId) ?? null;
   const hasPlayerStats = detail.availableSections.includes('player_stats');
-  const hasDetailSections = detail.availableSections.length > 0;
-  const detailNotice = detail.detailStatus === 'available'
-    ? null
-    : hasDetailSections
-      ? {
-          title: 'Частичный разбор',
-          message: 'Сохранённые данные уже показаны. Недостающие разделы можно дозагрузить или повторить загрузку полного разбора.',
-        }
-      : {
-          title: 'Базовый разбор',
-          message: 'Основная статистика уже доступна. Загрузите расширенный разбор для playback, abilities и подробных событий.',
-        };
-  const radiantLabel = detail.radiantWin === true ? 'WON' : detail.radiantWin === false ? 'LOST' : '—';
-  const direLabel = detail.radiantWin === false ? 'WON' : detail.radiantWin === true ? 'LOST' : '—';
-
   return (
     <section className="match-detail" aria-label="Match detail">
-      <div className="match-detail__toolbar">
-        <button className="match-detail__back" type="button" onClick={onBack}>
-          <span aria-hidden="true">←</span>
-          {backLabel}
-        </button>
-        <div className="match-detail__signals">
-          <span>Источник: {detail.source.toUpperCase()}</span>
-          <span className={`detail-status detail-status--${detail.detailStatus}`}>
-            {formatDetailStatus(detail.detailStatus)}
-          </span>
-          <button type="button" onClick={onRefresh}>Обновить</button>
-        </div>
-      </div>
+      <MatchDetailHeader
+        detail={detail}
+        parseError={parseError}
+        isParsing={isParsing}
+        parseDisabledReason={parseDisabledReason}
+        backLabel={backLabel}
+        onBack={onBack}
+        onRefresh={onRefresh}
+        onParse={onParse}
+      />
 
-      <header className="match-detail__scoreline">
-        <TeamOutcome
-          side="radiant"
-          label="Radiant"
-          outcome={radiantLabel}
-          score={detail.radiantScore}
-          won={detail.radiantWin === true}
-        />
-        <div className="match-detail__clock">
-          <span className="micro-label">MATCH / {detail.matchId}</span>
-          <strong>{formatDuration(detail.durationSeconds)}</strong>
-          <span>{formatMode(detail.gameMode)} · {formatDate(detail.startTime)}</span>
-        </div>
-        <TeamOutcome
-          side="dire"
-          label="Dire"
-          outcome={direLabel}
-          score={detail.direScore}
-          won={detail.radiantWin === false}
-        />
-      </header>
-
-      {detailNotice ? (
-        <div className="match-detail__notice">
-          <div>
-            <strong>{detailNotice.title}</strong>
-            <span>{detailNotice.message}</span>
-          </div>
-          {parseDisabledReason ? (
-            <span className="match-detail__parse-restriction">{parseDisabledReason}</span>
-          ) : (
-            <button type="button" onClick={onParse} disabled={isParsing}>
-              {isParsing ? 'Загружаем детали…' : 'Загрузить полный разбор'}
-            </button>
-          )}
-          {parseError ? <span className="match-detail__parse-error">{parseError.message}</span> : null}
-        </div>
-      ) : null}
-
-      <TeamScoreboard
+      <MatchScoreboard
         radiantPlayers={radiantPlayers}
         direPlayers={direPlayers}
         heroNames={heroNames}
@@ -328,200 +264,6 @@ function ChatMessage({
   );
 }
 
-function TeamOutcome({
-  side,
-  label,
-  outcome,
-  score,
-  won,
-}: {
-  side: 'radiant' | 'dire';
-  label: string;
-  outcome: string;
-  score: number;
-  won: boolean;
-}) {
-  const crestSrc = side === 'radiant' ? radiantCrest : direCrest;
-
-  return (
-    <div className={`team-outcome team-outcome--${side}${won ? ' is-winner' : ''}`}>
-      <span className="team-outcome__crest" aria-hidden="true">
-        <img src={crestSrc} alt="" />
-      </span>
-      <div>
-        <span className="micro-label">{outcome}</span>
-        <strong>{label}</strong>
-      </div>
-      <span className="team-outcome__score">{score}</span>
-    </div>
-  );
-}
-
-function TeamScoreboard({
-  radiantPlayers,
-  direPlayers,
-  heroNames,
-  currentAccountId,
-}: {
-  radiantPlayers: MatchDetailPlayer[];
-  direPlayers: MatchDetailPlayer[];
-  heroNames: Record<number, string>;
-  currentAccountId: number | null;
-}) {
-  const [sort, setSort] = useState<PlayerSort>('slot');
-  const players = [...radiantPlayers, ...direPlayers];
-  const performanceRanks = rankPlayersByImp(players);
-  const playerAchievements = getPlayerAchievements(players, performanceRanks);
-
-  return (
-    <section className="detail-panel detail-scoreboard" aria-labelledby="scoreboard-title">
-      <div className="detail-scoreboard__header">
-        <DetailHeading eyebrow="MATCHUP / SCOREBOARD" title="Ten-player breakdown" id="scoreboard-title" />
-        <PlayerSortControls value={sort} onChange={setSort} ariaLabel="Sort ten-player breakdown" />
-      </div>
-      <div className="detail-scoreboard__teams">
-        <TeamRoster
-          label="Radiant"
-          players={radiantPlayers}
-          heroNames={heroNames}
-          currentAccountId={currentAccountId}
-          sort={sort}
-          performanceRanks={performanceRanks}
-          playerAchievements={playerAchievements}
-        />
-        <div className="detail-scoreboard__versus">VS</div>
-        <TeamRoster
-          label="Dire"
-          players={direPlayers}
-          heroNames={heroNames}
-          currentAccountId={currentAccountId}
-          sort={sort}
-          performanceRanks={performanceRanks}
-          playerAchievements={playerAchievements}
-        />
-      </div>
-    </section>
-  );
-}
-
-function TeamRoster({
-  label,
-  players,
-  heroNames,
-  currentAccountId,
-  sort,
-  performanceRanks,
-  playerAchievements,
-}: {
-  label: string;
-  players: MatchDetailPlayer[];
-  heroNames: Record<number, string>;
-  currentAccountId: number | null;
-  sort: PlayerSort;
-  performanceRanks: Map<string, PerformanceRank>;
-  playerAchievements: Map<string, PlayerAchievement[]>;
-}) {
-  const orderedPlayers = sortPlayers(players, sort);
-
-  return (
-    <div className="team-roster">
-      <span className="team-roster__label">{label}</span>
-      {orderedPlayers.map((player) => {
-        const performanceRank = performanceRanks.get(player.key);
-        const achievements = playerAchievements.get(player.key) ?? [];
-        const playerLabel = player.name ?? formatAccount(player.accountId);
-        const rankClass = performanceRank === 1 ? ' is-highest' : performanceRank === 2 ? ' is-second' : '';
-        const currentClass = currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : '';
-
-        return (
-          <article
-            className={`scoreboard-player ${player.isRadiant ? 'is-radiant' : 'is-dire'}${rankClass}${currentClass}`}
-            key={player.key}
-            aria-label={`Scoreboard entry for ${playerLabel}`}
-          >
-            <MatchDetailHeroMark heroId={player.heroId} heroNames={heroNames} />
-            <div className="scoreboard-player__identity">
-              <strong>{playerLabel}</strong>
-              <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
-              {achievements.length > 0 ? (
-                <div className="scoreboard-player__achievements">
-                  {achievements.map((achievement) => (
-                    <span className={`scoreboard-player__achievement scoreboard-player__achievement--${achievement}`} key={achievement} title={PLAYER_ACHIEVEMENTS[achievement].title}>
-                      {PLAYER_ACHIEVEMENTS[achievement].label}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <div className="scoreboard-player__kda" role="group" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
-              <span><small>K</small><strong>{player.kills}</strong></span>
-              <span><small>D</small><strong>{player.deaths}</strong></span>
-              <span><small>A</small><strong>{player.assists}</strong></span>
-            </div>
-            <div className="scoreboard-player__economy">
-              <span><small>GPM</small><strong>{player.goldPerMinute}</strong></span>
-              <span><small>XPM</small><strong>{player.xpPerMinute}</strong></span>
-            </div>
-            <span className="scoreboard-player__net"><small>NW</small><strong>{formatCompact(player.netWorth)}</strong></span>
-          </article>
-        );
-      })}
-    </div>
-  );
-}
-
-function rankPlayersByImp(players: MatchDetailPlayer[]): Map<string, PerformanceRank> {
-  const impValues = [...new Set(players.flatMap((player) => player.imp === null ? [] : [player.imp]))]
-    .sort((left, right) => right - left);
-  const highest = impValues[0];
-  const second = impValues[1];
-  const ranks = new Map<string, PerformanceRank>();
-
-  for (const player of players) {
-    if (player.imp === highest) {
-      ranks.set(player.key, 1);
-    } else if (player.imp === second) {
-      ranks.set(player.key, 2);
-    }
-  }
-
-  return ranks;
-}
-
-function getPlayerAchievements(
-  players: MatchDetailPlayer[],
-  performanceRanks: Map<string, PerformanceRank>,
-): Map<string, PlayerAchievement[]> {
-  const highestHeroDamage = highestPlayerMetric(players, (player) => player.heroDamage);
-  const highestTowerDamage = highestPlayerMetric(players, (player) => player.towerDamage);
-  const achievements = new Map<string, PlayerAchievement[]>();
-
-  for (const player of players) {
-    const playerAchievements: PlayerAchievement[] = [];
-    const performanceRank = performanceRanks.get(player.key);
-    if (performanceRank === 1) {
-      playerAchievements.push('mvp');
-    } else if (performanceRank === 2) {
-      playerAchievements.push('top-imp');
-    }
-    if (highestHeroDamage > 0 && player.heroDamage === highestHeroDamage) {
-      playerAchievements.push('most-damage');
-    }
-    if (highestTowerDamage > 0 && player.towerDamage === highestTowerDamage) {
-      playerAchievements.push('most-tower-damage');
-    }
-    if (playerAchievements.length > 0) {
-      achievements.set(player.key, playerAchievements);
-    }
-  }
-
-  return achievements;
-}
-
-function highestPlayerMetric(players: MatchDetailPlayer[], getValue: (player: MatchDetailPlayer) => number): number {
-  return topPlayerMetricValues(players, getValue)[0] ?? 0;
-}
-
 function topPlayerMetricValues(players: MatchDetailPlayer[], getValue: (player: MatchDetailPlayer) => number): number[] {
   return [...new Set(players.map(getValue))].sort((left, right) => right - left);
 }
@@ -645,37 +387,6 @@ function BuildTeamColumn({
       ))}
     </section>
   );
-}
-
-function sortPlayers(players: MatchDetailPlayer[], sort: PlayerSort): MatchDetailPlayer[] {
-  return [...players].sort((left, right) => {
-    if (sort === 'slot') {
-      return left.playerSlot - right.playerSlot;
-    }
-
-    const leftValue = playerSortValue(left, sort);
-    const rightValue = playerSortValue(right, sort);
-    if (leftValue === null && rightValue !== null) {
-      return 1;
-    }
-    if (leftValue !== null && rightValue === null) {
-      return -1;
-    }
-    if (leftValue !== null && rightValue !== null && leftValue !== rightValue) {
-      return rightValue - leftValue;
-    }
-    return left.playerSlot - right.playerSlot;
-  });
-}
-
-function playerSortValue(player: MatchDetailPlayer, sort: Exclude<PlayerSort, 'slot'>): number | null {
-  if (sort === 'imp') {
-    return player.imp;
-  }
-  if (sort === 'heroDamage') {
-    return player.heroDamage;
-  }
-  return player.towerDamage;
 }
 
 function PlayerBuild({
@@ -903,15 +614,6 @@ function AnalysisMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DetailHeading({ eyebrow, title, id }: { eyebrow: string; title: string; id: string }) {
-  return (
-    <div className="detail-heading">
-      <span className="micro-label">{eyebrow}</span>
-      <h3 id={id}>{title}</h3>
-    </div>
-  );
-}
-
 function DetailMessage({
   text,
   tone = 'neutral',
@@ -929,40 +631,6 @@ function DetailMessage({
       <p>{text}</p>
     </div>
   );
-}
-
-function heroLabel(heroId: number | null, heroNames: Record<number, string>): string {
-  return heroId === null ? 'Unknown hero' : heroNames[heroId] ?? `Hero #${heroId}`;
-}
-
-function heroMark(heroId: number | null, heroNames: Record<number, string>): string {
-  return heroId === null ? '?' : heroLabel(heroId, heroNames).slice(0, 2).toUpperCase();
-}
-
-function formatAccount(accountId: number | null): string {
-  return accountId === null ? 'Anonymous player' : `Player #${accountId}`;
-}
-
-function formatEnum(value: string): string {
-  return value
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replaceAll('_', ' ')
-    .toLowerCase()
-    .replace(/^./, (letter) => letter.toUpperCase());
-}
-
-function formatDetailStatus(status: string): string {
-  return {
-    not_requested: 'Базовые данные',
-    pending: 'В очереди',
-    available: 'Полный разбор',
-    unavailable: 'Детали недоступны',
-    failed: 'Ошибка деталей',
-  }[status] ?? formatEnum(status);
-}
-
-function formatCompact(value: number): string {
-  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }
 
 function formatEventTime(seconds: number): string {
@@ -986,26 +654,4 @@ function matchEventDescription(label: string): string {
     buildings: 'Изменения состояния строений из match playback',
     roshan: 'События Roshan из match playback',
   }[label] ?? label;
-}
-
-function formatMode(mode: number | null): string {
-  return { 1: 'All Pick', 22: 'Ranked All Pick', 23: 'Turbo' }[mode ?? -1] ?? 'Dota 2';
-}
-
-function formatDate(timestamp: number | null): string {
-  if (timestamp === null) return 'Unknown date';
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(timestamp * 1_000));
-}
-
-function formatDuration(seconds: number | null): string {
-  if (seconds === null) return '—';
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${minutes}:${remainder.toString().padStart(2, '0')}`;
 }
