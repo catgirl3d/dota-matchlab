@@ -1,0 +1,172 @@
+@layer components {
+  .advantage-timeline {
+    padding: 20px 22px 18px;
+  }
+
+  .advantage-timeline__legend {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    gap: 16px;
+  }
+
+  .advantage-timeline__legend span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  .advantage-timeline__legend i,
+  .advantage-timeline__tooltip i {
+    width: 12px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--radiant) 0 48%, var(--signal-red) 52% 100%);
+    box-shadow: 0 0 5px rgba(var(--radiant-rgb), 0.35);
+  }
+
+  .advantage-timeline__legend i.is-xp,
+  .advantage-timeline__tooltip i.is-xp {
+    background: repeating-linear-gradient(90deg, var(--signal-blue) 0 3px, transparent 3px 5px);
+    box-shadow: 0 0 5px rgba(73, 199, 229, 0.35);
+  }
+
+  .advantage-timeline__events-key {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.05em;
+  }
+
+  .advantage-timeline__plot {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .advantage-timeline__canvas {
+    position: relative;
+    z-index: 0;
+    min-height: 278px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background:
+      linear-gradient(to bottom, rgba(var(--radiant-rgb), 0.03), transparent 38%, transparent 62%, rgba(255, 54, 95, 0.03)),
+      radial-gradient(circle at center, rgba(23, 26, 22, 0.3), rgba(16, 18, 15, 0.8));
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .advantage-timeline__canvas .uplot {
+    font-family: var(--font-mono);
+  }
+
+  .advantage-timeline__canvas .u-over {
+    cursor: crosshair;
+  }
+
+  .advantage-timeline__canvas .u-select {
+    border: 1px solid rgba(var(--radiant-rgb), 0.62);
+    background: rgba(var(--radiant-rgb), 0.08);
+  }
+
+  .advantage-timeline__tooltip {
+    position: absolute;
+    top: 12px;
+    z-index: 10;
+    display: grid;
+    min-width: 235px;
+    padding: 10px 12px;
+    border: 1px solid var(--line-strong);
+    background: rgba(9, 11, 9, 0.94);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    gap: 8px;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  .advantage-timeline__tooltip time {
+    color: var(--paper);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+  }
+
+  .advantage-timeline__tooltip > span {
+    display: grid;
+    align-items: center;
+    color: var(--muted);
+    grid-template-columns: 12px 1fr auto;
+    gap: 5px;
+  }
+
+  .advantage-timeline__tooltip strong {
+    color: var(--paper);
+    font-size: var(--fs-2xs);
+  }
+
+  .advantage-timeline__events {
+    display: grid;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .advantage-timeline__event {
+    display: flex;
+    align-items: center;
+    min-height: 20px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .advantage-timeline__event > time {
+    flex: 0 0 45px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: left;
+  }
+
+  .advantage-timeline__event-description {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .advantage-timeline__event-hero {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    background: var(--ink-soft);
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .advantage-timeline__event-hero .hero-mark__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .advantage-timeline__event-action {
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+}

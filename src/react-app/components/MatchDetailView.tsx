@@ -12,6 +12,7 @@ import { talentDescriptions } from '../lib/talent-descriptions';
 import { HeroMark } from './HeroMark';
 import { HeroPortrait } from './HeroPortrait';
 import { PlayerSortControls, type PlayerSort } from './PlayerSortControls';
+import { AdvantageTimeline } from './AdvantageTimeline';
 
 type PerformanceRank = 1 | 2;
 type PlayerAchievement = 'mvp' | 'top-imp' | 'most-damage' | 'most-tower-damage';
@@ -168,9 +169,11 @@ export function MatchDetailView({
       <div className="detail-analysis-grid">
         <section className="detail-panel detail-advantage" aria-labelledby="advantage-title">
           <DetailHeading eyebrow="ECONOMY / TIMELINE" title="Advantage curve" id="advantage-title" />
-          <AdvantageChart
+          <AdvantageTimeline
             networth={detail.radiantNetworthLeads}
             experience={detail.radiantExperienceLeads}
+            durationSeconds={detail.durationSeconds}
+            events={detail.timelineEvents}
           />
         </section>
 
@@ -520,36 +523,6 @@ function highestPlayerMetric(players: MatchDetailPlayer[], getValue: (player: Ma
 
 function topPlayerMetricValues(players: MatchDetailPlayer[], getValue: (player: MatchDetailPlayer) => number): number[] {
   return [...new Set(players.map(getValue))].sort((left, right) => right - left);
-}
-
-function AdvantageChart({ networth, experience }: { networth: number[]; experience: number[] }) {
-  const maxPoints = Math.max(networth.length, experience.length);
-  if (maxPoints < 2) {
-    return <p className="detail-empty">Timeline will appear after STRATZ parsing.</p>;
-  }
-  const absoluteMax = Math.max(
-    1,
-    ...networth.map(Math.abs),
-    ...experience.map(Math.abs),
-  );
-  const networthPoints = chartPoints(networth, absoluteMax);
-  const experiencePoints = chartPoints(experience, absoluteMax);
-
-  return (
-    <div className="advantage-chart">
-      <div className="advantage-chart__legend">
-        <span><i className="is-net" />Net worth</span>
-        <span><i className="is-xp" />Experience</span>
-        <strong>RADIANT + / DIRE −</strong>
-      </div>
-      <svg viewBox="0 0 100 48" role="img" aria-label="График преимущества команд">
-        <line x1="0" x2="100" y1="24" y2="24" />
-        <polyline className="is-net" points={networthPoints} />
-        <polyline className="is-xp" points={experiencePoints} />
-      </svg>
-      <div className="advantage-chart__axis"><span>00:00</span><span>{formatDuration((maxPoints - 1) * 60)}</span></div>
-    </div>
-  );
 }
 
 function TeamBuilds({
@@ -986,16 +959,6 @@ function DetailMessage({
       <p>{text}</p>
     </div>
   );
-}
-
-function chartPoints(values: number[], absoluteMax: number): string {
-  return values
-    .map((value, index) => {
-      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * 100;
-      const y = 24 - (value / absoluteMax) * 21;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(' ');
 }
 
 function heroLabel(heroId: number | null, heroNames: Record<number, string>): string {

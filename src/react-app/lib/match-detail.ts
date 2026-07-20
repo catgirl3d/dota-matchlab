@@ -77,6 +77,23 @@ export type MatchChatMessage = {
   chatWheelId: number | null;
 };
 
+export type MatchTimelineParticipant = {
+  accountId: number | null;
+  heroId: number | null;
+  name: string | null;
+  isRadiant: boolean | null;
+};
+
+export type MatchTimelineEvent = {
+  key: string;
+  time: number;
+  type: 'kill' | 'tower';
+  actor: MatchTimelineParticipant | null;
+  target: MatchTimelineParticipant | null;
+  isRadiant: boolean | null;
+  targetIsRadiant: boolean | null;
+};
+
 export type MatchDetailSnapshot = {
   matchId: number;
   startTime: number | null;
@@ -104,6 +121,7 @@ export type MatchDetailSnapshot = {
     roshan: number | null;
   };
   chatMessages: MatchChatMessage[];
+  timelineEvents: MatchTimelineEvent[];
   availableSections: string[];
   rosterStatus: 'complete' | 'incomplete';
 };
@@ -277,6 +295,7 @@ export function buildMatchDetailSnapshot(
       roshan: countObjectArray(readObject(playbackPayload?.playbackData)?.roshanEvents),
     },
     chatMessages: buildChatMessages(statsPayload, rawPlayersByAccount),
+    timelineEvents: buildTimelineEvents(metadata, statsPayload, rawPlayersByAccount),
     availableSections: payloadRows
       .filter((row) => row.payload_kind === 'detail')
       .map((row) => row.payload_section)
@@ -334,6 +353,108 @@ function buildChatMessages(
   }
 
   return messages.sort((left, right) => left.time - right.time || left.key.localeCompare(right.key));
+}
+
+function buildTimelineEvents(
+  metadata: Record<string, unknown> | null,
+  statsPayload: Record<string, unknown> | null | undefined,
+  rawPlayersByAccount: Map<number, Record<string, unknown>>,
+): MatchTimelineEvent[] {
+  const participantIndex = buildTimelineParticipantIndex(rawPlayersByAccount);
+  const events = [
+    ...readTowerTimelineEvents(metadata?.towerDeaths, participantIndex),
+    ...readKillTimelineEvents(statsPayload, participantIndex),
+  ];
+
+  return events.sort((left, right) => left.time - right.time || left.key.localeCompare(right.key));
+}
+
+function readTowerTimelineEvents(
+  value: unknown,
+  participantIndex: TimelineParticipantIndex,
+): MatchTimelineEvent[] {
+  return readObjectArray(value).flatMap((event, index) => {
+    const time = readInteger(event.time);
+    const targetIsRadiant = readBoolean(event.isRadiant);
+    const actor = readTimelineParticipant(event.attacker, participantIndex);
+    return time === null
+      ? []
+      : [{
+          key: `tower-${time}-${index}`,
+          time,
+          type: 'tower',
+          actor,
+          target: null,
+          isRadiant: actor?.isRadiant ?? (targetIsRadiant === null ? null : !targetIsRadiant),
+          targetIsRadiant,
+        }];
+  });
+}
+
+function readKillTimelineEvents(
+  statsPayload: Record<string, unknown> | null | undefined,
+  participantIndex: TimelineParticipantIndex,
+): MatchTimelineEvent[] {
+  const events: MatchTimelineEvent[] = [];
+
+  for (const player of readObjectArray(statsPayload?.players)) {
+    const stats = readObject(player.stats);
+    const accountId = readInteger(player.steamAccountId) ?? readInteger(stats?.steamAccountId);
+    const actor = accountId === null ? null : participantIndex.byAccount.get(accountId) ?? null;
+
+    for (const [index, event] of readObjectArray(stats?.killEvents).entries()) {
+      const time = readInteger(event.time);
+      if (time === null) continue;
+      const target = readTimelineParticipant(event.target, participantIndex);
+      events.push({
+        key: `kill-${accountId ?? 'unknown'}-${time}-${index}`,
+        time,
+        type: 'kill',
+        actor,
+        target,
+        isRadiant: actor?.isRadiant ?? null,
+        targetIsRadiant: target?.isRadiant ?? null,
+      });
+    }
+  }
+
+  return events;
+}
+
+type TimelineParticipantIndex = {
+  byAccount: Map<number, MatchTimelineParticipant>;
+  byHero: Map<number, MatchTimelineParticipant>;
+};
+
+function buildTimelineParticipantIndex(
+  rawPlayersByAccount: Map<number, Record<string, unknown>>,
+): TimelineParticipantIndex {
+  const byAccount = new Map<number, MatchTimelineParticipant>();
+  const byHero = new Map<number, MatchTimelineParticipant>();
+
+  for (const [accountId, rawPlayer] of rawPlayersByAccount) {
+    const participant = {
+      accountId,
+      heroId: readInteger(rawPlayer.heroId),
+      name: readString(readObject(rawPlayer.steamAccount)?.name),
+      isRadiant: readBoolean(rawPlayer.isRadiant),
+    };
+    byAccount.set(accountId, participant);
+    if (participant.heroId !== null) {
+      byHero.set(participant.heroId, participant);
+    }
+  }
+
+  return { byAccount, byHero };
+}
+
+function readTimelineParticipant(
+  value: unknown,
+  participantIndex: TimelineParticipantIndex,
+): MatchTimelineParticipant | null {
+  const identifier = readInteger(value);
+  if (identifier === null) return null;
+  return participantIndex.byAccount.get(identifier) ?? participantIndex.byHero.get(identifier) ?? null;
 }
 
 function buildPlayer(

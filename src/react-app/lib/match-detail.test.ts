@@ -34,6 +34,7 @@ describe('match detail read model', () => {
             topLaneOutcome: 'RADIANT_VICTORY',
             midLaneOutcome: 'DIRE_VICTORY',
             bottomLaneOutcome: 'TIE',
+            towerDeaths: [{ time: 600, isRadiant: false }],
             pickBans: [{ heroId: 1, isPick: true, isRadiant: true, order: 0 }],
             players: [
               {
@@ -90,6 +91,17 @@ describe('match detail read model', () => {
     expect(snapshot.pickBans).toEqual([
       { heroId: 1, isPick: true, isRadiant: true, order: 0 },
     ]);
+    expect(snapshot.timelineEvents).toEqual([
+      {
+        key: 'tower-600-0',
+        time: 600,
+        type: 'tower',
+        actor: null,
+        target: null,
+        isRadiant: true,
+        targetIsRadiant: false,
+      },
+    ]);
   });
 
   it('prefers detail player sections and exposes timeline event counts', () => {
@@ -123,7 +135,16 @@ describe('match detail read model', () => {
                     steamAccountId: 333,
                     playerSlot: 0,
                     heroId: 3,
+                    isRadiant: true,
+                    steamAccount: { name: 'vadan070' },
                     abilities: [{ abilityId: 5001 }],
+                  },
+                  {
+                    steamAccountId: 444,
+                    playerSlot: 128,
+                    heroId: 4,
+                    isRadiant: false,
+                    steamAccount: { name: 'mega' },
                   },
                 ],
               },
@@ -144,7 +165,7 @@ describe('match detail read model', () => {
                       goldPerMinute: [100, 250],
                       experiencePerMinute: [120, 300],
                       networthPerMinute: [600, 1_200],
-                      killEvents: [{ time: 120 }],
+                       killEvents: [{ time: 120, target: 4 }],
                       wards: [{ time: 90 }],
                       itemPurchases: [{ time: 120, itemId: 42 }],
                       allTalks: [{ time: 130, message: 'gg' }],
@@ -192,6 +213,17 @@ describe('match detail read model', () => {
       buildings: null,
       roshan: null,
     });
+    expect(snapshot.timelineEvents).toEqual([
+      {
+        key: 'kill-333-120-0',
+        time: 120,
+        type: 'kill',
+        actor: { accountId: 333, heroId: 3, name: 'vadan070', isRadiant: true },
+        target: { accountId: 444, heroId: 4, name: 'mega', isRadiant: false },
+        isRadiant: true,
+        targetIsRadiant: false,
+      },
+    ]);
     expect(snapshot.chatMessages).toEqual([
       expect.objectContaining({ type: 'text', time: 130, accountId: 333, message: 'gg' }),
       expect.objectContaining({ type: 'wheel', time: 140, accountId: 333, chatWheelId: 71 }),

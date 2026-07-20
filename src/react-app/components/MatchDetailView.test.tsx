@@ -3,6 +3,31 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MatchDetailSnapshot } from '../lib/match-detail';
 import { MatchDetailView } from './MatchDetailView';
 
+vi.mock('uplot', () => {
+  class UPlotMock {
+    static pxRatio = 1;
+    root: HTMLDivElement;
+    over: HTMLDivElement;
+    bbox = { left: 0, top: 0, width: 0, height: 0 };
+    cursor = { idx: null, left: 0 };
+    scales = { x: { min: 0, max: 0 } };
+
+    constructor(_options: unknown, _data: unknown, target: HTMLElement) {
+      this.root = document.createElement('div');
+      this.over = document.createElement('div');
+      this.root.appendChild(this.over);
+      target.appendChild(this.root);
+    }
+
+    setSize() {}
+    destroy() {
+      this.root.remove();
+    }
+  }
+
+  return { default: UPlotMock };
+});
+
 afterEach(cleanup);
 
 const detail: MatchDetailSnapshot = {
@@ -32,6 +57,7 @@ const detail: MatchDetailSnapshot = {
   ],
   eventCounts: { chat: 4, towers: 3, runes: null, wards: null, buildings: null, roshan: null },
   chatMessages: [],
+  timelineEvents: [],
   availableSections: [],
   rosterStatus: 'incomplete',
 };
@@ -69,6 +95,8 @@ describe('MatchDetailView', () => {
     expect(within(scoreboardEntry).getByText('GPM')).toBeVisible();
     expect(within(scoreboardEntry).getByText('XPM')).toBeVisible();
     expect(within(scoreboardEntry).getByText('NW')).toBeVisible();
+    const advantageChart = screen.getByRole('group', { name: 'Team advantage timeline' });
+    expect(advantageChart).toHaveClass('advantage-timeline__canvas');
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
     expect(draftPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getByText('Базовый разбор')).toBeVisible();

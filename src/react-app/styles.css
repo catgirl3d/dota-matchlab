@@ -6,5 +6,6 @@
 @import "./styles/components/landing.css";
 @import "./styles/components/player-dashboard.css";
 @import "./styles/components/date-range-calendar.css";
+@import "./styles/components/advantage-timeline.css";
 @import "./styles/components/match-detail.css";
 @import "./styles/responsive.css";
