@@ -222,9 +222,6 @@
   .archive-sync h3 {
     margin-top: 18px;
     color: var(--paper);
-    font-size: var(--fs-lg);
-    font-weight: 600;
-    letter-spacing: -0.03em;
   }
 
   .archive-sync p {
@@ -833,9 +830,6 @@
 
   .card-heading h3 {
     margin-top: 8px;
-    font-size: var(--fs-xl);
-    font-weight: 580;
-    letter-spacing: -0.025em;
   }
 
   .card-heading__count {

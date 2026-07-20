@@ -232,8 +232,6 @@
 
   .detail-heading h3 {
     margin-top: 8px;
-    font-size: var(--fs-lg-header);
-    letter-spacing: -0.03em;
   }
 
   .detail-scoreboard__teams {
@@ -1031,10 +1029,6 @@
   .match-chat__header > div {
     display: grid;
     gap: 7px;
-  }
-
-  .match-chat__header h3 {
-    font-size: var(--fs-lg-header);
   }
 
   .match-chat__header p {

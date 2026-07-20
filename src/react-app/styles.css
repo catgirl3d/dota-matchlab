@@ -10,3 +10,12 @@
 @import "./styles/components/player-minute-charts.css";
 @import "./styles/components/match-detail.css";
 @import "./styles/responsive.css";
+
+/* Unified typography for all panel/card titles */
+h3[id$="-title"] {
+  font-size: var(--fs-lg-header);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
