@@ -21,3 +21,9 @@ export function formatEnum(value: string): string {
 export function formatCompact(value: number): string {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }
+
+export function formatEventTime(seconds: number): string {
+  const sign = seconds < 0 ? '−' : '';
+  const absolute = Math.abs(seconds);
+  return `${sign}${Math.floor(absolute / 60)}:${(absolute % 60).toString().padStart(2, '0')}`;
+}
