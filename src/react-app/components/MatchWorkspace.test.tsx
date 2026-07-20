@@ -8,6 +8,7 @@ import { I18nProvider } from '../lib/i18n';
 
 const mocks = vi.hoisted(() => ({
   accounts: [] as Array<Record<string, unknown>>,
+  accountsQuery: vi.fn(),
 }));
 // ... rest of the mocks
 vi.mock('@clerk/react', () => ({
@@ -30,7 +31,7 @@ vi.mock('../lib/supabase', () => ({
       if (table !== 'tracked_accounts') throw new Error(`Unexpected table: ${table}`);
       return {
         select: () => ({
-          order: async () => ({ data: mocks.accounts, error: null }),
+          order: () => mocks.accountsQuery(),
         }),
       };
     },
@@ -73,18 +74,23 @@ function LocationProbe() {
   return <output data-testid="location">{location.search} {navigationType}</output>;
 }
 
-function renderWorkspace(path: string) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[path]}>
-        <I18nProvider>
-          <LocationProbe />
-          <MatchWorkspace />
-        </I18nProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+function renderWorkspace(
+  path: string,
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
+  return {
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[path]}>
+          <I18nProvider>
+            <LocationProbe />
+            <MatchWorkspace />
+          </I18nProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  };
 }
 
 function deferred<T>() {
@@ -105,6 +111,7 @@ beforeEach(() => {
     rank_tier: null,
     profile_refreshed_at: null,
   }];
+  mocks.accountsQuery.mockReset().mockResolvedValue({ data: mocks.accounts, error: null });
   vi.mocked(fetchArchiveOverview).mockReset().mockResolvedValue({} as never);
   vi.mocked(fetchArchivePage).mockReset().mockResolvedValue({} as never);
 });
@@ -132,6 +139,20 @@ describe('MatchWorkspace player query', () => {
 
     expect(await screen.findByText('Active account 77')).toBeVisible();
     expect(screen.getByTestId('location')).toHaveTextContent('?view=matches POP');
+  });
+
+  it('reuses fresh account and archive data after remounting', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const firstRender = renderWorkspace('/?player=77', queryClient);
+
+    expect(await screen.findByText('Active account 77')).toBeVisible();
+    firstRender.unmount();
+    renderWorkspace('/?player=77', queryClient);
+
+    expect(await screen.findByText('Active account 77')).toBeVisible();
+    expect(mocks.accountsQuery).toHaveBeenCalledTimes(1);
+    expect(fetchArchiveOverview).toHaveBeenCalledTimes(1);
+    expect(fetchArchivePage).toHaveBeenCalledTimes(1);
   });
 
   it('keeps archive snapshots while a hero-filter query is pending', async () => {

@@ -8,7 +8,7 @@ import {
   type ArchiveShowcaseOverview,
 } from '../lib/archive';
 import { DEFAULT_ARCHIVE_FILTERS, type ArchiveFilters } from '../lib/archive-analytics';
-import { archiveShowcaseQueryKeys } from '../lib/archive-query-keys';
+import { ARCHIVE_STALE_TIME_MS, archiveShowcaseQueryKeys } from '../lib/archive-query-keys';
 import { fetchHeroNames } from '../lib/dota-api';
 import { createPublicSupabaseClient } from '../lib/supabase';
 import { PlayerDashboard } from './PlayerDashboard';
@@ -34,14 +34,14 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
   const cursor = cursors.at(-1) ?? null;
   const overviewQuery = useQuery<ArchiveShowcaseOverview | null>({
     queryKey: archiveShowcaseQueryKeys.overview(dotaAccountId, filters),
-    staleTime: 60_000,
+    staleTime: ARCHIVE_STALE_TIME_MS,
     retry: false,
     placeholderData: (previousData, previousQuery) => keepShowcaseData(previousData, previousQuery, dotaAccountId),
     queryFn: ({ signal }) => fetchArchiveShowcaseOverview(createPublicSupabaseClient(), dotaAccountId, filters, signal),
   });
   const pageQuery = useQuery<ArchivePage | null>({
     queryKey: archiveShowcaseQueryKeys.page(dotaAccountId, filters, cursor),
-    staleTime: 60_000,
+    staleTime: ARCHIVE_STALE_TIME_MS,
     retry: false,
     placeholderData: (previousData, previousQuery) => keepShowcaseData(previousData, previousQuery, dotaAccountId),
     queryFn: ({ signal }) => fetchArchiveShowcasePage(createPublicSupabaseClient(), dotaAccountId, filters, cursor, signal),
@@ -80,4 +80,3 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
     />
   </section>;
 }
-

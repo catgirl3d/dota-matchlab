@@ -12,7 +12,7 @@ import {
   type ArchivePage,
 } from '../lib/archive';
 import { DEFAULT_ARCHIVE_FILTERS, type ArchiveFilters } from '../lib/archive-analytics';
-import { archiveQueryKeys } from '../lib/archive-query-keys';
+import { ARCHIVE_STALE_TIME_MS, archiveQueryKeys } from '../lib/archive-query-keys';
 import {
   fetchHeroNames,
   resolveSteamProfile,
@@ -38,6 +38,7 @@ type TrackedAccount = Pick<
 
 const trackedAccountFields =
   'id,steam_id64,dota_account_id,persona_name,avatar_url,rank_tier,profile_refreshed_at' as const;
+const TRACKED_ACCOUNTS_STALE_TIME_MS = 20 * 60_000;
 
 function keepArchiveDataForSameAccount<T>(
   previousData: T | undefined,
@@ -63,6 +64,7 @@ export function MatchWorkspace() {
   const accountsQuery = useQuery({
     queryKey: ['tracked-accounts', userId],
     enabled: Boolean(session && userId),
+    staleTime: TRACKED_ACCOUNTS_STALE_TIME_MS,
     queryFn: async () => {
       if (!session) {
         throw new Error('Clerk session is not ready');
@@ -194,7 +196,7 @@ export function MatchWorkspace() {
   const archiveOverviewQuery = useQuery<ArchiveOverview>({
     queryKey: archiveQueryKeys.overview(activeAccount?.id, archiveFilters),
     enabled: Boolean(session && activeAccount),
-    staleTime: 60_000,
+    staleTime: ARCHIVE_STALE_TIME_MS,
     retry: false,
     placeholderData: (previousData, previousQuery) =>
       keepArchiveDataForSameAccount<ArchiveOverview>(previousData, previousQuery, activeAccount?.id),
@@ -216,7 +218,7 @@ export function MatchWorkspace() {
   const archivePageQuery = useQuery<ArchivePage>({
     queryKey: archiveQueryKeys.page(activeAccount?.id, archiveFilters, archiveCursor),
     enabled: Boolean(session && activeAccount),
-    staleTime: 60_000,
+    staleTime: ARCHIVE_STALE_TIME_MS,
     retry: false,
     placeholderData: (previousData, previousQuery) =>
       keepArchiveDataForSameAccount<ArchivePage>(previousData, previousQuery, activeAccount?.id),
@@ -489,4 +491,3 @@ function WorkspaceMessage({
     </div>
   );
 }
-

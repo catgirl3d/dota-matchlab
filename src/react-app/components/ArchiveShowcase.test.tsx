@@ -21,8 +21,13 @@ beforeEach(() => {
   mocks.page.mockReset();
 });
 
-function renderShowcase() {
-  return render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><ArchiveShowcase dotaAccountId={77} fallback={<div>Unavailable</div>} /></QueryClientProvider>);
+function renderShowcase(
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
+  return {
+    queryClient,
+    ...render(<QueryClientProvider client={queryClient}><ArchiveShowcase dotaAccountId={77} fallback={<div>Unavailable</div>} /></QueryClientProvider>),
+  };
 }
 
 describe('ArchiveShowcase', () => {
@@ -32,6 +37,21 @@ describe('ArchiveShowcase', () => {
     renderShowcase();
     expect(await screen.findByText('Showcase 77 read-only')).toBeVisible();
     expect(screen.getByLabelText('Public player archive')).toHaveClass('match-workspace--showcase');
+  });
+
+  it('reuses fresh archive data after remounting', async () => {
+    mocks.overview.mockResolvedValue({ account: { dotaAccountId: 77, personaName: 'Curated', avatarUrl: null, rankTier: null, profileRefreshedAt: null }, overview: {} });
+    mocks.page.mockResolvedValue({ matches: [], nextCursor: null });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const firstRender = renderShowcase(queryClient);
+
+    expect(await screen.findByText('Showcase 77 read-only')).toBeVisible();
+    firstRender.unmount();
+    renderShowcase(queryClient);
+
+    expect(await screen.findByText('Showcase 77 read-only')).toBeVisible();
+    expect(mocks.overview).toHaveBeenCalledTimes(1);
+    expect(mocks.page).toHaveBeenCalledTimes(1);
   });
 
 
