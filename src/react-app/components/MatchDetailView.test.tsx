@@ -221,15 +221,7 @@ describe('MatchDetailView', () => {
   });
 
   it('sorts both team build columns by the selected descending metric', () => {
-    const sortableDetail: MatchDetailSnapshot = {
-      ...detail,
-      players: [
-        createPlayer({ key: 'radiant-low', accountId: 1, name: 'Radiant low', playerSlot: 0, isRadiant: true, imp: 4, heroDamage: 900, towerDamage: 700 }),
-        createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, heroDamage: 500, towerDamage: 900 }),
-        createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, heroDamage: 700, towerDamage: 400 }),
-        createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, heroDamage: 1_200, towerDamage: 800 }),
-      ],
-    };
+    const sortableDetail = createSortableDetail();
 
     render(<MatchDetailView detail={sortableDetail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
@@ -238,17 +230,36 @@ describe('MatchDetailView', () => {
     expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant low', 'Build for Radiant high']);
     expect(buildOrder(direColumn)).toEqual(['Build for Dire low', 'Build for Dire high']);
 
-    fireEvent.click(screen.getByRole('button', { name: 'IMP' }));
+    const buildSortControls = within(screen.getByRole('group', { name: 'Sort team builds' }));
+    fireEvent.click(buildSortControls.getByRole('button', { name: 'IMP' }));
     expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant high', 'Build for Radiant low']);
     expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hero damage' }));
+    fireEvent.click(buildSortControls.getByRole('button', { name: 'Hero damage' }));
     expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant low', 'Build for Radiant high']);
     expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tower damage' }));
+    fireEvent.click(buildSortControls.getByRole('button', { name: 'Tower damage' }));
     expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant high', 'Build for Radiant low']);
     expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
+  });
+
+  it('sorts scoreboard columns and marks the first two IMP ranks', () => {
+    render(<MatchDetailView detail={createSortableDetail()} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
+    const [radiantRoster, direRoster] = Array.from(scoreboardPanel?.querySelectorAll<HTMLElement>('.team-roster') ?? []);
+    expect(scoreboardOrder(radiantRoster)).toEqual(['Scoreboard entry for Radiant low', 'Scoreboard entry for Radiant high']);
+    expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire low', 'Scoreboard entry for Dire high']);
+    expect(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).toHaveClass('is-highest');
+    expect(screen.getByRole('article', { name: 'Scoreboard entry for Dire high' })).toHaveClass('is-second');
+    expect(screen.getByText('TOP 1 IMP')).toBeVisible();
+    expect(screen.getByText('TOP 2 IMP')).toBeVisible();
+
+    const scoreboardSortControls = within(screen.getByRole('group', { name: 'Sort ten-player breakdown' }));
+    fireEvent.click(scoreboardSortControls.getByRole('button', { name: 'Hero damage' }));
+    expect(scoreboardOrder(radiantRoster)).toEqual(['Scoreboard entry for Radiant low', 'Scoreboard entry for Radiant high']);
+    expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire high', 'Scoreboard entry for Dire low']);
   });
 
   it('keeps final loadout but labels progression unavailable for basic and partial data', () => {
@@ -334,6 +345,23 @@ describe('MatchDetailView', () => {
 function buildOrder(column: HTMLElement | null): string[] {
   return Array.from(column?.querySelectorAll<HTMLElement>('.player-build') ?? [])
     .map((player) => player.getAttribute('aria-label') ?? '');
+}
+
+function scoreboardOrder(roster: HTMLElement | undefined): string[] {
+  return Array.from(roster?.querySelectorAll<HTMLElement>('.scoreboard-player') ?? [])
+    .map((player) => player.getAttribute('aria-label') ?? '');
+}
+
+function createSortableDetail(): MatchDetailSnapshot {
+  return {
+    ...detail,
+    players: [
+      createPlayer({ key: 'radiant-low', accountId: 1, name: 'Radiant low', playerSlot: 0, isRadiant: true, imp: 4, heroDamage: 900, towerDamage: 700 }),
+      createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, heroDamage: 500, towerDamage: 900 }),
+      createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, heroDamage: 700, towerDamage: 400 }),
+      createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, heroDamage: 1_200, towerDamage: 800 }),
+    ],
+  };
 }
 
 function createPlayer(

@@ -95,6 +95,11 @@
     direction: ltr;
   }
 
+  .team-outcome--dire > div {
+    justify-items: end;
+    text-align: right;
+  }
+
   .team-outcome__crest {
     display: grid;
     width: 64px;
@@ -237,6 +242,19 @@
     grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr);
   }
 
+  .detail-scoreboard__header,
+  .detail-builds__header {
+    display: grid;
+    align-items: stretch;
+    border-bottom: 1px solid var(--line);
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .detail-scoreboard__header .detail-heading,
+  .detail-builds__header .detail-heading {
+    border-bottom: 0;
+  }
+
   .detail-scoreboard__versus {
     display: grid;
     place-items: center;
@@ -279,6 +297,16 @@
     box-shadow: inset 3px 0 0 var(--signal-red);
   }
 
+  .scoreboard-player.is-highest {
+    border-top-color: rgba(var(--rank-first-rgb), 0.35);
+    background: linear-gradient(90deg, rgba(var(--rank-first-rgb), 0.1), transparent 62%);
+  }
+
+  .scoreboard-player.is-second {
+    border-top-color: rgba(var(--rank-second-rgb), 0.3);
+    background: linear-gradient(90deg, rgba(var(--rank-second-rgb), 0.08), transparent 62%);
+  }
+
   .scoreboard-player__hero {
     display: grid;
     width: 38px;
@@ -317,6 +345,33 @@
   .scoreboard-player__identity span,
   .scoreboard-player__net {
     color: var(--muted);
+  }
+
+  .scoreboard-player__performance-rank {
+    width: fit-content;
+    padding: 2px 4px;
+    border: 1px solid currentColor;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+
+  .scoreboard-player.is-highest .scoreboard-player__performance-rank {
+    color: var(--rank-first);
+  }
+
+  .scoreboard-player.is-second .scoreboard-player__performance-rank {
+    color: var(--rank-second);
+  }
+
+  .scoreboard-player.is-highest .scoreboard-player__hero {
+    border-color: rgba(var(--rank-first-rgb), 0.7);
+    box-shadow: 0 0 8px rgba(var(--rank-first-rgb), 0.2);
+  }
+
+  .scoreboard-player.is-second .scoreboard-player__hero {
+    border-color: rgba(var(--rank-second-rgb), 0.65);
   }
 
   .scoreboard-player__economy {
@@ -753,17 +808,6 @@
     padding: 16px;
     gap: 20px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .detail-builds__header {
-    display: grid;
-    align-items: stretch;
-    border-bottom: 1px solid var(--line);
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .detail-builds__header .detail-heading {
-    border-bottom: 0;
   }
 
   .build-sort {
@@ -1720,20 +1764,20 @@
 
   /* Highest record-holder indicator styling */
   .player-build__metric.is-highest {
-    border: 1px solid rgba(255, 184, 0, 0.3) !important;
-    border-bottom: 2px solid rgba(255, 184, 0, 0.8) !important;
-    background: linear-gradient(to bottom, rgba(20, 18, 12, 0.8), rgba(255, 184, 0, 0.08)) !important;
-    box-shadow: 0 4px 12px rgba(255, 184, 0, 0.12);
+    border: 1px solid rgba(var(--rank-first-rgb), 0.3) !important;
+    border-bottom: 2px solid rgba(var(--rank-first-rgb), 0.8) !important;
+    background: linear-gradient(to bottom, rgba(20, 18, 12, 0.8), rgba(var(--rank-first-rgb), 0.08)) !important;
+    box-shadow: 0 4px 12px rgba(var(--rank-first-rgb), 0.12);
   }
 
   .player-build__metric.is-highest:hover {
-    border-color: rgba(255, 184, 0, 0.6) !important;
-    border-bottom-color: rgba(255, 184, 0, 1) !important;
+    border-color: rgba(var(--rank-first-rgb), 0.6) !important;
+    border-bottom-color: rgba(var(--rank-first-rgb), 1) !important;
   }
 
   .player-build__metric.is-highest .player-build__metric-value {
-    color: #ffb800 !important;
-    text-shadow: 0 0 6px rgba(255, 184, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.8);
+    color: var(--rank-first) !important;
+    text-shadow: 0 0 6px rgba(var(--rank-first-rgb), 0.35), 0 1px 2px rgba(0, 0, 0, 0.8);
   }
 
   .player-build__metric.is-highest::after {
@@ -1741,7 +1785,7 @@
     position: absolute;
     top: 4px;
     right: 5px;
-    color: #ffb800;
+    color: var(--rank-first);
     font-size: 8px;
     line-height: 1;
     opacity: 0.8;
@@ -1749,20 +1793,20 @@
 
   /* Second-best record-holder indicator styling (Silver/Steel Blue) */
   .player-build__metric.is-second {
-    border: 1px solid rgba(161, 181, 193, 0.25) !important;
-    border-bottom: 2px solid rgba(161, 181, 193, 0.65) !important;
-    background: linear-gradient(to bottom, rgba(16, 18, 20, 0.8), rgba(161, 181, 193, 0.05)) !important;
-    box-shadow: 0 4px 12px rgba(161, 181, 193, 0.06);
+    border: 1px solid rgba(var(--rank-second-rgb), 0.25) !important;
+    border-bottom: 2px solid rgba(var(--rank-second-rgb), 0.65) !important;
+    background: linear-gradient(to bottom, rgba(16, 18, 20, 0.8), rgba(var(--rank-second-rgb), 0.05)) !important;
+    box-shadow: 0 4px 12px rgba(var(--rank-second-rgb), 0.06);
   }
 
   .player-build__metric.is-second:hover {
-    border-color: rgba(161, 181, 193, 0.5) !important;
-    border-bottom-color: rgba(161, 181, 193, 0.85) !important;
+    border-color: rgba(var(--rank-second-rgb), 0.5) !important;
+    border-bottom-color: rgba(var(--rank-second-rgb), 0.85) !important;
   }
 
   .player-build__metric.is-second .player-build__metric-value {
-    color: #a1b5c1 !important;
-    text-shadow: 0 0 6px rgba(161, 181, 193, 0.3), 0 1px 2px rgba(0, 0, 0, 0.8);
+    color: var(--rank-second) !important;
+    text-shadow: 0 0 6px rgba(var(--rank-second-rgb), 0.3), 0 1px 2px rgba(0, 0, 0, 0.8);
   }
 
   .player-build__metric.is-second::after {
@@ -1770,7 +1814,7 @@
     position: absolute;
     top: 4px;
     right: 5px;
-    color: #a1b5c1;
+    color: var(--rank-second);
     font-size: 8px;
     line-height: 1;
     opacity: 0.65;

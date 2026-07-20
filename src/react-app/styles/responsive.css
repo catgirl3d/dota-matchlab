@@ -375,6 +375,7 @@
       grid-template-columns: 1fr;
     }
 
+    .detail-scoreboard__header,
     .detail-builds__header {
       grid-template-columns: 1fr;
     }

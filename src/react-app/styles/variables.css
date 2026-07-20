@@ -17,6 +17,10 @@
   --signal-red: #ff365f;
   --signal-blue: #49c7e5;
   --signal-violet: #b57aff;
+  --rank-first: #ffb800;
+  --rank-first-rgb: 255, 184, 0;
+  --rank-second: #a1b5c1;
+  --rank-second-rgb: 161, 181, 193;
 
   /* Typography / Fonts */
   --font-display: 'Instrument Sans', sans-serif;

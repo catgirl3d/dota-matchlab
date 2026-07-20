@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react';
+import direCrest from '../../../assets/icons/dire_square.webp?url';
+import radiantCrest from '../../../assets/icons/radiant_square.webp?url';
 import type {
   MatchChatMessage,
   MatchDetailPlayer,
@@ -11,6 +13,7 @@ import { HeroMark } from './HeroMark';
 import { HeroPortrait } from './HeroPortrait';
 
 type BuildSort = 'slot' | 'imp' | 'heroDamage' | 'towerDamage';
+type PerformanceRank = 1 | 2;
 
 const BUILD_SORT_OPTIONS: Array<{ value: BuildSort; label: string; title: string }> = [
   { value: 'slot', label: 'Order', title: 'Original player order' },
@@ -154,24 +157,12 @@ export function MatchDetailView({
         </div>
       ) : null}
 
-      <section className="detail-panel detail-scoreboard" aria-labelledby="scoreboard-title">
-        <DetailHeading eyebrow="MATCHUP / SCOREBOARD" title="Ten-player breakdown" id="scoreboard-title" />
-        <div className="detail-scoreboard__teams">
-          <TeamRoster
-            label="Radiant"
-            players={radiantPlayers}
-            heroNames={heroNames}
-            currentAccountId={currentAccountId}
-          />
-          <div className="detail-scoreboard__versus">VS</div>
-          <TeamRoster
-            label="Dire"
-            players={direPlayers}
-            heroNames={heroNames}
-            currentAccountId={currentAccountId}
-          />
-        </div>
-      </section>
+      <TeamScoreboard
+        radiantPlayers={radiantPlayers}
+        direPlayers={direPlayers}
+        heroNames={heroNames}
+        currentAccountId={currentAccountId}
+      />
 
       <div className="detail-analysis-grid">
         <section className="detail-panel detail-advantage" aria-labelledby="advantage-title">
@@ -345,9 +336,13 @@ function TeamOutcome({
   score: number;
   won: boolean;
 }) {
+  const crestSrc = side === 'radiant' ? radiantCrest : direCrest;
+
   return (
     <div className={`team-outcome team-outcome--${side}${won ? ' is-winner' : ''}`}>
-      <span className="team-outcome__crest" aria-hidden="true">{side === 'radiant' ? 'R' : 'D'}</span>
+      <span className="team-outcome__crest" aria-hidden="true">
+        <img src={crestSrc} alt="" />
+      </span>
       <div>
         <span className="micro-label">{outcome}</span>
         <strong>{label}</strong>
@@ -357,42 +352,118 @@ function TeamOutcome({
   );
 }
 
+function TeamScoreboard({
+  radiantPlayers,
+  direPlayers,
+  heroNames,
+  currentAccountId,
+}: {
+  radiantPlayers: MatchDetailPlayer[];
+  direPlayers: MatchDetailPlayer[];
+  heroNames: Record<number, string>;
+  currentAccountId: number | null;
+}) {
+  const [sort, setSort] = useState<BuildSort>('slot');
+  const performanceRanks = rankPlayersByImp([...radiantPlayers, ...direPlayers]);
+
+  return (
+    <section className="detail-panel detail-scoreboard" aria-labelledby="scoreboard-title">
+      <div className="detail-scoreboard__header">
+        <DetailHeading eyebrow="MATCHUP / SCOREBOARD" title="Ten-player breakdown" id="scoreboard-title" />
+        <BuildSortControls value={sort} onChange={setSort} ariaLabel="Sort ten-player breakdown" />
+      </div>
+      <div className="detail-scoreboard__teams">
+        <TeamRoster
+          label="Radiant"
+          players={radiantPlayers}
+          heroNames={heroNames}
+          currentAccountId={currentAccountId}
+          sort={sort}
+          performanceRanks={performanceRanks}
+        />
+        <div className="detail-scoreboard__versus">VS</div>
+        <TeamRoster
+          label="Dire"
+          players={direPlayers}
+          heroNames={heroNames}
+          currentAccountId={currentAccountId}
+          sort={sort}
+          performanceRanks={performanceRanks}
+        />
+      </div>
+    </section>
+  );
+}
+
 function TeamRoster({
   label,
   players,
   heroNames,
   currentAccountId,
+  sort,
+  performanceRanks,
 }: {
   label: string;
   players: MatchDetailPlayer[];
   heroNames: Record<number, string>;
   currentAccountId: number | null;
+  sort: BuildSort;
+  performanceRanks: Map<string, PerformanceRank>;
 }) {
+  const orderedPlayers = sortBuildPlayers(players, sort);
+
   return (
     <div className="team-roster">
       <span className="team-roster__label">{label}</span>
-      {players.map((player) => (
-        <article
-          className={`scoreboard-player ${player.isRadiant ? 'is-radiant' : 'is-dire'}${currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : ''}`}
-          key={player.key}
-        >
-          <MatchDetailHeroMark heroId={player.heroId} heroNames={heroNames} />
-          <div className="scoreboard-player__identity">
-            <strong>{player.name ?? formatAccount(player.accountId)}</strong>
-            <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
-          </div>
-          <strong className="scoreboard-player__kda">
-            {player.kills} / {player.deaths} / {player.assists}
-          </strong>
-          <div className="scoreboard-player__economy">
-            <span>{player.goldPerMinute} <small>GPM</small></span>
-            <span>{player.xpPerMinute} <small>XPM</small></span>
-          </div>
-          <span className="scoreboard-player__net">{formatCompact(player.netWorth)}</span>
-        </article>
-      ))}
+      {orderedPlayers.map((player) => {
+        const performanceRank = performanceRanks.get(player.key);
+        const playerLabel = player.name ?? formatAccount(player.accountId);
+        const rankClass = performanceRank === 1 ? ' is-highest' : performanceRank === 2 ? ' is-second' : '';
+        const currentClass = currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : '';
+
+        return (
+          <article
+            className={`scoreboard-player ${player.isRadiant ? 'is-radiant' : 'is-dire'}${rankClass}${currentClass}`}
+            key={player.key}
+            aria-label={`Scoreboard entry for ${playerLabel}`}
+          >
+            <MatchDetailHeroMark heroId={player.heroId} heroNames={heroNames} />
+            <div className="scoreboard-player__identity">
+              <strong>{playerLabel}</strong>
+              <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
+              {performanceRank ? <span className="scoreboard-player__performance-rank">TOP {performanceRank} IMP</span> : null}
+            </div>
+            <strong className="scoreboard-player__kda">
+              {player.kills} / {player.deaths} / {player.assists}
+            </strong>
+            <div className="scoreboard-player__economy">
+              <span>{player.goldPerMinute} <small>GPM</small></span>
+              <span>{player.xpPerMinute} <small>XPM</small></span>
+            </div>
+            <span className="scoreboard-player__net">{formatCompact(player.netWorth)}</span>
+          </article>
+        );
+      })}
     </div>
   );
+}
+
+function rankPlayersByImp(players: MatchDetailPlayer[]): Map<string, PerformanceRank> {
+  const impValues = [...new Set(players.flatMap((player) => player.imp === null ? [] : [player.imp]))]
+    .sort((left, right) => right - left);
+  const highest = impValues[0];
+  const second = impValues[1];
+  const ranks = new Map<string, PerformanceRank>();
+
+  for (const player of players) {
+    if (player.imp === highest) {
+      ranks.set(player.key, 1);
+    } else if (player.imp === second) {
+      ranks.set(player.key, 2);
+    }
+  }
+
+  return ranks;
 }
 
 function AdvantageChart({ networth, experience }: { networth: number[]; experience: number[] }) {
@@ -461,7 +532,7 @@ function TeamBuilds({
     <section className="detail-panel detail-builds" aria-labelledby="builds-title">
       <div className="detail-builds__header">
         <DetailHeading eyebrow="LOADOUT / BUILDS" title="Team builds" id="builds-title" />
-        <BuildSortControls value={sort} onChange={setSort} />
+        <BuildSortControls value={sort} onChange={setSort} ariaLabel="Sort team builds" />
       </div>
       {rosterStatus === 'incomplete' ? (
         <p className="detail-builds__roster-status">{playerCount}/10 players captured</p>
@@ -488,9 +559,17 @@ function TeamBuilds({
   );
 }
 
-function BuildSortControls({ value, onChange }: { value: BuildSort; onChange: (value: BuildSort) => void }) {
+function BuildSortControls({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: BuildSort;
+  onChange: (value: BuildSort) => void;
+  ariaLabel: string;
+}) {
   return (
-    <div className="build-sort" role="group" aria-label="Sort team builds">
+    <div className="build-sort" role="group" aria-label={ariaLabel}>
       <span className="micro-label">SORT BY / DESCENDING</span>
       <div className="build-sort__options">
         {BUILD_SORT_OPTIONS.map((option) => (
