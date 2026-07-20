@@ -120,7 +120,7 @@ describe('PlayerDashboard', () => {
     render(
       <MemoryRouter><PlayerDashboard
         account={account}
-        overview={overview}
+        overview={{ ...overview, summary: { ...overview.summary, winRate: 51 } }}
         page={{ ...page, nextCursor }}
         filters={DEFAULT_ARCHIVE_FILTERS}
         heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }}
@@ -142,7 +142,9 @@ describe('PlayerDashboard', () => {
     );
 
     expect(screen.getByRole('heading', { name: /fish\.bone/ })).toBeVisible();
-    expect(screen.getByText('50%')).toBeVisible();
+    expect(screen.getByText('51%')).toBeVisible();
+    expect(screen.getByText('51%').closest('.metric-card')).toHaveClass('metric-card--acid');
+    expect(screen.getByText('Above even')).toBeVisible();
     expect(screen.getByText('2 complete · 0 missing stats · 0 missing match')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
     const knownHeroLink = screen.getByRole('link', { name: /Открыть матч 2/i });

@@ -671,59 +671,72 @@
   }
 
   .metric-card {
+    --metric-accent: var(--paper);
+    --metric-glow: transparent;
     position: relative;
     display: grid;
     min-height: 148px;
     align-content: space-between;
     padding: 20px;
     border: 1px solid var(--line-strong);
-    background: rgba(23, 26, 22, 0.76);
+    background:
+      radial-gradient(circle at 100% 0, var(--metric-glow), transparent 58%),
+      rgba(23, 26, 22, 0.76);
     overflow: hidden;
   }
 
   .metric-card::before {
     position: absolute;
-    width: 7px;
+    width: 4px;
     height: 100%;
+    background: var(--metric-accent);
     content: '';
     inset: 0 auto 0 0;
     opacity: 0.92;
   }
 
-  .metric-card--acid::before {
-    background: var(--acid);
+  .metric-card--acid {
+    --metric-accent: var(--acid);
+    --metric-glow: rgba(198, 242, 74, 0.14);
   }
 
-  .metric-card--acid > strong {
-    color: var(--acid);
+  .metric-card--red {
+    --metric-accent: var(--signal-red);
+    --metric-glow: rgba(255, 54, 95, 0.14);
   }
 
-  .metric-card--red::before {
-    background: var(--signal-red);
+  .metric-card--violet {
+    --metric-accent: var(--signal-violet);
+    --metric-glow: rgba(181, 122, 255, 0.14);
   }
 
-  .metric-card--red > strong {
-    color: var(--signal-red);
+  .metric-card--blue {
+    --metric-accent: var(--signal-blue);
+    --metric-glow: rgba(67, 185, 255, 0.14);
   }
 
-  .metric-card--violet::before {
-    background: var(--signal-violet);
+  .metric-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
   }
 
-  .metric-card--violet > strong {
-    color: var(--signal-violet);
-  }
-
-  .metric-card--blue::before {
-    background: var(--signal-blue);
-  }
-
-  .metric-card--blue > strong {
-    color: var(--signal-blue);
+  .metric-card__status {
+    padding: 3px 5px;
+    border: 1px solid color-mix(in srgb, var(--metric-accent) 44%, transparent);
+    background: color-mix(in srgb, var(--metric-accent) 10%, transparent);
+    color: var(--metric-accent);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
   }
 
   .metric-card > strong {
     background: none;
+    color: var(--metric-accent);
     font-family: var(--font-mono);
     font-size: var(--fs-metric-value);
     letter-spacing: -0.07em;
@@ -749,7 +762,7 @@
     display: block;
     width: var(--progress);
     height: 100%;
-    background: var(--signal-red);
+    background: var(--metric-accent);
     content: '';
   }
 
@@ -1055,7 +1068,7 @@
 
   .hero-pool {
     display: grid;
-    padding: 12px 20px 18px;
+    padding: 0;
   }
 
   .hero-pool__reset {
@@ -1083,16 +1096,16 @@
     position: relative;
     display: grid;
     width: 100%;
-    min-height: 64px;
+    min-height: 72px;
     align-items: center;
-    padding: 0;
+    padding: 0 20px;
     border: 0;
     border-bottom: 1px solid var(--line);
     background: transparent;
     color: inherit;
     cursor: pointer;
-    gap: 12px;
-    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 14px;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
     overflow: hidden;
     text-align: left;
     transition: background-color 140ms ease;
@@ -1113,8 +1126,8 @@
   }
 
   .hero-pool__portrait {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     overflow: hidden;
   }
 
@@ -1146,12 +1159,18 @@
 
   .hero-pool__bar {
     position: absolute;
-    height: 2px;
-    background: var(--signal-violet);
+    right: 20px;
     bottom: 0;
-    left: 50px;
+    left: 74px;
+    height: 2px;
+    background: linear-gradient(
+      to right,
+      var(--signal-violet) 0,
+      var(--signal-violet) var(--hero-share),
+      transparent var(--hero-share),
+      transparent 100%
+    );
     opacity: 0.7;
-    width: var(--hero-share);
   }
 
   .dashboard-side-column > .archive-sync {

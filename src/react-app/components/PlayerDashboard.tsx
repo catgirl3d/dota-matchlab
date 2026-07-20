@@ -196,7 +196,8 @@ export function PlayerDashboard({
           label="Win rate"
           value={`${analytics.winRate}%`}
           detail={`${analytics.wins} W · ${analytics.losses} L`}
-          tone="red"
+          tone={analytics.winRate > 50 ? 'acid' : analytics.winRate < 50 ? 'red' : 'violet'}
+          status={analytics.winRate > 50 ? 'Above even' : analytics.winRate < 50 ? 'Below even' : 'Even'}
           progress={analytics.winRate}
         />
         <MetricCard
@@ -365,16 +366,21 @@ function MetricCard({
   detail,
   tone,
   progress,
+  status,
 }: {
   label: string;
   value: string;
   detail: string;
   tone: 'acid' | 'red' | 'violet' | 'blue';
   progress?: number;
+  status?: string;
 }) {
   return (
     <article className={`metric-card metric-card--${tone}`}>
-      <span className="micro-label">{label}</span>
+      <div className="metric-card__header">
+        <span className="micro-label">{label}</span>
+        {status ? <span className="metric-card__status">{status}</span> : null}
+      </div>
       <strong>{value}</strong>
       {progress !== undefined ? (
         <span
