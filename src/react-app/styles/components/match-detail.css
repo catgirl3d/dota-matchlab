@@ -1485,12 +1485,12 @@
     color: var(--text);
   }
 
-  .build-timeline__token--item {
+  .build-timeline__token--item,
+  .build-timeline__token--ability {
     display: grid;
-    flex: 0 0 42px;
-    width: 42px;
+    flex: 0 0 46px;
+    width: 46px;
     padding: 0;
-    grid-template-rows: 28px auto;
     justify-items: center;
     border: 1px solid var(--line);
     border-radius: 4px;
@@ -1499,18 +1499,13 @@
     transition: all 0.2s ease;
   }
 
+  .build-timeline__token--item {
+    grid-template-rows: 28px auto;
+  }
+
   .build-timeline__token--ability {
-    flex: 0 0 46px;
-    width: 46px;
     min-height: 47px;
-    padding: 0;
     grid-template-rows: 32px auto;
-    justify-items: center;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    background: rgba(23, 26, 22, 0.8);
-    overflow: hidden;
-    transition: all 0.2s ease;
   }
 
   .build-timeline__ability-level {
@@ -1558,7 +1553,7 @@
 
   .build-timeline__item-icon {
     display: block;
-    width: 42px;
+    width: 100%;
     height: 28px;
     object-fit: contain;
   }
