@@ -444,15 +444,14 @@ function PlayerBuild({
   heroNames: Record<number, string>;
   highlighted: boolean;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const visibleLimit = 12;
-  const abilityEvents = isExpanded ? player.abilityBuild : player.abilityBuild.slice(0, visibleLimit);
-  const purchaseEvents = isExpanded ? player.purchaseEvents : player.purchaseEvents.slice(0, visibleLimit);
-  const hiddenEvents = Math.max(0, player.abilityBuild.length - abilityEvents.length) + Math.max(0, player.purchaseEvents.length - purchaseEvents.length);
+  const teamClass = player.isRadiant ? 'player-build--radiant' : 'player-build--dire';
+  const impVal = player.imp;
+  const impClass = impVal === null ? 'is-neutral' : impVal > 0 ? 'is-positive' : 'is-negative';
+  const impText = impVal === null ? '— IMP' : `${impVal > 0 ? '+' : ''}${impVal} IMP`;
 
   return (
     <article
-      className={`player-build${highlighted ? ' is-current' : ''}`}
+      className={`player-build ${teamClass}${highlighted ? ' is-current' : ''}`}
       aria-current={highlighted ? 'true' : undefined}
       aria-label={`Build for ${player.name ?? formatAccount(player.accountId)}`}
       >
@@ -462,7 +461,9 @@ function PlayerBuild({
           <strong>{player.name ?? formatAccount(player.accountId)}</strong>
           <span>{heroLabel(player.heroId, heroNames)} · {player.level} lvl</span>
         </div>
-        <small>{player.imp === null ? '—' : `${player.imp > 0 ? '+' : ''}${player.imp} IMP`}</small>
+        <span className={`player-build__imp-badge ${impClass}`}>
+          {impText}
+        </span>
       </div>
       <div className="player-build__loadout" aria-label={`Final loadout for ${player.name ?? formatAccount(player.accountId)}`}>
         <span className="player-build__label">FINAL</span>
@@ -474,10 +475,10 @@ function PlayerBuild({
         </div>
       </div>
       <div className="player-build__progression">
-          <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={abilityEvents} total={player.abilityBuild.length}>
+          <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={player.abilityBuild} total={player.abilityBuild.length}>
             {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
           </BuildTimeline>
-          <BuildTimeline label="PURCHASES" emptyLabel="No purchase events" unavailableLabel="Purchase progression unavailable." available={player.hasPurchaseEventsData} events={purchaseEvents} total={player.purchaseEvents.length}>
+          <BuildTimeline label="PURCHASES" emptyLabel="No purchase events" unavailableLabel="Purchase progression unavailable." available={player.hasPurchaseEventsData} events={player.purchaseEvents} total={player.purchaseEvents.length}>
             {(purchase, index) => (
               <span className="build-timeline__token build-timeline__token--item" key={`${purchase.time}-${purchase.itemId}-${index}`} title={`Item #${purchase.itemId} at ${formatEventTime(purchase.time)}`}>
                 <ItemIcon itemId={purchase.itemId} className="build-timeline__item-icon" />
@@ -486,17 +487,24 @@ function PlayerBuild({
               </span>
             )}
           </BuildTimeline>
-          {hiddenEvents > 0 ? (
-            <button className="player-build__expand" type="button" onClick={() => setIsExpanded((value) => !value)} aria-expanded={isExpanded}>
-              {isExpanded ? 'Collapse timelines' : `Show ${hiddenEvents} more events`}
-            </button>
-          ) : null}
       </div>
       <div className="player-build__footer">
-        <span>{formatCompact(player.heroDamage)} hero dmg</span>
-        <span>{formatCompact(player.towerDamage)} tower</span>
-        <span>{player.lastHits}/{player.denies} CS</span>
-        <span>{player.abilityBuild.length} abilities</span>
+        <div className="player-build__metric">
+          <span className="player-build__metric-label">Hero Dmg</span>
+          <span className="player-build__metric-value">{formatCompact(player.heroDamage)}</span>
+        </div>
+        <div className="player-build__metric">
+          <span className="player-build__metric-label">Tower Dmg</span>
+          <span className="player-build__metric-value">{formatCompact(player.towerDamage)}</span>
+        </div>
+        <div className="player-build__metric">
+          <span className="player-build__metric-label">CS</span>
+          <span className="player-build__metric-value">{player.lastHits}/{player.denies}</span>
+        </div>
+        <div className="player-build__metric">
+          <span className="player-build__metric-label">Skills</span>
+          <span className="player-build__metric-value">{player.abilityBuild.length}</span>
+        </div>
       </div>
     </article>
   );
@@ -594,7 +602,6 @@ function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][
     ? talentDescription ? `Talent: ${talentDescription}` : 'Talent'
     : abilityIcon ? formatAbilityName(ability.name, ability.abilityId) : `Ability #${ability.abilityId}`;
   const timing = ability.isTalent ? formatEventTime(ability.time) : `${formatEventTime(ability.time)} · level ${ability.level + 1}`;
-  const footer = talentDescription ? `${formatEventTime(ability.time)} · ${talentDescription}` : timing;
 
   return (
     <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : abilityIcon ? ' build-timeline__token--ability' : ''}`} role="img" aria-label={`${label}, ${timing}`} title={label}>
@@ -604,7 +611,8 @@ function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][
           <strong className="build-timeline__talent-description">{talentDescription ?? 'Talent'}</strong>
         </>
       ) : abilityIcon ? <img className="build-timeline__ability-icon" src={abilityIcon.src} alt="" /> : <strong>{label}</strong>}
-      <small>{formatEventTime(ability.time)}{ability.isTalent ? '' : ` · L${ability.level + 1}`}</small>
+      {!ability.isTalent ? <span className="build-timeline__ability-level" aria-hidden="true">{ability.level + 1}</span> : null}
+      <small>{formatEventTime(ability.time)}</small>
     </span>
   );
 }

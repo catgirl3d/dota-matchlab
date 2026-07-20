@@ -177,7 +177,7 @@ describe('MatchDetailView', () => {
     expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
   });
 
-  it('groups compact builds by team, highlights the current account, and discloses long timelines', () => {
+  it('groups builds by team, highlights the current account, and renders full timelines', () => {
     const longPurchases = Array.from({ length: 14 }, (_, index) => ({ time: index * 30, itemId: index === 13 ? 99_999 : 29 }));
     const longAbilities = [
       { abilityId: 6_900, time: 10, level: 1, name: null, isTalent: true },
@@ -210,10 +210,14 @@ describe('MatchDetailView', () => {
     expect(within(currentBuild).getByRole('img', { name: 'Talent: +12 Desolate Damage, 0:10' })).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1000')).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1001')).toBeVisible();
-    expect(within(currentBuild).queryByRole('img', { name: 'Shrapnel, 2:10 · level 3' })).not.toBeInTheDocument();
-    fireEvent.click(within(currentBuild).getByRole('button', { name: 'Show 3 more events' }));
     expect(within(currentBuild).getByRole('img', { name: 'Shrapnel, 2:10 · level 3' })).toBeVisible();
     expect(within(currentBuild).getByText('#99999')).toBeVisible();
+    const abilityLevels = currentBuild.querySelectorAll('.build-timeline__ability-level');
+    expect(abilityLevels).toHaveLength(12);
+    expect(abilityLevels[1]).toHaveTextContent('4');
+    expect(currentBuild.querySelector('.build-timeline__token--ability small')).toHaveTextContent('2:10');
+    expect(currentBuild.querySelector('.build-timeline__token--ability small')).not.toHaveTextContent(/L\d/);
+    expect(within(currentBuild).queryByRole('button', { name: /more events/i })).not.toBeInTheDocument();
   });
 
   it('keeps final loadout but labels progression unavailable for basic and partial data', () => {
