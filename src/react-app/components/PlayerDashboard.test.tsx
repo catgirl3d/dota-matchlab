@@ -173,6 +173,9 @@ describe('PlayerDashboard', () => {
     expect(screen.getByRole('button', { name: 'Axe' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Anti-Mage' })).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by Anti-Mage' }));
+    expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, heroId: 1 });
+
     expect(knownHeroLink).toHaveAttribute(
       'href',
       '/matches/2?player=93447624',

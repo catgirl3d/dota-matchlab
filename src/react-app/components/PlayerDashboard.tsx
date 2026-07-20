@@ -283,7 +283,11 @@ export function PlayerDashboard({
                 <h3 id="hero-pool-title">Most played</h3>
               </div>
             </div>
-            <HeroPool heroes={overview.heroes.slice(0, 6).map((hero) => ({ ...hero, label: heroNames[hero.heroId] ?? `Hero #${hero.heroId}` }))} />
+            <HeroPool
+              heroes={overview.heroes.slice(0, 6).map((hero) => ({ ...hero, label: heroNames[hero.heroId] ?? `Hero #${hero.heroId}` }))}
+              selectedHeroId={filters.heroId}
+              onSelectHero={(heroId) => onFiltersChange({ ...filters, heroId })}
+            />
           </section>
 
           <section className="dashboard-card lane-card" aria-labelledby="lane-title">
@@ -416,6 +420,8 @@ function BreakdownList({
 
 function HeroPool({
   heroes,
+  selectedHeroId,
+  onSelectHero,
 }: {
   heroes: Array<{
     heroId: number;
@@ -424,13 +430,22 @@ function HeroPool({
     winRate: number;
     averageKda: number;
   }>;
+  selectedHeroId: number | null;
+  onSelectHero: (heroId: number) => void;
 }) {
   const maxMatches = heroes[0]?.matches ?? 1;
   return (
     <div className="hero-pool">
       {heroes.length === 0 ? <span className="breakdown-list__empty">No hero data</span> : null}
       {heroes.map((hero) => (
-        <div className="hero-pool__row" key={hero.heroId}>
+        <button
+          className={`hero-pool__row${hero.heroId === selectedHeroId ? ' is-selected' : ''}`}
+          type="button"
+          key={hero.heroId}
+          aria-pressed={hero.heroId === selectedHeroId}
+          aria-label={`Filter by ${hero.label}`}
+          onClick={() => onSelectHero(hero.heroId)}
+        >
           <HeroMark
             heroId={hero.heroId}
             label={hero.label}
@@ -446,7 +461,7 @@ function HeroPool({
             className="hero-pool__bar"
             style={{ '--hero-share': `${(hero.matches / maxMatches) * 100}%` } as CSSProperties}
           />
-        </div>
+        </button>
       ))}
     </div>
   );

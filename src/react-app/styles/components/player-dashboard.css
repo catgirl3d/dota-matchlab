@@ -1061,16 +1061,34 @@
   .hero-pool__row {
     position: relative;
     display: grid;
+    width: 100%;
     min-height: 64px;
     align-items: center;
+    padding: 0;
+    border: 0;
     border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
     gap: 12px;
     grid-template-columns: 38px minmax(0, 1fr) auto;
     overflow: hidden;
+    text-align: left;
+    transition: background-color 140ms ease;
   }
 
   .hero-pool__row:last-child {
     border-bottom: 0;
+  }
+
+  .hero-pool__row:hover,
+  .hero-pool__row.is-selected {
+    background: rgba(198, 242, 74, 0.08);
+  }
+
+  .hero-pool__row:focus-visible {
+    outline: 1px solid var(--acid);
+    outline-offset: -1px;
   }
 
   .hero-pool__portrait {
