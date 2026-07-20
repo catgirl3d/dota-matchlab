@@ -968,16 +968,46 @@
   }
 
   .build-timeline__token.is-talent {
-    flex-basis: 168px;
-    min-height: 46px;
+    flex: 0 0 82px;
+    width: 82px;
+    min-height: 47px;
+    padding: 4px 5px 3px;
+    align-items: center;
+    grid-template-columns: 18px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    column-gap: 5px;
     border-color: rgba(255, 190, 74, 0.75);
     background: rgba(255, 190, 74, 0.08);
   }
 
-  .build-timeline__token.is-talent small {
-    overflow: visible;
+  .build-timeline__talent-mark {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 190, 74, 0.8);
+    color: rgba(255, 210, 115, 0.95);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .build-timeline__token.is-talent .build-timeline__talent-description {
+    display: -webkit-box;
+    align-self: center;
+    overflow: hidden;
+    text-align: left;
     text-overflow: clip;
     white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .build-timeline__token.is-talent small {
+    grid-column: 1 / -1;
+    text-align: right;
   }
 
   .build-timeline__token strong,

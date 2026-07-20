@@ -598,8 +598,13 @@ function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][
 
   return (
     <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : abilityIcon ? ' build-timeline__token--ability' : ''}`} role="img" aria-label={`${label}, ${timing}`} title={label}>
-      {ability.isTalent ? <strong>TALENT</strong> : abilityIcon ? <img className="build-timeline__ability-icon" src={abilityIcon.src} alt="" /> : <strong>{label}</strong>}
-      <small>{ability.isTalent ? footer : `${formatEventTime(ability.time)} · L${ability.level + 1}`}</small>
+      {ability.isTalent ? (
+        <>
+          <span className="build-timeline__talent-mark" aria-hidden="true">T</span>
+          <strong className="build-timeline__talent-description">{talentDescription ?? 'Talent'}</strong>
+        </>
+      ) : abilityIcon ? <img className="build-timeline__ability-icon" src={abilityIcon.src} alt="" /> : <strong>{label}</strong>}
+      <small>{formatEventTime(ability.time)}{ability.isTalent ? '' : ` · L${ability.level + 1}`}</small>
     </span>
   );
 }

@@ -205,8 +205,8 @@ describe('MatchDetailView', () => {
     expect(direColumn).toContainElement(screen.getByRole('article', { name: 'Build for Opponent' }));
     const currentBuild = screen.getByRole('article', { name: 'Build for Current' });
     expect(currentBuild).toHaveAttribute('aria-current', 'true');
-    expect(within(currentBuild).getByText('TALENT')).toBeVisible();
-    expect(within(currentBuild).getByText(/0:10 · \+12 Desolate Damage/)).toBeVisible();
+    expect(within(currentBuild).getByText('T')).toBeVisible();
+    expect(within(currentBuild).getByText('+12 Desolate Damage')).toBeVisible();
     expect(within(currentBuild).getByRole('img', { name: 'Talent: +12 Desolate Damage, 0:10' })).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1000')).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1001')).toBeVisible();
