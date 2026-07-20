@@ -4,7 +4,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router';
 import type { Tables } from '../../shared/database.types';
 import type { MatchSyncResult } from '../../shared/match-archive';
-import { fetchArchiveOverview, fetchArchivePage, type ArchiveCursor } from '../lib/archive';
+import {
+  fetchArchiveOverview,
+  fetchArchivePage,
+  type ArchiveCursor,
+  type ArchiveOverview,
+  type ArchivePage,
+} from '../lib/archive';
 import { DEFAULT_ARCHIVE_FILTERS, type ArchiveFilters } from '../lib/archive-analytics';
 import { archiveQueryKeys } from '../lib/archive-query-keys';
 import {
@@ -29,6 +35,14 @@ type TrackedAccount = Pick<
 
 const trackedAccountFields =
   'id,steam_id64,dota_account_id,persona_name,avatar_url,rank_tier,profile_refreshed_at' as const;
+
+function keepArchiveDataForSameAccount<T>(
+  previousData: T | undefined,
+  previousQuery: { queryKey: readonly unknown[] } | undefined,
+  accountId: string | undefined,
+): T | undefined {
+  return previousQuery?.queryKey[1] === accountId ? previousData : undefined;
+}
 
 export function MatchWorkspace() {
   const { session } = useSession();
@@ -173,11 +187,13 @@ export function MatchWorkspace() {
   }, [accountsQuery.isSuccess, isRequestedAccountOwned, searchParams, setSearchParams]);
 
   const archiveCursor = archiveCursors.at(-1) ?? null;
-  const archiveOverviewQuery = useQuery({
+  const archiveOverviewQuery = useQuery<ArchiveOverview>({
     queryKey: archiveQueryKeys.overview(activeAccount?.id, archiveFilters),
     enabled: Boolean(session && activeAccount),
     staleTime: 60_000,
     retry: false,
+    placeholderData: (previousData, previousQuery) =>
+      keepArchiveDataForSameAccount<ArchiveOverview>(previousData, previousQuery, activeAccount?.id),
     queryFn: async ({ signal }) => {
       if (!session || !activeAccount) {
         throw new Error('Профиль не выбран');
@@ -193,11 +209,13 @@ export function MatchWorkspace() {
     },
   });
 
-  const archivePageQuery = useQuery({
+  const archivePageQuery = useQuery<ArchivePage>({
     queryKey: archiveQueryKeys.page(activeAccount?.id, archiveFilters, archiveCursor),
     enabled: Boolean(session && activeAccount),
     staleTime: 60_000,
     retry: false,
+    placeholderData: (previousData, previousQuery) =>
+      keepArchiveDataForSameAccount<ArchivePage>(previousData, previousQuery, activeAccount?.id),
     queryFn: async ({ signal }) => {
       if (!session || !activeAccount) throw new Error('Профиль не выбран');
       const token = await session.getToken();

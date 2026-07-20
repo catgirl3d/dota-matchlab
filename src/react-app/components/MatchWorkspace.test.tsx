@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fetchArchiveOverview, fetchArchivePage } from '../lib/archive';
 import { MatchWorkspace } from './MatchWorkspace';
 
 const mocks = vi.hoisted(() => ({
@@ -35,8 +36,30 @@ vi.mock('../lib/supabase', () => ({
   }),
 }));
 vi.mock('./PlayerDashboard', () => ({
-  PlayerDashboard: ({ account }: { account: { dota_account_id: number } }) => (
-    <div>Active account {account.dota_account_id}</div>
+  PlayerDashboard: ({
+    account,
+    overview,
+    page,
+    onFiltersChange,
+  }: {
+    account: { dota_account_id: number };
+    overview: unknown;
+    page: unknown;
+    onFiltersChange: (filters: Record<string, unknown>) => void;
+  }) => (
+    <div>
+      <div>Active account {account.dota_account_id}</div>
+      <output data-testid="overview-state">{overview ? 'ready' : 'empty'}</output>
+      <output data-testid="page-state">{page ? 'ready' : 'empty'}</output>
+      <button
+        type="button"
+        onClick={() => onFiltersChange({
+          period: 'all', mode: 'all', position: 'all', result: 'all', party: 'all', heroId: 1,
+        })}
+      >
+        Filter by hero
+      </button>
+    </div>
   ),
 }));
 
@@ -58,6 +81,14 @@ function renderWorkspace(path: string) {
   );
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((complete) => {
+    resolve = complete;
+  });
+  return { promise, resolve };
+}
+
 beforeEach(() => {
   mocks.accounts = [{
     id: 'tracked-1',
@@ -68,6 +99,8 @@ beforeEach(() => {
     rank_tier: null,
     profile_refreshed_at: null,
   }];
+  vi.mocked(fetchArchiveOverview).mockReset().mockResolvedValue({} as never);
+  vi.mocked(fetchArchivePage).mockReset().mockResolvedValue({} as never);
 });
 
 afterEach(cleanup);
@@ -93,5 +126,31 @@ describe('MatchWorkspace player query', () => {
 
     expect(await screen.findByText('Active account 77')).toBeVisible();
     expect(screen.getByTestId('location')).toHaveTextContent('?view=matches POP');
+  });
+
+  it('keeps archive snapshots while a hero-filter query is pending', async () => {
+    const overviewDeferred = deferred<unknown>();
+    const pageDeferred = deferred<unknown>();
+    vi.mocked(fetchArchiveOverview)
+      .mockResolvedValueOnce({} as never)
+      .mockImplementationOnce(() => overviewDeferred.promise as never);
+    vi.mocked(fetchArchivePage)
+      .mockResolvedValueOnce({} as never)
+      .mockImplementationOnce(() => pageDeferred.promise as never);
+
+    renderWorkspace('/?player=77');
+
+    await waitFor(() => expect(screen.getByTestId('overview-state')).toHaveTextContent('ready'));
+    await waitFor(() => expect(screen.getByTestId('page-state')).toHaveTextContent('ready'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by hero' }));
+
+    await waitFor(() => expect(fetchArchiveOverview).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchArchivePage).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('overview-state')).toHaveTextContent('ready');
+    expect(screen.getByTestId('page-state')).toHaveTextContent('ready');
+
+    overviewDeferred.resolve({});
+    pageDeferred.resolve({});
   });
 });
