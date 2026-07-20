@@ -64,6 +64,11 @@ describe('MatchDetailView', () => {
     expect(currentBuild.querySelector('.player-build__portrait img[src*="_icon_"]')).not.toBeInTheDocument();
     const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
     expect(scoreboardPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
+    const scoreboardEntry = screen.getByRole('article', { name: 'Scoreboard entry for Player #111' });
+    expect(within(scoreboardEntry).getByRole('group', { name: '22 kills, 2 deaths, 8 assists' })).toBeVisible();
+    expect(within(scoreboardEntry).getByText('GPM')).toBeVisible();
+    expect(within(scoreboardEntry).getByText('XPM')).toBeVisible();
+    expect(within(scoreboardEntry).getByText('NW')).toBeVisible();
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
     expect(draftPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getByText('Базовый разбор')).toBeVisible();

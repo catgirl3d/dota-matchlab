@@ -380,13 +380,13 @@
       grid-template-columns: 1fr;
     }
 
-    .build-sort {
+    .player-sort {
       justify-items: start;
       border-top: 1px solid var(--line);
       border-left: 0;
     }
 
-    .build-sort__options {
+    .player-sort__options {
       justify-content: flex-start;
     }
 

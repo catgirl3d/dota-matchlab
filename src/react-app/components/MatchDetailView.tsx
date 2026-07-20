@@ -426,14 +426,16 @@ function TeamRoster({
               <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
               {performanceRank ? <span className="scoreboard-player__performance-rank">TOP {performanceRank} IMP</span> : null}
             </div>
-            <strong className="scoreboard-player__kda">
-              {player.kills} / {player.deaths} / {player.assists}
-            </strong>
-            <div className="scoreboard-player__economy">
-              <span>{player.goldPerMinute} <small>GPM</small></span>
-              <span>{player.xpPerMinute} <small>XPM</small></span>
+            <div className="scoreboard-player__kda" role="group" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
+              <span><small>K</small><strong>{player.kills}</strong></span>
+              <span><small>D</small><strong>{player.deaths}</strong></span>
+              <span><small>A</small><strong>{player.assists}</strong></span>
             </div>
-            <span className="scoreboard-player__net">{formatCompact(player.netWorth)}</span>
+            <div className="scoreboard-player__economy">
+              <span><small>GPM</small><strong>{player.goldPerMinute}</strong></span>
+              <span><small>XPM</small><strong>{player.xpPerMinute}</strong></span>
+            </div>
+            <span className="scoreboard-player__net"><small>NW</small><strong>{formatCompact(player.netWorth)}</strong></span>
           </article>
         );
       })}
