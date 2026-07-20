@@ -470,64 +470,201 @@
   .detail-draft__sequence {
     display: flex;
     padding: 20px 22px;
-    gap: 8px;
+    gap: 12px;
     overflow-x: auto;
   }
 
-  .detail-draft__entry {
-    display: grid;
-    min-width: 124px;
-    min-height: 90px;
-    align-items: center;
-    padding: 12px;
-    border: 1px solid var(--line-strong);
-    background: var(--ink-soft);
-    column-gap: 8px;
-    grid-template-columns: 14px 34px minmax(0, 1fr);
-    grid-template-rows: 1fr auto;
+  /* Custom scrollbar for draft timeline */
+  .detail-draft__sequence::-webkit-scrollbar {
+    height: 6px;
   }
 
+  .detail-draft__sequence::-webkit-scrollbar-track {
+    background: rgba(16, 18, 15, 0.4);
+    border-radius: 3px;
+  }
+
+  .detail-draft__sequence::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 3px;
+  }
+
+  .detail-draft__sequence::-webkit-scrollbar-thumb:hover {
+    background: var(--line-strong);
+  }
+
+  .detail-draft__entry {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 114px;
+    padding: 14px 10px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(29, 33, 28, 0.6) 0%, rgba(16, 18, 15, 0.8) 100%);
+    backdrop-filter: blur(10px);
+    gap: 8px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .detail-draft__entry:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+    border-color: var(--line-strong);
+  }
+
+  /* Pick vs Ban styling states */
   .detail-draft__entry.is-pick {
-    box-shadow: inset 0 3px 0 var(--acid);
+    border-top: 3px solid var(--acid);
+  }
+
+  .detail-draft__entry.is-pick::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(198, 242, 74, 0.05), transparent);
+    pointer-events: none;
+    border-radius: 7px 7px 0 0;
   }
 
   .detail-draft__entry.is-ban {
-    box-shadow: inset 0 3px 0 var(--signal-red);
-    opacity: 0.62;
+    border-top: 3px solid var(--signal-red);
+    opacity: 0.55;
+    background: linear-gradient(135deg, rgba(20, 22, 18, 0.7) 0%, rgba(10, 11, 9, 0.85) 100%);
   }
 
-  .detail-draft__entry > span,
-  .detail-draft__entry small {
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: var(--fs-2xs);
+  .detail-draft__entry.is-ban img {
+    filter: grayscale(90%) contrast(90%);
+    opacity: 0.65;
   }
 
+  /* Subtle diagonal line motif inside bans */
+  .detail-draft__entry.is-ban::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 8px,
+      rgba(255, 54, 95, 0.03) 8px,
+      rgba(255, 54, 95, 0.03) 9px
+    );
+    pointer-events: none;
+    border-radius: 7px;
+  }
+
+  /* Order/numbering badge */
   .detail-draft__entry > span:first-child {
-    align-self: start;
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 14px;
+    min-width: 14px;
+    padding: 0 3px;
+    border-radius: 3px;
+    background: rgba(224, 230, 208, 0.08);
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--muted);
+    border: 1px solid rgba(224, 230, 208, 0.05);
   }
 
+  .detail-draft__entry.is-pick > span:first-child {
+    color: var(--acid);
+    background: rgba(198, 242, 74, 0.1);
+    border-color: rgba(198, 242, 74, 0.2);
+  }
+
+  .detail-draft__entry.is-ban > span:first-child {
+    color: var(--signal-red);
+    background: rgba(255, 54, 95, 0.1);
+    border-color: rgba(255, 54, 95, 0.2);
+  }
+
+  /* Hero portrait in draft */
   .detail-draft__hero-mark {
-    display: grid;
-    width: 34px;
-    height: 34px;
+    display: flex;
+    width: 38px;
+    height: 38px;
     overflow: hidden;
     border: 1px solid var(--line-strong);
+    border-radius: 4px;
     background: var(--ink-soft);
-    grid-column: 2;
-    grid-row: 1 / -1;
-    place-items: center;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    margin-top: 4px;
+    transition: transform 0.2s ease;
   }
 
+  .detail-draft__entry:hover .detail-draft__hero-mark {
+    transform: scale(1.06);
+    border-color: var(--paper);
+  }
+
+  .detail-draft__hero-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Faction-based style variants */
+  .detail-draft__entry.is-team-radiant {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 12px rgba(49, 209, 123, 0.02);
+  }
+
+  .detail-draft__entry.is-team-dire {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 12px rgba(255, 54, 95, 0.01);
+  }
+
+  .detail-draft__entry.is-pick.is-team-radiant:hover {
+    box-shadow: 0 6px 18px rgba(49, 209, 123, 0.08);
+    border-color: rgba(49, 209, 123, 0.4);
+  }
+
+  .detail-draft__entry.is-pick.is-team-dire:hover {
+    box-shadow: 0 6px 18px rgba(255, 54, 95, 0.06);
+    border-color: rgba(255, 54, 95, 0.4);
+  }
+
+  /* Typographies inside entry */
   .detail-draft__entry strong {
+    width: 100%;
     overflow: hidden;
-    font-size: var(--fs-small-btn);
+    text-align: center;
+    font-size: var(--fs-label-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--paper);
+    font-weight: 600;
   }
 
   .detail-draft__entry small {
-    grid-column: 1 / -1;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: -2px;
+  }
+
+  .detail-draft__entry.is-pick.is-team-radiant small {
+    color: rgba(49, 209, 123, 0.85);
+  }
+
+  .detail-draft__entry.is-pick.is-team-dire small {
+    color: rgba(255, 54, 95, 0.85);
   }
 
   .detail-builds__grid {

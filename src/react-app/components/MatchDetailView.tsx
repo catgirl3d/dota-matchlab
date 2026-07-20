@@ -219,9 +219,10 @@ export function MatchDetailView({
           <div className="detail-draft__sequence">
             {detail.pickBans.map((entry, index) => {
               const label = heroNames[entry.heroId] ?? `Hero #${entry.heroId}`;
+              const teamClass = entry.isRadiant === true ? 'is-team-radiant' : entry.isRadiant === false ? 'is-team-dire' : '';
               return (
                 <article
-                  className={`detail-draft__entry ${entry.isPick ? 'is-pick' : 'is-ban'}`}
+                  className={`detail-draft__entry ${entry.isPick ? 'is-pick' : 'is-ban'} ${teamClass}`}
                   key={`${entry.order ?? index}-${entry.heroId}`}
                 >
                   <span>{entry.order ?? index + 1}</span>
