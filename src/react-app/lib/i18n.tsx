@@ -234,7 +234,7 @@ export function translate(
   key: string,
   replacements?: TranslationReplacements,
 ): string {
-  const dictionary = translations[locale] as Record<string, string>;
+  const dictionary: Record<string, string> = translations[locale];
   let resolvedKey = key;
   if (replacements && 'count' in replacements) {
     const suffix = getPluralSuffix(replacements.count ?? 0);

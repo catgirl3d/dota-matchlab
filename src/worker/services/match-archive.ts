@@ -465,7 +465,6 @@ function getPageUpperBound(page: { matches: ArchivedPlayerMatch[] }): number | n
 
 type JsonObject = { [key: string]: Json | undefined };
 
-// eslint-disable-next-line @typescript-eslint/no-shadow
 function isObject(value: Json | null): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

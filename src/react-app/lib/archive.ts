@@ -241,7 +241,7 @@ function mapOverview(value: unknown): ArchiveOverview {
     modes: mapBreakdowns(record.modes), heroes: mapHeroBreakdowns(record.heroes), positions: mapBreakdowns(record.positions),
     lanes: mapBreakdowns(record.lanes), party: mapBreakdowns(record.party), tempo: mapBreakdowns(record.tempo),
     heroOptions: arrayValue(record.heroOptions).map(numberValue),
-    syncState: record.syncState === null || record.syncState === undefined ? null : asRecord(record.syncState, 'overview.syncState') as ArchiveSyncState,
+    syncState: record.syncState === null || record.syncState === undefined ? null : readSyncState(record.syncState),
     integrity: { linked: numberValue(integrity.linked), complete: numberValue(integrity.complete), missingStats: numberValue(integrity.missing_stats), missingMatch: numberValue(integrity.missing_match) },
   };
 }
@@ -289,8 +289,29 @@ function mapHeroBreakdowns(value: unknown): ArchiveHeroBreakdown[] {
 }
 
 function asRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Invalid response ${label}`);
-  return value as Record<string, unknown>;
+  if (!isRecord(value)) throw new Error(`Invalid response ${label}`);
+  return value;
+}
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function readSyncState(value: unknown): ArchiveSyncState {
+  if (!isArchiveSyncState(value)) throw new Error('Invalid response overview.syncState');
+  return value;
+}
+function isArchiveSyncState(value: unknown): value is ArchiveSyncState {
+  if (!isRecord(value)) return false;
+  return typeof value.status === 'string'
+    && typeof value.history_provider === 'string'
+    && typeof value.backfill_offset === 'number'
+    && typeof value.backfill_complete === 'boolean'
+    && (value.last_attempt_at === null || typeof value.last_attempt_at === 'string')
+    && (value.last_success_at === null || typeof value.last_success_at === 'string')
+    && (value.next_retry_at === null || typeof value.next_retry_at === 'string')
+    && typeof value.consecutive_failures === 'number'
+    && (value.last_error_message === null || typeof value.last_error_message === 'string')
+    && (value.newest_match_id === null || typeof value.newest_match_id === 'number')
+    && (value.oldest_match_id === null || typeof value.oldest_match_id === 'number');
 }
 function arrayValue(value: unknown): unknown[] { if (!Array.isArray(value)) throw new Error('Invalid archive array'); return value; }
 function numberValue(value: unknown): number { if (typeof value !== 'number') throw new Error('Invalid archive number'); return value; }

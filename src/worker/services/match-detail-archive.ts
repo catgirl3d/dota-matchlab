@@ -206,10 +206,14 @@ function readObject(response: RpcResponse, message: string, errorCode: string): 
 }
 
 function readMatchIds(value: Json | undefined): number[] {
-  if (!Array.isArray(value) || !value.every((id) => typeof id === 'number' && Number.isSafeInteger(id) && id > 0)) {
+  if (!isMatchIdArray(value)) {
     throw new StratzError('STRATZ details queue returned invalid match IDs', 502, 'MATCH_DETAIL_ARCHIVE_QUEUE_INVALID_IDS');
   }
-  return value as number[];
+  return value;
+}
+
+function isMatchIdArray(value: Json | undefined): value is number[] {
+  return Array.isArray(value) && value.every((id) => typeof id === 'number' && Number.isSafeInteger(id) && id > 0);
 }
 
 function readInteger(value: Json | undefined, field: string): number {

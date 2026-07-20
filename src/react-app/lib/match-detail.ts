@@ -732,9 +732,11 @@ function sumObjectField(values: Array<Record<string, unknown>>, field: string): 
 }
 
 function readObject(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return isRecord(value) ? value : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function readInteger(value: unknown): number | null {

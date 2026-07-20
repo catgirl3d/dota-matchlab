@@ -7,12 +7,18 @@ describe('archive RPC adapter', () => {
     const abortSignal = new AbortController().signal;
     const client = createFakeClient({
       summary: { matches: 1, wins: 1, losses: 0, unknown_results: 0, win_rate: 100, average_kills: 10, average_deaths: 2, average_assists: 8, average_kda: 9, average_gpm: 600, average_xpm: 700, average_last_hits: 300, average_damage: 30000, average_duration_minutes: 40, first_match_at: 1, latest_match_at: 1 },
-      form: ['win'], modes: [], heroes: [{ key: '1', heroId: 1, matches: 1, wins: 1, winRate: 100, averageKda: 9, averageGpm: 600 }], positions: [], lanes: [], party: [], tempo: [], heroOptions: [1], syncState: null,
+      form: ['win'], modes: [], heroes: [{ key: '1', heroId: 1, matches: 1, wins: 1, winRate: 100, averageKda: 9, averageGpm: 600 }], positions: [], lanes: [], party: [], tempo: [], heroOptions: [1],
+      syncState: {
+        status: 'ready', history_provider: 'stratz', backfill_offset: 500, backfill_complete: true,
+        last_attempt_at: '2026-07-20T10:00:00.000Z', last_success_at: '2026-07-20T10:00:00.000Z', next_retry_at: null,
+        consecutive_failures: 0, last_error_message: null, newest_match_id: 9, oldest_match_id: 9,
+      },
       integrity: { linked: 2, complete: 1, missing_stats: 1, missing_match: 0 },
     });
 
     await expect(fetchArchiveOverview(client, 'account', DEFAULT_ARCHIVE_FILTERS, abortSignal)).resolves.toMatchObject({
       summary: { matches: 1, unknownResults: 0 }, integrity: { missingStats: 1 }, heroOptions: [1],
+      syncState: { status: 'ready', backfill_complete: true, newest_match_id: 9 },
       heroes: [{ heroId: 1, averageKda: 9 }],
     });
     expect(client.rpc).toHaveBeenCalledWith('get_match_archive_overview', expect.objectContaining({ p_tracked_account_id: 'account' }));
