@@ -586,6 +586,10 @@
     border-bottom: 1px solid var(--line-strong);
   }
 
+  .match-workspace--showcase {
+    padding-top: 0;
+  }
+
   .workspace-header {
     display: grid;
     align-items: end;

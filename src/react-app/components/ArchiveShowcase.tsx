@@ -60,7 +60,7 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
   if (!overviewQuery.data || !pageQuery.data) return <>{fallback}</>;
 
   const { account, overview } = overviewQuery.data;
-  return <section className="match-workspace" aria-label="Публичный архив игрока">
+  return <section className="match-workspace match-workspace--showcase" aria-label="Публичный архив игрока">
     <PlayerDashboard
       account={{ dota_account_id: account.dotaAccountId, persona_name: account.personaName, avatar_url: account.avatarUrl, rank_tier: account.rankTier }}
       overview={overview}

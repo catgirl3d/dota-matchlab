@@ -237,6 +237,10 @@
       padding: 72px 0 80px;
     }
 
+    .match-workspace--showcase {
+      padding-top: 0;
+    }
+
     .player-identity {
       min-height: auto;
       padding: 22px;

@@ -31,6 +31,7 @@ describe('ArchiveShowcase', () => {
     mocks.page.mockResolvedValue({ matches: [], nextCursor: null });
     renderShowcase();
     expect(await screen.findByText('Showcase 77 read-only')).toBeVisible();
+    expect(screen.getByLabelText('Публичный архив игрока')).toHaveClass('match-workspace--showcase');
   });
 
   it('uses the supplied fallback when the showcase is missing', async () => {
