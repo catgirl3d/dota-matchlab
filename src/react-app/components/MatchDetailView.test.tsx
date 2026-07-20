@@ -220,6 +220,37 @@ describe('MatchDetailView', () => {
     expect(within(currentBuild).queryByRole('button', { name: /more events/i })).not.toBeInTheDocument();
   });
 
+  it('sorts both team build columns by the selected descending metric', () => {
+    const sortableDetail: MatchDetailSnapshot = {
+      ...detail,
+      players: [
+        createPlayer({ key: 'radiant-low', accountId: 1, name: 'Radiant low', playerSlot: 0, isRadiant: true, imp: 4, heroDamage: 900, towerDamage: 700 }),
+        createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, heroDamage: 500, towerDamage: 900 }),
+        createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, heroDamage: 700, towerDamage: 400 }),
+        createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, heroDamage: 1_200, towerDamage: 800 }),
+      ],
+    };
+
+    render(<MatchDetailView detail={sortableDetail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const radiantColumn = screen.getByRole('heading', { name: 'Radiant builds' }).closest('section');
+    const direColumn = screen.getByRole('heading', { name: 'Dire builds' }).closest('section');
+    expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant low', 'Build for Radiant high']);
+    expect(buildOrder(direColumn)).toEqual(['Build for Dire low', 'Build for Dire high']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'IMP' }));
+    expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant high', 'Build for Radiant low']);
+    expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hero damage' }));
+    expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant low', 'Build for Radiant high']);
+    expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tower damage' }));
+    expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant high', 'Build for Radiant low']);
+    expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
+  });
+
   it('keeps final loadout but labels progression unavailable for basic and partial data', () => {
     render(<MatchDetailView detail={detail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
@@ -299,6 +330,11 @@ describe('MatchDetailView', () => {
     expect(draftPanel?.querySelector('img')).not.toBeInTheDocument();
   });
 });
+
+function buildOrder(column: HTMLElement | null): string[] {
+  return Array.from(column?.querySelectorAll<HTMLElement>('.player-build') ?? [])
+    .map((player) => player.getAttribute('aria-label') ?? '');
+}
 
 function createPlayer(
   overrides: Partial<MatchDetailSnapshot['players'][number]>,

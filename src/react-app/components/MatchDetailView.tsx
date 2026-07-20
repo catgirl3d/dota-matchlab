@@ -10,6 +10,15 @@ import { talentDescriptions } from '../lib/talent-descriptions';
 import { HeroMark } from './HeroMark';
 import { HeroPortrait } from './HeroPortrait';
 
+type BuildSort = 'slot' | 'imp' | 'heroDamage' | 'towerDamage';
+
+const BUILD_SORT_OPTIONS: Array<{ value: BuildSort; label: string; title: string }> = [
+  { value: 'slot', label: 'Order', title: 'Original player order' },
+  { value: 'imp', label: 'IMP', title: 'Sort by Individual Match Performance' },
+  { value: 'heroDamage', label: 'Hero damage', title: 'Sort by hero damage' },
+  { value: 'towerDamage', label: 'Tower damage', title: 'Sort by tower damage' },
+];
+
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
   heroNames: Record<number, string>;
@@ -52,11 +61,24 @@ export function MatchDetailView({
   const radiantPlayers = detail.players.filter((player) => player.isRadiant);
   const direPlayers = detail.players.filter((player) => !player.isRadiant);
 
+  const heroDamages = [...new Set(detail.players.map((p) => p.heroDamage))].sort((a, b) => b - a);
+  const towerDamages = [...new Set(detail.players.map((p) => p.towerDamage))].sort((a, b) => b - a);
+  const csValues = [...new Set(detail.players.map((p) => p.lastHits))].sort((a, b) => b - a);
+  const skillsValues = [...new Set(detail.players.map((p) => p.abilityBuild.length))].sort((a, b) => b - a);
+
   const maxStats = {
-    heroDamage: Math.max(1, ...detail.players.map((p) => p.heroDamage)),
-    towerDamage: Math.max(1, ...detail.players.map((p) => p.towerDamage)),
-    cs: Math.max(1, ...detail.players.map((p) => p.lastHits)),
-    skills: Math.max(1, ...detail.players.map((p) => p.abilityBuild.length)),
+    first: {
+      heroDamage: heroDamages[0] ?? 0,
+      towerDamage: towerDamages[0] ?? 0,
+      cs: csValues[0] ?? 0,
+      skills: skillsValues[0] ?? 0,
+    },
+    second: {
+      heroDamage: heroDamages[1] ?? 0,
+      towerDamage: towerDamages[1] ?? 0,
+      cs: csValues[1] ?? 0,
+      skills: skillsValues[1] ?? 0,
+    },
   };
   const focusedPlayer = currentAccountId === null
     ? null
@@ -213,28 +235,15 @@ export function MatchDetailView({
         )}
       </section>
 
-      <section className="detail-panel detail-builds" aria-labelledby="builds-title">
-        <DetailHeading eyebrow="LOADOUT / BUILDS" title="Team builds" id="builds-title" />
-        {detail.rosterStatus === 'incomplete' ? (
-          <p className="detail-builds__roster-status">{detail.players.length}/10 players captured</p>
-        ) : null}
-        <div className="detail-builds__grid">
-          <BuildTeamColumn
-            side="radiant"
-            players={radiantPlayers}
-            heroNames={heroNames}
-            currentAccountId={currentAccountId}
-            maxStats={maxStats}
-          />
-          <BuildTeamColumn
-            side="dire"
-            players={direPlayers}
-            heroNames={heroNames}
-            currentAccountId={currentAccountId}
-            maxStats={maxStats}
-          />
-        </div>
-      </section>
+      <TeamBuilds
+        radiantPlayers={radiantPlayers}
+        direPlayers={direPlayers}
+        heroNames={heroNames}
+        currentAccountId={currentAccountId}
+        maxStats={maxStats}
+        rosterStatus={detail.rosterStatus}
+        playerCount={detail.players.length}
+      />
     </section>
   );
 }
@@ -412,25 +421,120 @@ function AdvantageChart({ networth, experience }: { networth: number[]; experien
   );
 }
 
+function TeamBuilds({
+  radiantPlayers,
+  direPlayers,
+  heroNames,
+  currentAccountId,
+  maxStats,
+  rosterStatus,
+  playerCount,
+}: {
+  radiantPlayers: MatchDetailPlayer[];
+  direPlayers: MatchDetailPlayer[];
+  heroNames: Record<number, string>;
+  currentAccountId: number | null;
+  maxStats: {
+    first: {
+      heroDamage: number;
+      towerDamage: number;
+      cs: number;
+      skills: number;
+    };
+    second: {
+      heroDamage: number;
+      towerDamage: number;
+      cs: number;
+      skills: number;
+    };
+  };
+  rosterStatus: MatchDetailSnapshot['rosterStatus'];
+  playerCount: number;
+}) {
+  const [sort, setSort] = useState<BuildSort>('slot');
+
+  return (
+    <section className="detail-panel detail-builds" aria-labelledby="builds-title">
+      <div className="detail-builds__header">
+        <DetailHeading eyebrow="LOADOUT / BUILDS" title="Team builds" id="builds-title" />
+        <BuildSortControls value={sort} onChange={setSort} />
+      </div>
+      {rosterStatus === 'incomplete' ? (
+        <p className="detail-builds__roster-status">{playerCount}/10 players captured</p>
+      ) : null}
+      <div className="detail-builds__grid">
+        <BuildTeamColumn
+          side="radiant"
+          players={radiantPlayers}
+          heroNames={heroNames}
+          currentAccountId={currentAccountId}
+          maxStats={maxStats}
+          sort={sort}
+        />
+        <BuildTeamColumn
+          side="dire"
+          players={direPlayers}
+          heroNames={heroNames}
+          currentAccountId={currentAccountId}
+          maxStats={maxStats}
+          sort={sort}
+        />
+      </div>
+    </section>
+  );
+}
+
+function BuildSortControls({ value, onChange }: { value: BuildSort; onChange: (value: BuildSort) => void }) {
+  return (
+    <div className="build-sort" role="group" aria-label="Sort team builds">
+      <span className="micro-label">SORT BY / DESCENDING</span>
+      <div className="build-sort__options">
+        {BUILD_SORT_OPTIONS.map((option) => (
+          <button
+            className={value === option.value ? 'is-active' : ''}
+            type="button"
+            key={option.value}
+            title={option.title}
+            aria-pressed={value === option.value}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BuildTeamColumn({
   side,
   players,
   heroNames,
   currentAccountId,
   maxStats,
+  sort,
 }: {
   side: 'radiant' | 'dire';
   players: MatchDetailPlayer[];
   heroNames: Record<number, string>;
   currentAccountId: number | null;
   maxStats: {
-    heroDamage: number;
-    towerDamage: number;
-    cs: number;
-    skills: number;
+    first: {
+      heroDamage: number;
+      towerDamage: number;
+      cs: number;
+      skills: number;
+    };
+    second: {
+      heroDamage: number;
+      towerDamage: number;
+      cs: number;
+      skills: number;
+    };
   };
+  sort: BuildSort;
 }) {
-  const orderedPlayers = [...players].sort((left, right) => left.playerSlot - right.playerSlot);
+  const orderedPlayers = sortBuildPlayers(players, sort);
   return (
     <section className={`build-team build-team--${side}`} aria-labelledby={`build-team-${side}`}>
       <header className="build-team__header">
@@ -452,6 +556,37 @@ function BuildTeamColumn({
   );
 }
 
+function sortBuildPlayers(players: MatchDetailPlayer[], sort: BuildSort): MatchDetailPlayer[] {
+  return [...players].sort((left, right) => {
+    if (sort === 'slot') {
+      return left.playerSlot - right.playerSlot;
+    }
+
+    const leftValue = buildSortValue(left, sort);
+    const rightValue = buildSortValue(right, sort);
+    if (leftValue === null && rightValue !== null) {
+      return 1;
+    }
+    if (leftValue !== null && rightValue === null) {
+      return -1;
+    }
+    if (leftValue !== null && rightValue !== null && leftValue !== rightValue) {
+      return rightValue - leftValue;
+    }
+    return left.playerSlot - right.playerSlot;
+  });
+}
+
+function buildSortValue(player: MatchDetailPlayer, sort: Exclude<BuildSort, 'slot'>): number | null {
+  if (sort === 'imp') {
+    return player.imp;
+  }
+  if (sort === 'heroDamage') {
+    return player.heroDamage;
+  }
+  return player.towerDamage;
+}
+
 function PlayerBuild({
   player,
   heroNames,
@@ -462,10 +597,18 @@ function PlayerBuild({
   heroNames: Record<number, string>;
   highlighted: boolean;
   maxStats: {
-    heroDamage: number;
-    towerDamage: number;
-    cs: number;
-    skills: number;
+    first: {
+      heroDamage: number;
+      towerDamage: number;
+      cs: number;
+      skills: number;
+    };
+    second: {
+      heroDamage: number;
+      towerDamage: number;
+      cs: number;
+      skills: number;
+    };
   };
 }) {
   const teamClass = player.isRadiant ? 'player-build--radiant' : 'player-build--dire';
@@ -513,19 +656,31 @@ function PlayerBuild({
           </BuildTimeline>
       </div>
       <div className="player-build__footer">
-        <div className={`player-build__metric${player.heroDamage > 0 && player.heroDamage === maxStats.heroDamage ? ' is-highest' : ''}`}>
+        <div className={`player-build__metric${
+          player.heroDamage > 0 && player.heroDamage === maxStats.first.heroDamage ? ' is-highest' :
+          player.heroDamage > 0 && player.heroDamage === maxStats.second.heroDamage ? ' is-second' : ''
+        }`}>
           <span className="player-build__metric-label">Hero Dmg</span>
           <span className="player-build__metric-value">{formatCompact(player.heroDamage)}</span>
         </div>
-        <div className={`player-build__metric${player.towerDamage > 0 && player.towerDamage === maxStats.towerDamage ? ' is-highest' : ''}`}>
+        <div className={`player-build__metric${
+          player.towerDamage > 0 && player.towerDamage === maxStats.first.towerDamage ? ' is-highest' :
+          player.towerDamage > 0 && player.towerDamage === maxStats.second.towerDamage ? ' is-second' : ''
+        }`}>
           <span className="player-build__metric-label">Tower Dmg</span>
           <span className="player-build__metric-value">{formatCompact(player.towerDamage)}</span>
         </div>
-        <div className={`player-build__metric${player.lastHits > 0 && player.lastHits === maxStats.cs ? ' is-highest' : ''}`}>
+        <div className={`player-build__metric${
+          player.lastHits > 0 && player.lastHits === maxStats.first.cs ? ' is-highest' :
+          player.lastHits > 0 && player.lastHits === maxStats.second.cs ? ' is-second' : ''
+        }`}>
           <span className="player-build__metric-label">CS</span>
           <span className="player-build__metric-value">{player.lastHits}/{player.denies}</span>
         </div>
-        <div className={`player-build__metric${player.abilityBuild.length > 0 && player.abilityBuild.length === maxStats.skills ? ' is-highest' : ''}`}>
+        <div className={`player-build__metric${
+          player.abilityBuild.length > 0 && player.abilityBuild.length === maxStats.first.skills ? ' is-highest' :
+          player.abilityBuild.length > 0 && player.abilityBuild.length === maxStats.second.skills ? ' is-second' : ''
+        }`}>
           <span className="player-build__metric-label">Skills</span>
           <span className="player-build__metric-value">{player.abilityBuild.length}</span>
         </div>
@@ -553,7 +708,10 @@ function BuildTimeline<T extends { time: number }>({
 }) {
   return (
     <div className="build-timeline">
-      <span className="player-build__label">{label} / {total}</span>
+      <div className="build-timeline__header">
+        <span className="player-build__label">{label}</span>
+        <span className="build-timeline__count">{total}</span>
+      </div>
       {!available ? <span className="build-timeline__empty">{unavailableLabel}</span> : events.length === 0 ? <span className="build-timeline__empty">{emptyLabel}</span> : <div className="build-timeline__strip">{events.map(children)}</div>}
     </div>
   );
