@@ -1162,23 +1162,24 @@
 
   .build-timeline__ability-level {
     position: absolute;
-    top: 3px;
-    right: 3px;
+    top: 1px;
+    right: 8px;
     z-index: 1;
-    display: grid;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 3px;
-    place-items: center;
-    border: 1px solid rgba(198, 242, 74, 0.7);
-    border-radius: 3px;
+    display: flex;
+    width: 13px;
+    height: 13px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
     background: rgba(7, 9, 7, 0.9);
-    color: var(--acid);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 700;
+    border: 1px solid rgba(255, 184, 0, 0.6);
+    color: #ffb800;
+    font-family: var(--font-sans);
+    font-size: 8px;
+    font-weight: 800;
     line-height: 1;
     pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   }
 
   .build-timeline__token--item:hover,
