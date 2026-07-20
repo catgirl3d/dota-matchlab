@@ -104,12 +104,14 @@ export const translations = {
     rankPrefix: 'Rank',
     indexedSuffix: ' indexed',
     durationSuffix: ' min average match',
-    winsInView: ' wins in current view',
+    winsInView_one: '{formattedCount} win in current view',
+    winsInView_other: '{formattedCount} wins in current view',
     noDataYet: 'No data yet',
     personalArchive: 'Personal match archive',
     publicShowcase: 'Public read-only showcase',
     filterSignal: 'FILTER THE SIGNAL',
-    matchesInView: '{count} matches in view',
+    matchesInView_one: '{formattedCount} match in view',
+    matchesInView_other: '{formattedCount} matches in view',
     noSignal: 'No signal',
     games_one: '{count} game',
     games_other: '{count} games',
@@ -132,7 +134,8 @@ export const translations = {
     topPlayedTab: 'Top played',
     winRateTab: 'Win rate',
     lossRateTab: 'Loss rate',
-    minGamesAriaLabel: 'Show heroes with at least {count} games',
+    minGamesAriaLabel_one: 'Show heroes with at least {formattedCount} game',
+    minGamesAriaLabel_other: 'Show heroes with at least {formattedCount} games',
     positionLane: 'POSITION / LANE',
     roleRecord: 'Role record',
     tableNotePrevious: 'Previous',
@@ -143,6 +146,11 @@ export const translations = {
     aboveEven: 'Above even',
     belowEven: 'Below even',
     even: 'Even',
+    allModes: 'All modes',
+    gameModeAllPick: 'All Pick',
+    gameModeRanked: 'Ranked',
+    gameModeRankedAllPick: 'Ranked All Pick',
+    gameModeTurbo: 'Turbo',
     otherMode: 'Other mode',
     filterByHero: 'Filter by {hero}',
     recentFormTitle: 'The signal is still moving',
@@ -157,8 +165,7 @@ export const translations = {
     filterHeroLabel: 'Hero',
     unknownHeroLabel: 'Hero',
     playerDossierTitle: 'PLAYER DOSSIER / ARCHIVE',
-    minGamesSuffix_one: '{count}+',
-    minGamesSuffix_other: '{count}+',
+    minGamesSuffix: '{formattedCount}+',
 
     // MatchWorkspace / Account details
     publicArchiveUnavailable: 'This public archive is unavailable.',
@@ -210,114 +217,40 @@ export const translations = {
     chatAll: 'All',
     chatAriaLabel: 'Match chat log',
 
-    // Backend Error codes
-    INVALID_JSON: 'Invalid JSON',
-    STEAM_PROFILE_REQUIRED: 'Steam profile is required',
-    INVALID_TRACKED_ACCOUNT_ID: 'Invalid tracked account ID',
-    INVALID_MATCH_ID: 'Invalid match ID',
-    INVALID_STEAM_ID: 'Please enter a valid SteamID64',
-    STEAM_PROFILE_NOT_FOUND: 'Steam profile not found',
-    STEAM_NO_ID_RETURNED: 'Steam did not return ID for the specified profile',
-    STEAM_COMMUNITY_TIMEOUT: 'Steam Community did not respond in time',
-    STEAM_COMMUNITY_CONN_ERROR: 'Failed to connect with Steam Community',
-    STEAM_COMMUNITY_INPUT_INVALID: 'Please enter a SteamID64, vanity name, or Steam Community link',
-    STEAM_COMMUNITY_HOSTS_INVALID: 'Only steamcommunity.com links are supported',
-    STEAM_PROFILE_LINK_INVALID: 'Steam profile link is invalid',
-    STEAM_ID_LINK_INVALID: 'SteamID64 in the link is invalid',
-    STEAM_RESPONSE_TOO_LARGE: 'Steam response exceeds allowed size',
-    OPENDOTA_PROFILE_HIDDEN: 'Profile not found or hidden by privacy settings',
-    OPENDOTA_NO_PROFILE_NAME: 'OpenDota did not return profile name',
-    OPENDOTA_UNEXPECTED_FORMAT: 'OpenDota returned unexpected data format',
-    OPENDOTA_INVALID_OFFSET: 'Invalid match history offset',
-    OPENDOTA_INVALID_LIMIT: 'Invalid match history page size',
-    OPENDOTA_INVALID_HISTORY: 'OpenDota returned unexpected history format',
-    OPENDOTA_URL_MISCONFIGURED: 'OpenDota URL is misconfigured',
-    OPENDOTA_PROFILE_NOT_FOUND: 'OpenDota profile not found',
-    OPENDOTA_LIMIT_EXCEEDED: 'OpenDota rate limit exceeded, please retry later',
-    OPENDOTA_UNAVAILABLE: 'OpenDota is temporarily unavailable',
-    OPENDOTA_RESPONSE_TOO_LARGE: 'OpenDota response exceeds allowed size',
-    OPENDOTA_TIMEOUT: 'OpenDota did not respond in time',
-    OPENDOTA_CONN_ERROR: 'Failed to connect to OpenDota',
-    OPENDOTA_HEROES_UNEXPECTED: 'OpenDota returned unexpected heroes format',
-    STRATZ_OFFSET_INVALID: 'Invalid STRATZ match history offset',
-    STRATZ_LIMIT_INVALID: 'Invalid STRATZ match history page size',
-    STRATZ_UNEXPECTED_FORMAT: 'STRATZ returned unexpected match history format',
-    STRATZ_MATCH_ID_INVALID: 'Invalid STRATZ match ID',
-    STRATZ_DETAIL_INVALID: 'STRATZ returned invalid match details',
-    STRATZ_SECTION_FAILED: 'Failed to load STRATZ detail section',
-    STRATZ_RESPONSE_TOO_LARGE: 'STRATZ response exceeds allowed size',
-    STRATZ_CHALLENGE_OR_REJECTED: 'STRATZ rejected request or returned Cloudflare challenge',
-    STRATZ_PLAYER_NOT_FOUND: 'STRATZ player not found',
-    STRATZ_LIMIT_EXCEEDED: 'STRATZ rate limit exceeded, please retry later',
-    STRATZ_UNAVAILABLE: 'STRATZ is temporarily unavailable',
-    STRATZ_INVALID_JSON: 'STRATZ returned invalid JSON',
-    STRATZ_UNEXPECTED_RESPONSE: 'STRATZ returned unexpected response',
-    STRATZ_TIMEOUT: 'STRATZ did not respond in time',
-    STRATZ_CONN_ERROR: 'Failed to connect to STRATZ',
-    STRATZ_GRAPHQL_ERROR: 'STRATZ GraphQL returned error',
-    MATCH_ARCHIVE_NOT_CONFIGURED: 'Match archive is not configured on Worker',
-    MATCH_ARCHIVE_SYNC_INITIATION_FAILED: 'Failed to initiate archive synchronization',
-    MATCH_ARCHIVE_ACCOUNT_NOT_FOUND: 'Tracked account not found',
-    MATCH_ARCHIVE_SYNC_SUSPENDED: 'Synchronization is temporarily suspended due to provider error',
-    MATCH_ARCHIVE_SYNC_IN_PROGRESS: 'Synchronization for this account is already in progress',
-    MATCH_ARCHIVE_SAVE_PAGE_FAILED: 'Failed to save archive page',
-    MATCH_ARCHIVE_SYNC_FAILED: 'Failed to synchronize match archive',
-    MATCH_ARCHIVE_INVALID_FIELD: 'Archive returned invalid field {fieldName}',
-    MATCH_ARCHIVE_INVALID_STATUS: 'Archive returned invalid status',
-    MATCH_ARCHIVE_UNKNOWN_ERROR: 'Unknown synchronization error',
-    MATCH_DETAIL_ARCHIVE_INVALID_ID: 'Invalid match ID',
-    MATCH_DETAIL_ARCHIVE_FETCH_FAILED: 'Failed to retrieve selected match details',
-    MATCH_DETAIL_ARCHIVE_SAVE_FAILED: 'Failed to save match',
-    MATCH_DETAIL_ARCHIVE_NOT_FOUND: 'Tracked match not found',
-    MATCH_DETAIL_ARCHIVE_DETAILS_SAVE_FAILED: 'Failed to save match details',
-    MATCH_DETAIL_ARCHIVE_QUEUE_INVALID_IDS: 'STRATZ details queue returned invalid match IDs',
   }
 } as const;
 
-export type Locale = 'en' | 'ru';
-type PluralBaseKeys<T> = T extends `${infer Base}_${'one' | 'few' | 'many' | 'other'}` ? Base : never;
+export type Locale = 'en';
+type PluralBaseKeys<T> = T extends `${infer Base}_${'one' | 'other'}` ? Base : never;
 export type TranslationKey = keyof typeof translations.en | PluralBaseKeys<keyof typeof translations.en>;
+type TranslationReplacements = Record<string, string | number> & { count?: number };
 
-export function getPluralSuffix(locale: Locale, n: number): 'one' | 'few' | 'many' | 'other' {
-  if (locale === 'ru') {
-    const mod10 = n % 10;
-    const mod100 = n % 100;
-    if (mod10 === 1 && mod100 !== 11) return 'one';
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'few';
-    return 'many';
-  }
+export function getPluralSuffix(n: number): 'one' | 'other' {
   return n === 1 ? 'one' : 'other';
 }
 
 export function translate(
   locale: Locale,
   key: string,
-  replacements?: Record<string, string | number>,
+  replacements?: TranslationReplacements,
 ): string {
+  const dictionary = translations[locale] as Record<string, string>;
   let resolvedKey = key;
   if (replacements && 'count' in replacements) {
-    const count = Number(replacements.count);
-    const suffix = getPluralSuffix(locale, count);
+    const suffix = getPluralSuffix(replacements.count ?? 0);
     const pluralKey = `${key}_${suffix}`;
-    const localeDict = (translations as Record<string, Record<string, string> | undefined>)[locale];
-    const enDict = translations['en'] as Record<string, string>;
 
-    if ((localeDict && pluralKey in localeDict) || pluralKey in enDict) {
+    if (pluralKey in dictionary) {
       resolvedKey = pluralKey;
     } else if (suffix !== 'other') {
       const otherKey = `${key}_other`;
-      if ((localeDict && otherKey in localeDict) || otherKey in enDict) {
+      if (otherKey in dictionary) {
         resolvedKey = otherKey;
       }
     }
   }
 
-  const localeDict = (translations as Record<string, Record<string, string> | undefined>)[locale];
-  const enDict = translations['en'] as Record<string, string>;
-  let val = localeDict ? localeDict[resolvedKey] : undefined;
-  if (!val) {
-    val = enDict[resolvedKey];
-  }
+  let val = dictionary[resolvedKey];
   if (!val) {
     return String(resolvedKey);
   }
@@ -330,7 +263,7 @@ export function translate(
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: TranslationKey, replacements?: Record<string, string | number>) => string;
+  t: (key: TranslationKey, replacements?: TranslationReplacements) => string;
 }
 
 const I18nContext = createContext<I18nContextType | null>(null);
@@ -338,7 +271,7 @@ const I18nContext = createContext<I18nContextType | null>(null);
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>('en');
 
-  const t = (key: TranslationKey, replacements?: Record<string, string | number>): string => {
+  const t = (key: TranslationKey, replacements?: TranslationReplacements): string => {
     return translate(locale, key, replacements);
   };
 
@@ -352,14 +285,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 export function useTranslation() {
   const context = useContext(I18nContext);
   if (!context) {
-    const isTest = typeof globalThis !== 'undefined' && (globalThis as unknown as Record<string, Record<string, Record<string, string>> | undefined>).process?.env?.NODE_ENV === 'test';
-    if (!isTest) {
-      console.warn('useTranslation was called outside of an I18nProvider. Falling back to English.');
-    }
-    const t = (key: TranslationKey, replacements?: Record<string, string | number>): string => {
+    console.warn('useTranslation was called outside of an I18nProvider. Falling back to English.');
+    const t = (key: TranslationKey, replacements?: TranslationReplacements): string => {
       return translate('en', key, replacements);
     };
-    return { locale: 'en' as Locale, setLocale: () => {}, t };
+    return { locale: 'en' as const, setLocale: () => {}, t };
   }
   return context;
 }

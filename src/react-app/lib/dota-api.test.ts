@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  DotaApiError,
   fetchHeroNames,
   importMatch,
   resolveSteamProfile,
@@ -39,17 +40,24 @@ describe('Dota API client', () => {
     );
   });
 
-  it('surfaces the safe Worker error message', async () => {
+  it('preserves the Worker error code and safe message', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        Response.json({ error: 'Please enter a valid SteamID64' }, { status: 400 }),
+        Response.json({
+          error: 'Please enter a valid SteamID64',
+          code: 'INVALID_STEAM_ID',
+        }, { status: 400 }),
       ),
     );
 
-    await expect(resolveSteamProfile('token', 'bad')).rejects.toThrow(
-      'Please enter a valid SteamID64',
-    );
+    const error = await resolveSteamProfile('token', 'bad').catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(DotaApiError);
+    expect(error).toMatchObject({
+      message: 'Please enter a valid SteamID64',
+      code: 'INVALID_STEAM_ID',
+    });
   });
 
   it('starts a tracked-account archive sync with the Clerk token', async () => {

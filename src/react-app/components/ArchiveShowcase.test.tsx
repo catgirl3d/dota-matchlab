@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../test/setup';
 import { ArchiveShowcase } from './ArchiveShowcase';
 
 const mocks = vi.hoisted(() => ({ overview: vi.fn(), page: vi.fn() }));

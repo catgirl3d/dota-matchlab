@@ -1,6 +1,7 @@
 import direCrest from '../../../../assets/icons/dire_square.webp?url';
 import radiantCrest from '../../../../assets/icons/radiant_square.webp?url';
 import type { MatchDetailSnapshot } from '../../lib/match-detail';
+import { formatGameMode } from '../../lib/game-mode';
 import { formatEnum } from './match-detail-display';
 import { useTranslation, type TranslationKey } from '../../lib/i18n';
 
@@ -68,7 +69,7 @@ export function MatchDetailHeader({
         <div className="match-detail__clock">
           <span className="micro-label">MATCH / {detail.matchId}</span>
           <strong>{formatDuration(detail.durationSeconds)}</strong>
-          <span>{formatMode(detail.gameMode)} · {formatDate(detail.startTime, locale)}</span>
+          <span>{formatGameMode(detail.gameMode, t)} · {formatDate(detail.startTime, locale)}</span>
         </div>
         <TeamOutcome
           side="dire"
@@ -140,11 +141,7 @@ function formatDetailStatus(status: string, t: (key: TranslationKey) => string):
   return key ? t(key) : formatEnum(status);
 }
 
-function formatMode(mode: number | null): string {
-  return { 1: 'All Pick', 22: 'Ranked All Pick', 23: 'Turbo' }[mode ?? -1] ?? 'Dota 2';
-}
-
-function formatDate(timestamp: number | null, locale: string): string {
+function formatDate(timestamp: number | null, locale: 'en'): string {
   if (timestamp === null) return 'Unknown date';
   return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
@@ -161,4 +158,3 @@ function formatDuration(seconds: number | null): string {
   const remainder = seconds % 60;
   return `${minutes}:${remainder.toString().padStart(2, '0')}`;
 }
-

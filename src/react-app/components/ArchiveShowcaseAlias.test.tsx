@@ -1,6 +1,7 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../test/setup';
 import { ArchiveShowcaseAlias } from './ArchiveShowcaseAlias';
 
 const mocks = vi.hoisted(() => ({ query: vi.fn() }));

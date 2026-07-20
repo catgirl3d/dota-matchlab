@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchArchiveOverview, fetchArchivePage } from '../lib/archive';
+import { render } from '../test/setup';
 import { MatchWorkspace } from './MatchWorkspace';
-import { I18nProvider } from '../lib/i18n';
 
 const mocks = vi.hoisted(() => ({
   accounts: [] as Array<Record<string, unknown>>,
@@ -83,10 +83,8 @@ function renderWorkspace(
     ...render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[path]}>
-          <I18nProvider>
-            <LocationProbe />
-            <MatchWorkspace />
-          </I18nProvider>
+          <LocationProbe />
+          <MatchWorkspace />
         </MemoryRouter>
       </QueryClientProvider>,
     ),

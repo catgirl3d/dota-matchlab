@@ -79,7 +79,7 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     const auth = getAuth(context);
 
     if (!auth.userId) {
-      return context.json({ error: 'Unauthorized' }, 401);
+      return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
     }
 
     return context.json({ userId: auth.userId });
@@ -89,19 +89,19 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
   app.post('/api/dota/players/resolve', async (context) => {
     const auth = getAuth(context);
     if (!auth.userId) {
-      return context.json({ error: 'Unauthorized' }, 401);
+      return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
     }
 
     const contentLength = Number(context.req.header('content-length') ?? 0);
     if (contentLength > 2_048) {
-      return context.json({ error: 'Request body is too large' }, 413);
+      return context.json({ error: 'Request body is too large', code: 'BODY_TOO_LARGE' }, 413);
     }
 
     let payload: unknown;
     try {
       payload = await context.req.json();
     } catch {
-      return context.json({ error: 'Некорректный JSON' }, 400);
+      return context.json({ error: 'Invalid JSON', code: 'INVALID_JSON' }, 400);
     }
 
     if (
@@ -110,7 +110,7 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
       !('steamProfile' in payload) ||
       typeof payload.steamProfile !== 'string'
     ) {
-      return context.json({ error: 'Steam-профиль обязателен' }, 400);
+      return context.json({ error: 'Steam profile is required', code: 'STEAM_PROFILE_REQUIRED' }, 400);
     }
 
     const steamId64 = await dependencies.resolveSteamProfileInput(
@@ -127,7 +127,7 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
   app.get('/api/dota/players/:accountId/recent-matches', async (context) => {
     const auth = getAuth(context);
     if (!auth.userId) {
-      return context.json({ error: 'Unauthorized' }, 401);
+      return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
     }
 
     const accountId = parseDotaAccountId(context.req.param('accountId'));
@@ -145,12 +145,12 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     async (context) => {
       const auth = getAuth(context);
       if (!auth.userId) {
-        return context.json({ error: 'Unauthorized' }, 401);
+        return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
       }
 
       const trackedAccountId = context.req.param('trackedAccountId');
       if (!isUuid(trackedAccountId)) {
-        return context.json({ error: 'Некорректный tracked account id' }, 400);
+        return context.json({ error: 'Invalid tracked account ID', code: 'INVALID_TRACKED_ACCOUNT_ID' }, 400);
       }
 
       const result = await dependencies.syncTrackedAccount(
@@ -165,9 +165,9 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
 
   app.post('/api/dota/matches/:matchId/import', async (context) => {
     const auth = getAuth(context);
-    if (!auth.userId) return context.json({ error: 'Unauthorized' }, 401);
+    if (!auth.userId) return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
     const matchId = parseMatchId(context.req.param('matchId'));
-    if (matchId === null) return context.json({ error: 'Некорректный match id' }, 400);
+    if (matchId === null) return context.json({ error: 'Invalid match ID', code: 'INVALID_MATCH_ID' }, 400);
     return context.json(await dependencies.importPublicMatchDetail(context.env, matchId));
   });
 
@@ -175,14 +175,14 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     '/api/dota/tracked-accounts/:trackedAccountId/matches/:matchId/details/sync',
     async (context) => {
       const auth = getAuth(context);
-      if (!auth.userId) return context.json({ error: 'Unauthorized' }, 401);
+      if (!auth.userId) return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
       const trackedAccountId = context.req.param('trackedAccountId');
       if (!isUuid(trackedAccountId)) {
-        return context.json({ error: 'Некорректный tracked account id' }, 400);
+        return context.json({ error: 'Invalid tracked account ID', code: 'INVALID_TRACKED_ACCOUNT_ID' }, 400);
       }
       const matchId = parseMatchId(context.req.param('matchId'));
       if (matchId === null) {
-        return context.json({ error: 'Некорректный match id' }, 400);
+        return context.json({ error: 'Invalid match ID', code: 'INVALID_MATCH_ID' }, 400);
       }
       return context.json(await dependencies.syncTrackedMatchDetail(
         context.env,
@@ -193,22 +193,22 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     },
   );
 
-  app.notFound((context) => context.json({ error: 'Not found' }, 404));
+  app.notFound((context) => context.json({ error: 'Not found', code: 'NOT_FOUND' }, 404));
   app.onError((error, context) => {
     if (error instanceof InvalidSteamIdError) {
-      return context.json({ error: error.message }, 400);
+      return context.json({ error: error.message, code: error.code }, 400);
     }
     if (error instanceof OpenDotaError) {
-      return context.json({ error: error.message }, error.statusCode);
+      return context.json({ error: error.message, code: error.code }, error.statusCode);
     }
     if (error instanceof MatchArchiveError) {
-      return context.json({ error: error.message }, error.statusCode);
+      return context.json({ error: error.message, code: error.code }, error.statusCode);
     }
     if (error instanceof StratzError) {
-      return context.json({ error: error.message }, error.statusCode);
+      return context.json({ error: error.message, code: error.code }, error.statusCode);
     }
     if (error instanceof SteamCommunityError) {
-      return context.json({ error: error.message }, error.statusCode);
+      return context.json({ error: error.message, code: error.code }, error.statusCode);
     }
 
     console.error(
@@ -219,7 +219,7 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
       }),
     );
 
-    return context.json({ error: 'Internal server error' }, 500);
+    return context.json({ error: 'Internal server error', code: 'INTERNAL_SERVER_ERROR' }, 500);
   });
 
   return app;

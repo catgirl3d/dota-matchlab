@@ -7,7 +7,18 @@ import type { MatchDetailSyncResult, MatchImportResult, MatchSyncResult } from '
 
 type ApiErrorPayload = {
   error?: unknown;
+  code?: unknown;
 };
+
+export class DotaApiError extends Error {
+  readonly code: string | undefined;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'DotaApiError';
+    this.code = code;
+  }
+}
 
 export type MatchSyncProgress = {
   completedBatches: number;
@@ -145,7 +156,8 @@ async function requestJson<T>(
       typeof errorPayload.error === 'string'
         ? errorPayload.error
         : 'Failed to complete request';
-    throw new Error(message);
+    const code = typeof errorPayload.code === 'string' ? errorPayload.code : undefined;
+    throw new DotaApiError(message, code);
   }
 
   return payload as T;

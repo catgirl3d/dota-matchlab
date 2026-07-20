@@ -66,11 +66,13 @@ type MatchArchiveDependencies = {
 
 export class MatchArchiveError extends Error {
   readonly statusCode: 404 | 409 | 502 | 504;
+  readonly code: string;
 
-  constructor(message: string, statusCode: 404 | 409 | 502 | 504) {
+  constructor(message: string, statusCode: 404 | 409 | 502 | 504, code: string) {
     super(message);
     this.name = 'MatchArchiveError';
     this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -87,7 +89,7 @@ export async function syncTrackedAccount(
   dependencies: MatchArchiveDependencies = defaultDependencies,
 ): Promise<MatchSyncResult> {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new MatchArchiveError('Архив матчей не настроен на Worker', 502);
+    throw new MatchArchiveError('Match archive is not configured on Worker', 502, 'MATCH_ARCHIVE_NOT_CONFIGURED');
   }
 
   const archiveClient = dependencies.createClient(env);
@@ -100,22 +102,28 @@ export async function syncTrackedAccount(
     p_lease_seconds: 300,
     p_history_provider: preferredProvider,
   });
-  const claim = readRpcData(claimResponse, 'Не удалось начать синхронизацию архива');
+  const claim = readRpcData(
+    claimResponse,
+    'Failed to initiate archive synchronization',
+    'MATCH_ARCHIVE_SYNC_INITIATION_FAILED',
+  );
 
   if (!readBoolean(claim.owned)) {
-    throw new MatchArchiveError('Отслеживаемый аккаунт не найден', 404);
+    throw new MatchArchiveError('Tracked account not found', 404, 'MATCH_ARCHIVE_ACCOUNT_NOT_FOUND');
   }
   if (!readBoolean(claim.claimed)) {
     const status = readString(claim.status);
     if (status === 'failed') {
       throw new MatchArchiveError(
-        'Синхронизация временно приостановлена из-за ошибки провайдера',
+        'Synchronization is temporarily suspended due to provider error',
         409,
+        'MATCH_ARCHIVE_SYNC_SUSPENDED',
       );
     }
     throw new MatchArchiveError(
-      'Синхронизация этого аккаунта уже выполняется',
+      'Synchronization for this account is already in progress',
       409,
+      'MATCH_ARCHIVE_SYNC_IN_PROGRESS',
     );
   }
 
@@ -158,7 +166,8 @@ export async function syncTrackedAccount(
     });
     const applied = readRpcData(
       applyResponse,
-      'Не удалось сохранить страницу архива',
+      'Failed to save archive page',
+      'MATCH_ARCHIVE_SAVE_PAGE_FAILED',
     );
 
     return {
@@ -191,7 +200,7 @@ export async function syncTrackedAccount(
       throw error;
     }
 
-    throw new MatchArchiveError('Не удалось синхронизировать архив матчей', 502);
+    throw new MatchArchiveError('Failed to synchronize match archive', 502, 'MATCH_ARCHIVE_SYNC_FAILED');
   }
 }
 
@@ -320,7 +329,7 @@ function toArchiveRpcPayload(
   };
 }
 
-function readRpcData(response: RpcResponse, fallbackMessage: string): JsonObject {
+function readRpcData(response: RpcResponse, fallbackMessage: string, errorCode: string): JsonObject {
   if (response.error) {
     console.error(
       JSON.stringify({
@@ -329,24 +338,24 @@ function readRpcData(response: RpcResponse, fallbackMessage: string): JsonObject
         fallbackMessage,
       }),
     );
-    throw new MatchArchiveError(fallbackMessage, 502);
+    throw new MatchArchiveError(fallbackMessage, 502, errorCode);
   }
   if (!isObject(response.data)) {
-    throw new MatchArchiveError(fallbackMessage, 502);
+    throw new MatchArchiveError(fallbackMessage, 502, errorCode);
   }
   return response.data;
 }
 
 function readRequiredString(value: Json | undefined, fieldName: string): string {
   if (typeof value !== 'string' || !value.trim()) {
-    throw new MatchArchiveError(`Архив вернул некорректное поле ${fieldName}`, 502);
+    throw new MatchArchiveError(`Archive returned invalid field ${fieldName}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
   }
   return value;
 }
 
 function readRequiredInteger(value: Json | undefined, fieldName: string): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
-    throw new MatchArchiveError(`Архив вернул некорректное поле ${fieldName}`, 502);
+    throw new MatchArchiveError(`Archive returned invalid field ${fieldName}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
   }
   return value;
 }
@@ -374,7 +383,7 @@ function readRequiredBoolean(
   fieldName: string,
 ): boolean {
   if (typeof value !== 'boolean') {
-    throw new MatchArchiveError(`Архив вернул некорректное поле ${fieldName}`, 502);
+    throw new MatchArchiveError(`Archive returned invalid field ${fieldName}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
   }
   return value;
 }
@@ -383,7 +392,7 @@ function readStatus(value: Json | undefined): 'partial' | 'ready' {
   if (value === 'partial' || value === 'ready') {
     return value;
   }
-  throw new MatchArchiveError('Архив вернул некорректный статус', 502);
+  throw new MatchArchiveError('Archive returned invalid status', 502, 'MATCH_ARCHIVE_INVALID_STATUS');
 }
 
 function getSyncErrorCode(error: unknown): string {
@@ -407,7 +416,7 @@ function getSyncErrorMessage(error: unknown): string {
   ) {
     return error.message;
   }
-  return 'Неизвестная ошибка синхронизации';
+  return 'Unknown synchronization error';
 }
 
 async function loadProviderPage(
@@ -419,7 +428,7 @@ async function loadProviderPage(
 ): Promise<PlayerMatchesPage> {
   if (provider === 'stratz') {
     if (!dependencies.loadStratzPlayerMatchesBatch) {
-      throw new MatchArchiveError('STRATZ provider is not configured on the Worker', 502);
+      throw new MatchArchiveError('STRATZ provider is not configured on the Worker', 502, 'MATCH_ARCHIVE_NOT_CONFIGURED');
     }
     return dependencies.loadStratzPlayerMatchesBatch(
       env.STRATZ_API_TOKEN,
@@ -456,6 +465,7 @@ function getPageUpperBound(page: { matches: ArchivedPlayerMatch[] }): number | n
 
 type JsonObject = { [key: string]: Json | undefined };
 
+// eslint-disable-next-line @typescript-eslint/no-shadow
 function isObject(value: Json | null): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

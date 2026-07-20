@@ -17,7 +17,7 @@ describe('API health routes', () => {
   it('preserves STRATZ status instead of returning a generic 500', async () => {
     const app = createApp({
       checkSupabase: async () => {
-        throw new StratzError('STRATZ отклонил запрос', 403);
+        throw new StratzError('STRATZ rejected query', 403, 'STRATZ_QUERY_REJECTED');
       },
     });
 
@@ -29,7 +29,8 @@ describe('API health routes', () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
-      error: 'STRATZ отклонил запрос',
+      error: 'STRATZ rejected query',
+      code: 'STRATZ_QUERY_REJECTED',
     });
   });
 

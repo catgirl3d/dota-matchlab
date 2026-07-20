@@ -332,7 +332,7 @@ describe('match archive sync', () => {
         leaseToken: 'lease-token',
       },
     });
-    const providerError = new OpenDotaError('Лимит OpenDota исчерпан', 429);
+    const providerError = new OpenDotaError('OpenDota API limit exceeded', 429, 'OPENDOTA_LIMIT_EXCEEDED');
     const loadOpenDotaPlayerMatchesPage = vi.fn().mockRejectedValue(providerError);
 
     await expect(
@@ -352,7 +352,7 @@ describe('match archive sync', () => {
         p_dota_account_id: 123456789,
         p_lease_token: 'lease-token',
         p_error_code: 'OPEN_DOTA_429',
-        p_error_message: 'Лимит OpenDota исчерпан',
+        p_error_message: 'OpenDota API limit exceeded',
       }),
     );
   });

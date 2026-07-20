@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../test/setup';
 import { MatchDetailRoute, MatchRouteLayout, RouteError } from './MatchRoute';
 
 const mocks = vi.hoisted(() => ({
@@ -256,4 +257,3 @@ describe('match router', () => {
     expect(screen.queryByRole('button', { name: 'Load match from STRATZ' })).not.toBeInTheDocument();
   });
 });
-

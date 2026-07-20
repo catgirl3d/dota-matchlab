@@ -1,5 +1,7 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DotaApiError } from '../lib/dota-api';
+import { render } from '../test/setup';
 import { ArchiveSyncPanel } from './ArchiveSyncPanel';
 
 afterEach(() => {
@@ -88,5 +90,22 @@ describe('ArchiveSyncPanel', () => {
     );
     expect(screen.getByRole('button', { name: /Parsing history.../i })).toBeDisabled();
   });
-});
 
+  it('shows the Worker error message', () => {
+    render(
+      <ArchiveSyncPanel
+        accountName="Analyst"
+        isPending={false}
+        isSyncingAll={false}
+        fullSyncProgress={null}
+        error={new DotaApiError('Provider-specific message', 'OPENDOTA_LIMIT_EXCEEDED')}
+        onSync={vi.fn()}
+        onSyncAll={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Provider-specific message',
+    );
+  });
+});

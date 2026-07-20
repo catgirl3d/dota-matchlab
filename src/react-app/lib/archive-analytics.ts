@@ -26,13 +26,6 @@ export const DEFAULT_ARCHIVE_FILTERS: ArchiveFilters = {
   endDate: null,
 };
 
-const MODE_LABELS: Record<ArchiveMode, string> = {
-  all: 'All modes',
-  ranked: 'Ranked',
-  turbo: 'Turbo',
-  'all-pick': 'All Pick',
-};
-
 const POSITION_LABELS: Record<ArchivePosition, string> = {
   all: 'All positions',
   carry: 'Carry',
@@ -41,10 +34,6 @@ const POSITION_LABELS: Record<ArchivePosition, string> = {
   support: 'Soft support',
   'hard-support': 'Hard support',
 };
-
-export function getModeLabelForFilter(mode: ArchiveMode): string {
-  return MODE_LABELS[mode];
-}
 
 export function getPositionLabelForFilter(position: ArchivePosition): string {
   return POSITION_LABELS[position];

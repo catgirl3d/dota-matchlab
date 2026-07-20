@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
+import { render } from '../test/setup';
 import { LandingPage } from './LandingPage';
 
 afterEach(cleanup);
@@ -40,4 +41,3 @@ describe('LandingPage match search', () => {
     expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
   });
 });
-

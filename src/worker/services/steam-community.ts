@@ -14,11 +14,13 @@ type SteamProfileReference =
 
 export class SteamCommunityError extends Error {
   readonly statusCode: 400 | 404 | 502 | 504;
+  readonly code: string;
 
-  constructor(message: string, statusCode: 400 | 404 | 502 | 504) {
+  constructor(message: string, statusCode: 400 | 404 | 502 | 504, code: string) {
     super(message);
     this.name = 'SteamCommunityError';
     this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -51,15 +53,16 @@ export async function resolveSteamProfileInput(
 
     if (!response.ok) {
       await response.body?.cancel();
-      throw new SteamCommunityError('Steam-профиль не найден', 404);
+      throw new SteamCommunityError('Steam profile not found', 404, 'STEAM_PROFILE_NOT_FOUND');
     }
 
     const xml = await readBoundedText(response, MAX_XML_BYTES);
     const steamId64 = /<steamID64>([0-9]{16,20})<\/steamID64>/.exec(xml)?.[1];
     if (!steamId64) {
       throw new SteamCommunityError(
-        'Steam не вернул ID для указанного профиля',
+        'Steam did not return ID for the specified profile',
         404,
+        'STEAM_NO_ID_RETURNED',
       );
     }
 
@@ -70,10 +73,10 @@ export async function resolveSteamProfileInput(
       throw error;
     }
     if (abortController.signal.aborted) {
-      throw new SteamCommunityError('Steam Community не ответил вовремя', 504);
+      throw new SteamCommunityError('Steam Community did not respond in time', 504, 'STEAM_COMMUNITY_TIMEOUT');
     }
 
-    throw new SteamCommunityError('Не удалось связаться со Steam Community', 502);
+    throw new SteamCommunityError('Failed to connect with Steam Community', 502, 'STEAM_COMMUNITY_CONN_ERROR');
   } finally {
     clearTimeout(timeout);
   }
@@ -100,8 +103,9 @@ export function parseSteamProfileInput(input: string): SteamProfileReference {
     url = new URL(urlValue);
   } catch {
     throw new SteamCommunityError(
-      'Введите SteamID64, vanity name или ссылку Steam Community',
+      'Please enter a SteamID64, vanity name, or Steam Community link',
       400,
+      'STEAM_COMMUNITY_INPUT_INVALID',
     );
   }
 
@@ -113,14 +117,15 @@ export function parseSteamProfileInput(input: string): SteamProfileReference {
     url.port
   ) {
     throw new SteamCommunityError(
-      'Поддерживаются только ссылки steamcommunity.com',
+      'Only steamcommunity.com links are supported',
       400,
+      'STEAM_COMMUNITY_HOSTS_INVALID',
     );
   }
 
   const segments = url.pathname.split('/').filter(Boolean);
   if (segments.length !== 2) {
-    throw new SteamCommunityError('Ссылка Steam-профиля некорректна', 400);
+    throw new SteamCommunityError('Steam profile link is invalid', 400, 'STEAM_PROFILE_LINK_INVALID');
   }
 
   const [kind, rawValue] = segments;
@@ -130,7 +135,7 @@ export function parseSteamProfileInput(input: string): SteamProfileReference {
       steamId64ToAccountId(value);
     } catch (error) {
       if (error instanceof InvalidSteamIdError) {
-        throw new SteamCommunityError('SteamID64 в ссылке некорректен', 400);
+        throw new SteamCommunityError('SteamID64 in the link is invalid', 400, 'STEAM_ID_LINK_INVALID');
       }
       throw error;
     }
@@ -141,7 +146,7 @@ export function parseSteamProfileInput(input: string): SteamProfileReference {
     return { type: 'vanity', value };
   }
 
-  throw new SteamCommunityError('Ссылка Steam-профиля некорректна', 400);
+  throw new SteamCommunityError('Steam profile link is invalid', 400, 'STEAM_PROFILE_LINK_INVALID');
 }
 
 async function readBoundedText(
@@ -151,7 +156,7 @@ async function readBoundedText(
   const contentLength = Number(response.headers.get('content-length') ?? 0);
   if (contentLength > maxBytes) {
     await response.body?.cancel();
-    throw new SteamCommunityError('Ответ Steam превышает допустимый размер', 502);
+    throw new SteamCommunityError('Steam response exceeds allowed size', 502, 'STEAM_RESPONSE_TOO_LARGE');
   }
 
   if (!response.body) {
@@ -171,7 +176,7 @@ async function readBoundedText(
     receivedBytes += value.byteLength;
     if (receivedBytes > maxBytes) {
       await reader.cancel();
-      throw new SteamCommunityError('Ответ Steam превышает допустимый размер', 502);
+      throw new SteamCommunityError('Steam response exceeds allowed size', 502, 'STEAM_RESPONSE_TOO_LARGE');
     }
     chunks.push(value);
   }

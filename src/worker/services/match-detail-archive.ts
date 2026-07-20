@@ -49,10 +49,10 @@ export async function syncTrackedMatchDetail(
   dependencies: Dependencies = defaultDependencies,
 ): Promise<MatchDetailSyncResult> {
   if (!Number.isSafeInteger(matchId) || matchId <= 0) {
-    throw new StratzError('Некорректный match ID', 400);
+    throw new StratzError('Invalid match ID', 400, 'MATCH_DETAIL_ARCHIVE_INVALID_ID');
   }
   if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.STRATZ_API_TOKEN.trim()) {
-    throw new StratzError('STRATZ detail sync is not configured', 403);
+    throw new StratzError('STRATZ detail sync is not configured', 403, 'STRATZ_TOKEN_MISSING');
   }
   const client = dependencies.createClient(env);
   const claim = readObject(await client.claimSpecificMatchDetail({
@@ -60,7 +60,7 @@ export async function syncTrackedMatchDetail(
     p_tracked_account_id: trackedAccountId,
     p_match_id: matchId,
     p_lease_seconds: 300,
-  }), 'Не удалось получить выбранный detail матч');
+  }), 'Failed to retrieve selected match details', 'MATCH_DETAIL_ARCHIVE_FETCH_FAILED');
   return processDetailClaim(env, actorUserId, trackedAccountId, claim, client, dependencies);
 }
 
@@ -69,25 +69,25 @@ export async function importPublicMatchDetail(
   matchId: number,
   dependencies: Dependencies = defaultDependencies,
 ): Promise<MatchImportResult> {
-  if (!Number.isSafeInteger(matchId) || matchId <= 0) throw new StratzError('Некорректный match ID', 400);
-  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.STRATZ_API_TOKEN.trim()) throw new StratzError('STRATZ detail sync is not configured', 403);
+  if (!Number.isSafeInteger(matchId) || matchId <= 0) throw new StratzError('Invalid match ID', 400, 'MATCH_DETAIL_ARCHIVE_INVALID_ID');
+  if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.STRATZ_API_TOKEN.trim()) throw new StratzError('STRATZ detail sync is not configured', 403, 'STRATZ_TOKEN_MISSING');
   const client = dependencies.createClient(env);
   const detail = await dependencies.loadDetail(env.STRATZ_API_TOKEN, matchId);
   if (detail.unavailable) return { matchId, status: 'unavailable', imported: false };
   if (detail.error) throw detail.error;
   if (!validateDetailIdentity(matchId, detail.payloads)) {
-    throw new StratzError('STRATZ detail returned another match', 502);
+    throw new StratzError('STRATZ detail returned another match', 502, 'STRATZ_DETAIL_INVALID');
   }
   const normalizedMatch = readNormalizedMatch(detail.payloads);
   if (!normalizedMatch || normalizedMatch.match_id !== matchId) {
-    throw new StratzError('STRATZ detail metadata is incomplete', 502);
+    throw new StratzError('STRATZ detail metadata is incomplete', 502, 'STRATZ_DETAIL_INVALID');
   }
   const result: Json = {
     status: 'available',
     payloads: detail.payloads.map(toPayload),
     normalized_match: normalizedMatch,
   };
-  readObject(await client.applyPublicMatchImport({ p_match_id: matchId, p_result: result }), 'Не удалось сохранить матч');
+  readObject(await client.applyPublicMatchImport({ p_match_id: matchId, p_result: result }), 'Failed to save match', 'MATCH_DETAIL_ARCHIVE_SAVE_FAILED');
   return { matchId, status: 'available', imported: true };
 }
 
@@ -103,7 +103,7 @@ async function processDetailClaim(
   client: DetailRpcClient,
   dependencies: Dependencies,
 ): Promise<MatchDetailSyncResult> {
-  if (claim.owned !== true) throw new StratzError('Отслеживаемый матч не найден', 404);
+  if (claim.owned !== true) throw new StratzError('Tracked match not found', 404, 'MATCH_DETAIL_ARCHIVE_NOT_FOUND');
 
   const accountId = readInteger(claim.dotaAccountId, 'dotaAccountId');
   const matchIds = readMatchIds(claim.matchIds);
@@ -169,7 +169,7 @@ async function processDetailClaim(
     p_dota_account_id: accountId,
     p_lease_token: leaseToken,
     p_results: results,
-  }), 'Не удалось сохранить detail матчей');
+  }), 'Failed to save match details', 'MATCH_DETAIL_ARCHIVE_DETAILS_SAVE_FAILED');
   return {
     accountId,
     processedMatches: readInteger(applied.processedMatches, 'processedMatches'),
@@ -198,29 +198,29 @@ function readNormalizedMatch(payloads: Array<{ section: string; response: Json }
   return null;
 }
 
-function readObject(response: RpcResponse, message: string): Record<string, Json | undefined> {
+function readObject(response: RpcResponse, message: string, errorCode: string): Record<string, Json | undefined> {
   if (response.error || !isObject(response.data)) {
-    throw new StratzError(response.error?.message || message, 502);
+    throw new StratzError(response.error?.message || message, 502, errorCode);
   }
   return response.data;
 }
 
 function readMatchIds(value: Json | undefined): number[] {
   if (!Array.isArray(value) || !value.every((id) => typeof id === 'number' && Number.isSafeInteger(id) && id > 0)) {
-    throw new StratzError('Очередь STRATZ detail вернула некорректные match ID', 502);
+    throw new StratzError('STRATZ details queue returned invalid match IDs', 502, 'MATCH_DETAIL_ARCHIVE_QUEUE_INVALID_IDS');
   }
   return value as number[];
 }
 
 function readInteger(value: Json | undefined, field: string): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
-    throw new StratzError(`Очередь detail вернула некорректное поле ${field}`, 502);
+    throw new StratzError(`Detail queue returned invalid field ${field}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
   }
   return value;
 }
 
 function readString(value: Json | undefined, field: string): string {
-  if (typeof value !== 'string' || !value) throw new StratzError(`Очередь detail вернула некорректное поле ${field}`, 502);
+  if (typeof value !== 'string' || !value) throw new StratzError(`Detail queue returned invalid field ${field}`, 502, 'MATCH_ARCHIVE_INVALID_FIELD');
   return value;
 }
 

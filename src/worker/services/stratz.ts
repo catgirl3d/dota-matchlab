@@ -197,9 +197,6 @@ const PLAYER_MATCHES_QUERY = `
   }
 `;
 
-// This selection contains only fields verified by the STRATZ schema probe and
-// generated schema consumer. Detail requests are intentionally one match each:
-// playback timelines can be substantially larger than history rows.
 const DETAIL_SECTIONS = [
   ['metadata', `${METADATA_SELECTION} ${RELATIONS_SELECTION}`],
   ['players', `players { ${PLAYERS_SELECTION} }`],
@@ -212,11 +209,13 @@ type JsonObject = Record<string, unknown>;
 
 export class StratzError extends Error {
   readonly statusCode: 400 | 403 | 404 | 429 | 502 | 504;
+  readonly code: string;
 
-  constructor(message: string, statusCode: 400 | 403 | 404 | 429 | 502 | 504) {
+  constructor(message: string, statusCode: 400 | 403 | 404 | 429 | 502 | 504, code: string) {
     super(message);
     this.name = 'StratzError';
     this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -228,13 +227,13 @@ export async function loadStratzPlayerMatchesPage(
   fetcher: typeof fetch = fetch,
 ): Promise<PlayerMatchesPage> {
   if (!token.trim()) {
-    throw new StratzError('STRATZ API token is not configured', 403);
+    throw new StratzError('STRATZ API token is not configured', 403, 'STRATZ_TOKEN_MISSING');
   }
   if (!Number.isSafeInteger(offset) || offset < 0) {
-    throw new StratzError('Некорректный STRATZ offset истории матчей', 400);
+    throw new StratzError('Invalid STRATZ match history offset', 400, 'STRATZ_OFFSET_INVALID');
   }
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > STRATZ_PAGE_SIZE) {
-    throw new StratzError('Некорректный размер страницы STRATZ истории матчей', 400);
+    throw new StratzError('Invalid STRATZ match history page size', 400, 'STRATZ_LIMIT_INVALID');
   }
 
   const payload = await fetchStratzJson(
@@ -254,7 +253,7 @@ export async function loadStratzPlayerMatchesPage(
   const player = data && isObject(data.player) ? data.player : null;
   const rawMatches = player && Array.isArray(player.matches) ? player.matches : null;
   if (!rawMatches) {
-    throw new StratzError('STRATZ вернул неожиданный формат истории матчей', 502);
+    throw new StratzError('STRATZ returned unexpected match history format', 502, 'STRATZ_UNEXPECTED_FORMAT');
   }
 
   const matches = rawMatches.flatMap((value): ArchivedPlayerMatch[] => {
@@ -367,7 +366,7 @@ export async function loadStratzMatchDetail(
   fetcher: typeof fetch = fetch,
 ): Promise<StratzMatchDetailResult> {
   if (!Number.isSafeInteger(matchId) || matchId <= 0) {
-    throw new StratzError('Некорректный STRATZ match ID', 400);
+    throw new StratzError('Invalid STRATZ match ID', 400, 'STRATZ_MATCH_ID_INVALID');
   }
   const payloads: StratzDetailPayload[] = [];
   let unavailable = false;
@@ -392,13 +391,13 @@ export async function loadStratzMatchDetail(
         break;
       }
       if (!isObject(match) || !isJson(response)) {
-        throw new StratzError('STRATZ вернул некорректный detail матча', 502);
+        throw new StratzError('STRATZ returned invalid match details', 502, 'STRATZ_DETAIL_INVALID');
       }
       payloads.push({ section, response });
     } catch (sectionError) {
       error = sectionError instanceof StratzError
         ? sectionError
-        : new StratzError('Не удалось загрузить STRATZ detail section', 502);
+        : new StratzError('Failed to load STRATZ detail section', 502, 'STRATZ_SECTION_FAILED');
       break;
     }
   }
@@ -431,34 +430,34 @@ export async function fetchStratzJson(
     const contentLength = Number(response.headers.get('content-length') ?? 0);
     if (contentLength > maxResponseBytes) {
       await response.body?.cancel();
-      throw new StratzError('Ответ STRATZ превышает допустимый размер', 502);
+      throw new StratzError('STRATZ response exceeds allowed size', 502, 'STRATZ_RESPONSE_TOO_LARGE');
     }
 
     if (!response.ok) {
       if (response.status === 403) {
-        throw new StratzError('STRATZ отклонил запрос или вернул Cloudflare challenge', 403);
+        throw new StratzError('STRATZ rejected request or returned Cloudflare challenge', 403, 'STRATZ_CHALLENGE_OR_REJECTED');
       }
       if (response.status === 404) {
-        throw new StratzError('STRATZ игрок не найден', 404);
+        throw new StratzError('STRATZ player not found', 404, 'STRATZ_PLAYER_NOT_FOUND');
       }
       if (response.status === 429) {
-        throw new StratzError('Лимит STRATZ исчерпан, повторите позже', 429);
+        throw new StratzError('STRATZ rate limit exceeded, please retry later', 429, 'STRATZ_LIMIT_EXCEEDED');
       }
-      throw new StratzError('STRATZ временно недоступен', 502);
+      throw new StratzError('STRATZ is temporarily unavailable', 502, 'STRATZ_UNAVAILABLE');
     }
 
     let responseBody: unknown;
     try {
       responseBody = await response.json();
     } catch {
-      throw new StratzError('STRATZ вернул некорректный JSON', 502);
+      throw new StratzError('STRATZ returned invalid JSON', 502, 'STRATZ_INVALID_JSON');
     }
 
     if (!isObject(responseBody)) {
-      throw new StratzError('STRATZ вернул неожиданный ответ', 502);
+      throw new StratzError('STRATZ returned unexpected response', 502, 'STRATZ_UNEXPECTED_RESPONSE');
     }
     if (Array.isArray(responseBody.errors) && responseBody.errors.length > 0) {
-      throw new StratzError(readGraphqlError(responseBody.errors), 502);
+      throw new StratzError(readGraphqlError(responseBody.errors), 502, 'STRATZ_GRAPHQL_ERROR');
     }
 
     return responseBody;
@@ -467,9 +466,9 @@ export async function fetchStratzJson(
       throw error;
     }
     if (abortController.signal.aborted) {
-      throw new StratzError('STRATZ не ответил вовремя', 504);
+      throw new StratzError('STRATZ did not respond in time', 504, 'STRATZ_TIMEOUT');
     }
-    throw new StratzError('Не удалось связаться с STRATZ', 502);
+    throw new StratzError('Failed to connect to STRATZ', 502, 'STRATZ_CONN_ERROR');
   } finally {
     clearTimeout(timeout);
   }
@@ -549,7 +548,7 @@ function readGraphqlError(errors: unknown[]): string {
   const first = errors[0];
   return isObject(first) && typeof first.message === 'string'
     ? first.message
-    : 'STRATZ GraphQL вернул ошибку';
+    : 'STRATZ GraphQL returned error';
 }
 
 function readVersion(value: unknown): number | null {

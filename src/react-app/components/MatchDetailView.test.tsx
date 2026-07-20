@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MatchDetailSnapshot } from '../lib/match-detail';
+import { render } from '../test/setup';
 import { MatchDetailView } from './MatchDetailView';
 
 vi.mock('uplot', () => {

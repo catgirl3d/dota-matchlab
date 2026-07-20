@@ -1,9 +1,10 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Tables } from '../../shared/database.types';
 import type { ArchiveOverview, ArchivePage } from '../lib/archive';
 import { DEFAULT_ARCHIVE_FILTERS } from '../lib/archive-analytics';
+import { render } from '../test/setup';
 import { PlayerDashboard } from './PlayerDashboard';
 
 afterEach(() => {
@@ -313,7 +314,7 @@ describe('PlayerDashboard', () => {
     expect(screen.getByRole('button', { name: 'Filter by Anti-Mage' })).toBeInTheDocument();
 
     // Toggle Min games to 1
-    fireEvent.click(screen.getByRole('button', { name: 'Show heroes with at least 1 games' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show heroes with at least 1 game' }));
     expect(screen.getByRole('button', { name: 'Filter by Bane' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Filter by Axe' })).toBeInTheDocument();
 

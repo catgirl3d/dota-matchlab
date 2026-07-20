@@ -6,10 +6,10 @@ import type { ArchiveCursor, ArchiveOverview, ArchivePage } from '../lib/archive
 import { HeroMark } from './HeroMark';
 import type { MatchSyncProgress } from '../lib/dota-api';
 import {
-  getModeLabelForFilter,
   getPositionLabelForFilter,
   type ArchiveFilters,
 } from '../lib/archive-analytics';
+import { formatArchiveMode, formatGameMode } from '../lib/game-mode';
 import { ArchiveSyncPanel } from './ArchiveSyncPanel';
 import { FilterDropdown } from './FilterDropdown';
 import { PeriodFilter } from './PeriodFilter';
@@ -151,7 +151,10 @@ export function PlayerDashboard({
       <div className="archive-control-bar">
         <div className="filter-heading">
           <span className="micro-label">{t('filterSignal')}</span>
-          <strong>{t('matchesInView', { count: formatNumber(analytics.matches, locale) })}</strong>
+          <strong>{t('matchesInView', {
+            count: analytics.matches,
+            formattedCount: formatNumber(analytics.matches, locale),
+          })}</strong>
         </div>
         <PeriodFilter
           period={filters.period}
@@ -165,7 +168,7 @@ export function PlayerDashboard({
           onChange={(value) => onFiltersChange({ ...filters, mode: value as ArchiveFilters['mode'] })}
           options={(['all', 'ranked', 'turbo', 'all-pick'] as const).map((value) => [
             value,
-            getModeLabelForFilter(value),
+            formatArchiveMode(value, t),
           ])}
         />
         <FilterDropdown
@@ -245,7 +248,10 @@ export function PlayerDashboard({
             </div>
             <FormStrip form={overview.form} />
             <div className="form-card__footer">
-              <span>{analytics.wins}{t('winsInView')}</span>
+              <span>{t('winsInView', {
+                count: analytics.wins,
+                formattedCount: formatNumber(analytics.wins, locale),
+              })}</span>
               <span>{analytics.averageDurationMinutes}{t('durationSuffix')}</span>
             </div>
           </section>
@@ -362,9 +368,12 @@ export function PlayerDashboard({
                     className={`hero-pool__setting-btn ${minGames === g ? 'is-active' : ''}`}
                     onClick={() => setMinGames(g)}
                     type="button"
-                    aria-label={t('minGamesAriaLabel', { count: g })}
+                    aria-label={t('minGamesAriaLabel', {
+                      count: g,
+                      formattedCount: formatNumber(g, locale),
+                    })}
                   >
-                    {t('minGamesSuffix', { count: g })}
+                    {t('minGamesSuffix', { formattedCount: formatNumber(g, locale) })}
                   </button>
                 ))}
               </div>
@@ -444,7 +453,6 @@ type MetricCardProps = {
   status?: string;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function MetricCard({
   label,
   value,
@@ -587,7 +595,7 @@ function ArchiveMatchRow({
         <div className="archive-match-row__identity">
           <strong>{heroLabel}</strong>
           <span>
-            {formatMatchDate(match.startTime, locale, t)} · {formatMode(match.gameMode, t)}
+            {formatMatchDate(match.startTime, locale, t)} · {formatGameMode(match.gameMode, t)}
             {isMissingStats ? t('missingStatsSuffix') : ''}
           </span>
         </div>
@@ -620,19 +628,18 @@ function formatRank(rankTier: number | null, t: (key: TranslationKey) => string)
   return `${t('rankPrefix')} ${medal}.${stars}`;
 }
 
-function formatNumber(value: number, locale: string): string {
+function formatNumber(value: number, locale: 'en'): string {
   return value.toLocaleString(locale);
 }
 
-function formatDate(timestamp: number | null, locale: string, t: (k: TranslationKey) => string): string {
+function formatDate(timestamp: number | null, locale: 'en', t: (k: TranslationKey) => string): string {
   if (timestamp === null) return t('noDataYet');
   return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' }).format(
     new Date(timestamp * 1_000),
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function formatMatchDate(timestamp: number | null, locale: string, t: (k: TranslationKey) => string): string {
+function formatMatchDate(timestamp: number | null, locale: 'en', t: (k: TranslationKey) => string): string {
   if (timestamp === null) return t('noDataYet');
   return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
@@ -647,10 +654,6 @@ function formatDuration(seconds: number | null): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-}
-
-function formatMode(mode: number | null, t: (k: TranslationKey) => string): string {
-  return { 1: 'All Pick', 22: 'Ranked', 23: 'Turbo' }[mode ?? -1] ?? t('otherMode');
 }
 
 function formatStat(value: number | null): string {

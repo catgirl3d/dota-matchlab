@@ -66,11 +66,13 @@ type JsonObject = Record<string, unknown>;
 
 export class OpenDotaError extends Error {
   readonly statusCode: 400 | 404 | 429 | 502 | 504;
+  readonly code: string;
 
-  constructor(message: string, statusCode: 400 | 404 | 429 | 502 | 504) {
+  constructor(message: string, statusCode: 400 | 404 | 429 | 502 | 504, code: string) {
     super(message);
     this.name = 'OpenDotaError';
     this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -88,14 +90,15 @@ export async function resolveDotaPlayer(
 
   if (!isObject(payload) || !isObject(payload.profile)) {
     throw new OpenDotaError(
-      'Профиль не найден или скрыт настройками приватности',
+      'Profile not found or hidden by privacy settings',
       404,
+      'OPENDOTA_PROFILE_HIDDEN',
     );
   }
 
   const personaName = readString(payload.profile.personaname);
   if (!personaName) {
-    throw new OpenDotaError('OpenDota не вернула имя профиля', 502);
+    throw new OpenDotaError('OpenDota did not return profile name', 502, 'OPENDOTA_NO_PROFILE_NAME');
   }
 
   return {
@@ -118,7 +121,7 @@ export async function loadRecentMatches(
   ]);
 
   if (!Array.isArray(matchesPayload) || !isObject(heroesPayload)) {
-    throw new OpenDotaError('OpenDota вернула неожиданный формат данных', 502);
+    throw new OpenDotaError('OpenDota returned unexpected data format', 502, 'OPENDOTA_UNEXPECTED_FORMAT');
   }
 
   const matches = matchesPayload
@@ -145,7 +148,7 @@ export async function loadRecentMatches(
       const heroName =
         isObject(hero) && readString(hero.localized_name)
           ? readString(hero.localized_name)!
-          : `Герой #${heroId}`;
+          : `Hero #${heroId}`;
       const isRadiant = playerSlot < 128;
 
       return [
@@ -180,7 +183,7 @@ export async function loadHeroConstants(
 
   const payload = await fetchOpenDotaJson(baseUrl, '/constants/heroes', fetcher);
   if (!isObject(payload)) {
-    throw new OpenDotaError('OpenDota вернула неожиданный формат героев', 502);
+    throw new OpenDotaError('OpenDota returned unexpected heroes format', 502, 'OPENDOTA_HEROES_UNEXPECTED');
   }
 
   const names = Object.entries(payload).reduce<Record<string, string>>(
@@ -215,10 +218,10 @@ export async function loadPlayerMatchesPage(
   fetcher: typeof fetch = fetch,
 ): Promise<PlayerMatchesPage> {
   if (!Number.isSafeInteger(offset) || offset < 0) {
-    throw new OpenDotaError('Некорректный offset истории матчей', 400);
+    throw new OpenDotaError('Invalid match history offset', 400, 'OPENDOTA_INVALID_OFFSET');
   }
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > HISTORY_PAGE_SIZE) {
-    throw new OpenDotaError('Некорректный размер страницы истории матчей', 400);
+    throw new OpenDotaError('Invalid match history page size', 400, 'OPENDOTA_INVALID_LIMIT');
   }
 
   const query = new URLSearchParams({
@@ -236,7 +239,7 @@ export async function loadPlayerMatchesPage(
   );
 
   if (!Array.isArray(payload)) {
-    throw new OpenDotaError('OpenDota вернула неожиданный формат истории', 502);
+    throw new OpenDotaError('OpenDota returned unexpected history format', 502, 'OPENDOTA_INVALID_HISTORY');
   }
 
   const matches: ArchivedPlayerMatch[] = [];
@@ -271,7 +274,7 @@ async function fetchOpenDotaJson(
   try {
     endpoint = new URL(`${baseUrl.replace(/\/$/, '')}${pathname}`);
   } catch {
-    throw new OpenDotaError('OpenDota URL настроен неверно', 502);
+    throw new OpenDotaError('OpenDota URL is misconfigured', 502, 'OPENDOTA_URL_MISCONFIGURED');
   }
 
   const abortController = new AbortController();
@@ -287,19 +290,19 @@ async function fetchOpenDotaJson(
       await response.body?.cancel();
 
       if (response.status === 404) {
-        throw new OpenDotaError('Профиль OpenDota не найден', 404);
+        throw new OpenDotaError('OpenDota profile not found', 404, 'OPENDOTA_PROFILE_NOT_FOUND');
       }
       if (response.status === 429) {
-        throw new OpenDotaError('Лимит OpenDota исчерпан, повторите позже', 429);
+        throw new OpenDotaError('OpenDota rate limit exceeded, please retry later', 429, 'OPENDOTA_LIMIT_EXCEEDED');
       }
 
-      throw new OpenDotaError('OpenDota временно недоступна', 502);
+      throw new OpenDotaError('OpenDota is temporarily unavailable', 502, 'OPENDOTA_UNAVAILABLE');
     }
 
     const contentLength = Number(response.headers.get('content-length') ?? 0);
     if (contentLength > MAX_RESPONSE_BYTES) {
       await response.body?.cancel();
-      throw new OpenDotaError('Ответ OpenDota превышает допустимый размер', 502);
+      throw new OpenDotaError('OpenDota response exceeds allowed size', 502, 'OPENDOTA_RESPONSE_TOO_LARGE');
     }
 
     return await response.json();
@@ -308,10 +311,10 @@ async function fetchOpenDotaJson(
       throw error;
     }
     if (abortController.signal.aborted) {
-      throw new OpenDotaError('OpenDota не ответила вовремя', 504);
+      throw new OpenDotaError('OpenDota did not respond in time', 504, 'OPENDOTA_TIMEOUT');
     }
 
-    throw new OpenDotaError('Не удалось связаться с OpenDota', 502);
+    throw new OpenDotaError('Failed to connect to OpenDota', 502, 'OPENDOTA_CONN_ERROR');
   } finally {
     clearTimeout(timeout);
   }

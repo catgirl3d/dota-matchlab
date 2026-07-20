@@ -3,8 +3,9 @@ const MAX_DOTA_ACCOUNT_ID = 4_294_967_295n;
 const STEAM_ID64_PATTERN = /^[0-9]{16,20}$/;
 
 export class InvalidSteamIdError extends Error {
+  readonly code = 'INVALID_STEAM_ID';
   constructor() {
-    super('Введите корректный SteamID64');
+    super('Please enter a valid SteamID64');
     this.name = 'InvalidSteamIdError';
   }
 }

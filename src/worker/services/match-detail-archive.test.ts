@@ -83,7 +83,7 @@ describe('STRATZ detail archive', () => {
 
   it('does not persist partial sections when provider loading fails', async () => {
     const client = { claimSpecificMatchDetail: vi.fn(), applyMatchDetailBatch: vi.fn(), applyPublicMatchImport: vi.fn() };
-    const loadDetail = vi.fn().mockResolvedValue({ unavailable: false, error: new StratzError('section failed', 502), payloads: [{ section: 'players', response: { data: { match: { id: 9001 } } } }] });
+    const loadDetail = vi.fn().mockResolvedValue({ unavailable: false, error: new StratzError('section failed', 502, 'STRATZ_SECTION_FAILED'), payloads: [{ section: 'players', response: { data: { match: { id: 9001 } } } }] });
     await expect(importPublicMatchDetail(env, 9001, { createClient: () => client, loadDetail })).rejects.toThrow('section failed');
     expect(client.applyPublicMatchImport).not.toHaveBeenCalled();
   });

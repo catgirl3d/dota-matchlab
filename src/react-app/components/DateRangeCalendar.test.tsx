@@ -1,5 +1,6 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../test/setup';
 import { DateRangeCalendar } from './DateRangeCalendar';
 
 beforeEach(() => {

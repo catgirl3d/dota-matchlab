@@ -119,4 +119,3 @@ function formatSyncDate(value: string, locale: string): string {
     minute: '2-digit',
   }).format(new Date(value));
 }
-
