@@ -601,6 +601,42 @@
     overflow-y: auto;
   }
 
+  .period-filter__menu {
+    min-width: 180px;
+  }
+
+  .period-filter__custom-trigger {
+    display: grid;
+    padding: 9px 10px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    gap: 3px;
+    text-align: left;
+  }
+
+  .period-filter__custom-trigger > span:first-child {
+    color: var(--acid);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .period-filter__custom-trigger > span:last-child {
+    color: var(--muted);
+    font-size: var(--fs-2xs);
+  }
+
+  .period-filter__custom-trigger:hover,
+  .period-filter__custom-trigger:focus-visible,
+  .period-filter__custom-trigger[data-selected='true'] {
+    border-color: var(--acid);
+    outline: 0;
+    background: rgba(198, 242, 74, 0.08);
+  }
+
   .filter-dropdown__search {
     position: sticky;
     z-index: 1;

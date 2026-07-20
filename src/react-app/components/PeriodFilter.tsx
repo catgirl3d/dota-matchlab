@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ArchiveFilters, ArchivePeriod } from '../lib/archive-analytics';
+import { DateRangePopover } from './DateRangePopover';
 import { FILTER_DROPDOWN_OPEN_EVENT } from './FilterDropdown';
 
 const PERIOD_OPTIONS = [
@@ -15,14 +16,11 @@ type PeriodFilterProps = Pick<ArchiveFilters, 'period' | 'startDate' | 'endDate'
 
 export function PeriodFilter({ period, startDate, endDate, onChange }: PeriodFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [draftStartDate, setDraftStartDate] = useState(startDate ?? '');
-  const [draftEndDate, setDraftEndDate] = useState(endDate ?? '');
+  const [isRangePopoverOpen, setIsRangePopoverOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const selectedLabel = period === 'custom'
     ? 'Custom range'
     : PERIOD_OPTIONS.find(([value]) => value === period)?.[1] ?? 'All time';
-  const rangeError = getRangeError(draftStartDate, draftEndDate);
-  const canApplyRange = draftStartDate !== '' && draftEndDate !== '' && rangeError === null;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,8 +42,6 @@ export function PeriodFilter({ period, startDate, endDate, onChange }: PeriodFil
 
   function toggleFilter() {
     if (!isOpen) {
-      setDraftStartDate(startDate ?? '');
-      setDraftEndDate(endDate ?? '');
       document.dispatchEvent(new Event(FILTER_DROPDOWN_OPEN_EVENT));
     }
     setIsOpen((open) => !open);
@@ -56,11 +52,9 @@ export function PeriodFilter({ period, startDate, endDate, onChange }: PeriodFil
     setIsOpen(false);
   }
 
-  function applyRange() {
-    if (!canApplyRange) return;
-
-    onChange({ period: 'custom', startDate: draftStartDate, endDate: draftEndDate });
+  function openRangePopover() {
     setIsOpen(false);
+    setIsRangePopoverOpen(true);
   }
 
   return (
@@ -88,44 +82,23 @@ export function PeriodFilter({ period, startDate, endDate, onChange }: PeriodFil
               {optionLabel}
             </button>
           ))}
-          <div className="period-filter__range" data-active={period === 'custom'}>
-            <span className="period-filter__range-label">Custom range / UTC</span>
-            <div className="period-filter__fields">
-              <label>
-                <span>From</span>
-                <input
-                  type="date"
-                  value={draftStartDate}
-                  max={draftEndDate || undefined}
-                  aria-label="From date (UTC)"
-                  onChange={(event) => setDraftStartDate(event.target.value)}
-                />
-              </label>
-              <label>
-                <span>To</span>
-                <input
-                  type="date"
-                  value={draftEndDate}
-                  min={draftStartDate || undefined}
-                  aria-label="To date (UTC)"
-                  onChange={(event) => setDraftEndDate(event.target.value)}
-                />
-              </label>
-            </div>
-            {rangeError ? <span className="period-filter__error">{rangeError}</span> : null}
-            <button className="period-filter__apply" type="button" disabled={!canApplyRange} onClick={applyRange}>
-              Apply range
-            </button>
-          </div>
+          <button className="period-filter__custom-trigger" type="button" data-selected={period === 'custom'} onClick={openRangePopover}>
+            <span>Custom range</span>
+            <span>{period === 'custom' ? 'Edit dates' : 'Choose dates'}</span>
+          </button>
         </div>
+      ) : null}
+      {isRangePopoverOpen ? (
+        <DateRangePopover
+          startDate={startDate}
+          endDate={endDate}
+          onClose={() => setIsRangePopoverOpen(false)}
+          onApply={(nextStartDate, nextEndDate) => {
+            onChange({ period: 'custom', startDate: nextStartDate, endDate: nextEndDate });
+            setIsRangePopoverOpen(false);
+          }}
+        />
       ) : null}
     </div>
   );
-}
-
-function getRangeError(startDate: string, endDate: string): string | null {
-  if (startDate === '' && endDate === '') return null;
-  if (startDate === '' || endDate === '') return 'Set both dates';
-  if (startDate > endDate) return 'Start date must be on or before end date';
-  return null;
 }

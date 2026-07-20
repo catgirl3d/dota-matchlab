@@ -1,0 +1,365 @@
+@layer components {
+  .date-range-popover {
+    position: fixed;
+    z-index: 40;
+    display: grid;
+    padding: 16px;
+    background: rgba(8, 10, 8, 0.62);
+    inset: 0;
+    place-items: center;
+  }
+
+  .date-range-popover__panel {
+    display: grid;
+    width: min(420px, 100%);
+    max-height: calc(100vh - 32px);
+    padding: 16px;
+    border: 1px solid var(--acid);
+    background:
+      radial-gradient(circle at 100% 0, rgba(198, 242, 74, 0.12), transparent 52%),
+      var(--panel);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.62);
+    gap: 14px;
+    overflow-y: auto;
+  }
+
+  .date-range-popover__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .date-range-popover__header > div {
+    display: grid;
+    gap: 4px;
+  }
+
+  .date-range-popover__header strong {
+    color: var(--paper);
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    line-height: 1;
+  }
+
+  .date-range-popover__close {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: var(--fs-lg);
+    line-height: 1;
+  }
+
+  .date-range-popover__close:hover,
+  .date-range-popover__close:focus-visible {
+    border-color: var(--acid);
+    outline: 0;
+    color: var(--acid);
+  }
+
+  .date-range-popover__actions {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+
+  .date-range-popover__cancel,
+  .date-range-popover__apply {
+    min-height: 34px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .date-range-popover__cancel:hover,
+  .date-range-popover__cancel:focus-visible {
+    border-color: var(--paper);
+    outline: 0;
+  }
+
+  .date-range-popover__apply {
+    border-color: var(--acid);
+    color: var(--acid);
+  }
+
+  .date-range-popover__apply:hover:not(:disabled),
+  .date-range-popover__apply:focus-visible {
+    outline: 0;
+    background: var(--acid);
+    color: var(--ink);
+  }
+
+  .date-range-popover__apply:disabled {
+    border-color: var(--line-strong);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  .date-range-calendar {
+    display: grid;
+    gap: 8px;
+  }
+
+  .date-range-calendar__selection {
+    display: grid;
+    border: 1px solid var(--line-strong);
+    background: var(--ink);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .date-range-calendar__selected-date {
+    display: grid;
+    min-width: 0;
+    min-height: 42px;
+    align-content: center;
+    padding: 5px 8px;
+    gap: 2px;
+  }
+
+  .date-range-calendar__selected-date + .date-range-calendar__selected-date {
+    border-left: 1px solid var(--line-strong);
+  }
+
+  .date-range-calendar__selected-date > span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .date-range-calendar__selected-date > strong {
+    overflow: hidden;
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .date-range-calendar__selected-date[data-selected='false'] > strong {
+    color: var(--muted);
+  }
+
+  .date-range-calendar__toolbar {
+    display: grid;
+    align-items: center;
+    grid-template-columns: 30px 1fr 30px;
+  }
+
+  .date-range-calendar__month-label {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .date-range-calendar__month-label:hover,
+  .date-range-calendar__month-label:focus-visible {
+    color: var(--acid);
+    outline: 0;
+  }
+
+  .date-range-calendar__month-button {
+    display: grid;
+    width: 30px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--acid);
+    cursor: pointer;
+    font-size: var(--fs-lg);
+    line-height: 1;
+  }
+
+  .date-range-calendar__month-button:hover,
+  .date-range-calendar__month-button:focus-visible {
+    border-color: var(--acid);
+    outline: 0;
+    background: rgba(198, 242, 74, 0.1);
+  }
+
+  .date-range-calendar__weekdays,
+  .date-range-calendar__days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .date-range-calendar__weekdays {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+
+  .date-range-calendar__day,
+  .date-range-calendar__blank {
+    min-width: 0;
+    height: 28px;
+  }
+
+  .date-range-calendar__day {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+  }
+
+  .date-range-calendar__day:hover,
+  .date-range-calendar__day:focus-visible {
+    background: rgba(198, 242, 74, 0.16);
+    color: var(--acid);
+  }
+
+  .date-range-calendar__day[data-in-range='true'] {
+    background: rgba(198, 242, 74, 0.12);
+    color: var(--acid);
+  }
+
+  .date-range-calendar__day[data-range-start='true'],
+  .date-range-calendar__day[data-range-end='true'] {
+    background: var(--acid);
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .date-range-calendar__month-navigator {
+    display: grid;
+    min-height: 186px;
+    align-content: space-between;
+    padding: 4px 0;
+    gap: 10px;
+  }
+
+  .date-range-calendar__year-toolbar {
+    display: grid;
+    align-items: center;
+    grid-template-columns: 30px 1fr 30px;
+  }
+
+  .date-range-calendar__year-toolbar strong {
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  .date-range-calendar__year-button {
+    display: grid;
+    width: 30px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--acid);
+    cursor: pointer;
+    font-size: var(--fs-lg);
+    line-height: 1;
+  }
+
+  .date-range-calendar__year-button:hover,
+  .date-range-calendar__year-button:focus-visible {
+    border-color: var(--acid);
+    outline: 0;
+    background: rgba(198, 242, 74, 0.1);
+  }
+
+  .date-range-calendar__months {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .date-range-calendar__month {
+    min-height: 28px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    text-transform: uppercase;
+  }
+
+  .date-range-calendar__month:hover,
+  .date-range-calendar__month:focus-visible {
+    border-color: var(--acid);
+    outline: 0;
+    background: rgba(198, 242, 74, 0.1);
+    color: var(--acid);
+  }
+
+  .date-range-calendar__month[data-selected='true'] {
+    border-color: var(--acid);
+    background: var(--acid);
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .date-range-calendar__today {
+    justify-self: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .date-range-calendar__today:hover,
+  .date-range-calendar__today:focus-visible {
+    color: var(--acid);
+    outline: 0;
+  }
+
+  .date-range-calendar__clear {
+    justify-self: start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .date-range-calendar__clear:hover:not(:disabled),
+  .date-range-calendar__clear:focus-visible {
+    color: var(--acid);
+    outline: 0;
+  }
+
+  .date-range-calendar__clear:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
+}

@@ -1,8 +1,16 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PeriodFilter } from './PeriodFilter';
 
-afterEach(cleanup);
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 describe('PeriodFilter', () => {
   it('commits a complete custom UTC range atomically', () => {
@@ -10,11 +18,14 @@ describe('PeriodFilter', () => {
     render(<PeriodFilter period="all" startDate={null} endDate={null} onChange={onChange} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Period: All time' }));
+    fireEvent.click(screen.getByRole('button', { name: /Custom range/ }));
+    expect(screen.getByRole('dialog', { name: 'Custom date range' })).toBeVisible();
     const applyRange = screen.getByRole('button', { name: 'Apply range' });
     expect(applyRange).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText('From date (UTC)'), { target: { value: '2026-01-10' } });
-    fireEvent.change(screen.getByLabelText('To date (UTC)'), { target: { value: '2026-02-20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Select 2026-01-10' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Select 2026-02-20' }));
     expect(applyRange).toBeEnabled();
 
     fireEvent.click(applyRange);
@@ -36,16 +47,20 @@ describe('PeriodFilter', () => {
     expect(onChange).toHaveBeenCalledWith({ period: '30d', startDate: null, endDate: null });
   });
 
-  it('rejects an inverted date range', () => {
+  it('orders dates when the second selection precedes the first', () => {
     const onChange = vi.fn();
     render(<PeriodFilter period="all" startDate={null} endDate={null} onChange={onChange} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Period: All time' }));
-    fireEvent.change(screen.getByLabelText('From date (UTC)'), { target: { value: '2026-02-20' } });
-    fireEvent.change(screen.getByLabelText('To date (UTC)'), { target: { value: '2026-02-10' } });
+    fireEvent.click(screen.getByRole('button', { name: /Custom range/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Select 2026-01-20' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Select 2026-01-10' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply range' }));
 
-    expect(screen.getByText('Start date must be on or before end date')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Apply range' })).toBeDisabled();
-    expect(onChange).not.toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith({
+      period: 'custom',
+      startDate: '2026-01-10',
+      endDate: '2026-01-20',
+    });
   });
 });
