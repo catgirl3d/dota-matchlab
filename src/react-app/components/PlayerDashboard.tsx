@@ -12,6 +12,7 @@ import {
 } from '../lib/archive-analytics';
 import { ArchiveSyncPanel } from './ArchiveSyncPanel';
 import { FilterDropdown } from './FilterDropdown';
+import { PeriodFilter } from './PeriodFilter';
 
 type PlayerAccount = Pick<
   Tables<'tracked_accounts'>,
@@ -125,16 +126,11 @@ export function PlayerDashboard({
           <span className="micro-label">FILTER THE SIGNAL</span>
           <strong>{analytics.matches.toLocaleString('ru-RU')} matches in view</strong>
         </div>
-        <FilterDropdown
-          label="Period"
-          value={filters.period}
-          onChange={(value) => onFiltersChange({ ...filters, period: value as ArchiveFilters['period'] })}
-          options={[
-            ['all', 'All time'],
-            ['30d', 'Last 30 days'],
-            ['90d', 'Last 90 days'],
-            ['year', 'Last year'],
-          ]}
+        <PeriodFilter
+          period={filters.period}
+          startDate={filters.startDate}
+          endDate={filters.endDate}
+          onChange={(period) => onFiltersChange({ ...filters, ...period })}
         />
         <FilterDropdown
           label="Mode"

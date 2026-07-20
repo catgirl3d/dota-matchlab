@@ -1,4 +1,4 @@
-export type ArchivePeriod = 'all' | '30d' | '90d' | 'year';
+export type ArchivePeriod = 'all' | '30d' | '90d' | 'year' | 'custom';
 export type ArchiveMode = 'all' | 'ranked' | 'turbo' | 'all-pick';
 export type ArchiveResult = 'all' | 'wins' | 'losses';
 export type ArchiveParty = 'all' | 'solo' | 'party';
@@ -11,6 +11,8 @@ export type ArchiveFilters = {
   party: ArchiveParty;
   position: ArchivePosition;
   heroId: number | null;
+  startDate: string | null;
+  endDate: string | null;
 };
 
 export const DEFAULT_ARCHIVE_FILTERS: ArchiveFilters = {
@@ -20,6 +22,8 @@ export const DEFAULT_ARCHIVE_FILTERS: ArchiveFilters = {
   party: 'all',
   position: 'all',
   heroId: null,
+  startDate: null,
+  endDate: null,
 };
 
 const MODE_LABELS: Record<ArchiveMode, string> = {

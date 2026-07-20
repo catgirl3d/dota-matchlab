@@ -1,6 +1,6 @@
 begin;
 
-select plan(32);
+select plan(33);
 
 select has_table('public', 'archive_showcases', 'curated showcase registry exists');
 select col_is_pk('public', 'archive_showcases', 'dota_account_id', 'Dota account is showcase key');
@@ -8,11 +8,11 @@ select col_is_unique('public', 'archive_showcases', 'tracked_account_id', 'track
 select has_column('public', 'archive_showcases', 'slug', 'showcase slug exists');
 select col_not_null('public', 'archive_showcases', 'slug', 'showcase slug is required');
 select col_is_unique('public', 'archive_showcases', 'slug', 'showcase slug is unique');
-select has_function('public', 'get_archive_showcase_overview', array['bigint', 'text', 'text', 'text', 'text', 'text', 'smallint'], 'public showcase overview RPC exists');
-select has_function('public', 'get_archive_showcase_page', array['bigint', 'text', 'text', 'text', 'text', 'text', 'smallint', 'bigint', 'bigint', 'integer'], 'public showcase page RPC exists');
+select has_function('public', 'get_archive_showcase_overview', array['bigint', 'text', 'text', 'text', 'text', 'text', 'smallint', 'date', 'date'], 'public showcase overview RPC exists');
+select has_function('public', 'get_archive_showcase_page', array['bigint', 'text', 'text', 'text', 'text', 'text', 'smallint', 'bigint', 'bigint', 'integer', 'date', 'date'], 'public showcase page RPC exists');
 select has_function('public', 'resolve_archive_showcase', array['text'], 'public showcase resolver RPC exists');
-select ok(has_function_privilege('anon', 'public.get_archive_showcase_overview(bigint, text, text, text, text, text, smallint)', 'execute'), 'anon can execute overview');
-select ok(has_function_privilege('anon', 'public.get_archive_showcase_page(bigint, text, text, text, text, text, smallint, bigint, bigint, integer)', 'execute'), 'anon can execute page');
+select ok(has_function_privilege('anon', 'public.get_archive_showcase_overview(bigint, text, text, text, text, text, smallint, date, date)', 'execute'), 'anon can execute overview');
+select ok(has_function_privilege('anon', 'public.get_archive_showcase_page(bigint, text, text, text, text, text, smallint, bigint, bigint, integer, date, date)', 'execute'), 'anon can execute page');
 select ok(has_function_privilege('anon', 'public.resolve_archive_showcase(text)', 'execute'), 'anon can execute resolver');
 select ok(not has_table_privilege('anon', 'public.archive_showcases', 'select'), 'anon cannot read registry');
 select ok(not has_table_privilege('anon', 'public.tracked_accounts', 'select'), 'anon cannot read accounts');
@@ -40,6 +40,7 @@ select is(public.get_archive_showcase_overview(2001) #>> '{account,dotaAccountId
 select is(public.get_archive_showcase_overview(2001) #>> '{account,personaName}', 'Curated player', 'public overview exposes curated profile metadata');
 select ok((public.get_archive_showcase_overview(2001) #>> '{overview,syncState}') is null, 'public overview never exposes sync state');
 select is(public.get_archive_showcase_page(2001) #>> '{matches,0,matchId}', '9000002001', 'public page reads curated match');
+select is((public.get_archive_showcase_overview(2001, 'custom', 'all', 'all', 'all', 'all', null, '2023-11-14', '2023-11-14') #>> '{overview,summary,matches}'), '1', 'public overview applies a custom UTC date range');
 select ok(public.get_archive_showcase_overview(2002) is null, 'private profile is indistinguishable from missing');
 select ok(public.get_archive_showcase_page(2002) is null, 'private archive page is indistinguishable from missing');
 select ok(public.get_archive_showcase_overview(999999) is null, 'missing profile returns SQL null');

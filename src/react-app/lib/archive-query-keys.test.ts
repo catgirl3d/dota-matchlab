@@ -16,4 +16,16 @@ describe('archive query keys', () => {
   it('keys a public alias independently from showcase data', () => {
     expect(archiveShowcaseQueryKeys.resolve('demo')).toEqual(['archive-showcase-alias', 'demo']);
   });
+
+  it('separates custom date ranges in private and showcase caches', () => {
+    const januaryRange = { ...DEFAULT_ARCHIVE_FILTERS, period: 'custom' as const, startDate: '2026-01-01', endDate: '2026-01-31' };
+    const februaryRange = { ...januaryRange, startDate: '2026-02-01', endDate: '2026-02-28' };
+
+    expect(archiveQueryKeys.overview('account-a', januaryRange)).not.toEqual(
+      archiveQueryKeys.overview('account-a', februaryRange),
+    );
+    expect(archiveShowcaseQueryKeys.page(77, januaryRange, null)).not.toEqual(
+      archiveShowcaseQueryKeys.page(77, februaryRange, null),
+    );
+  });
 });

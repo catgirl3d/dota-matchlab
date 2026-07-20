@@ -569,6 +569,8 @@ export type Database = {
           p_party?: string
           p_position?: string
           p_hero_id?: number | null
+          p_start_date?: string | null
+          p_end_date?: string | null
         }
         Returns: Json
       }
@@ -584,6 +586,8 @@ export type Database = {
           p_cursor_start_time?: number | null
           p_cursor_match_id?: number | null
           p_limit?: number
+          p_start_date?: string | null
+          p_end_date?: string | null
         }
         Returns: Json
       }
@@ -596,6 +600,8 @@ export type Database = {
           p_party?: string
           p_position?: string
           p_hero_id?: number | null
+          p_start_date?: string | null
+          p_end_date?: string | null
         }
         Returns: Json
       }
@@ -611,6 +617,8 @@ export type Database = {
           p_cursor_start_time?: number | null
           p_cursor_match_id?: number | null
           p_limit?: number
+          p_start_date?: string | null
+          p_end_date?: string | null
         }
         Returns: Json
       }

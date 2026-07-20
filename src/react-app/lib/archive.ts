@@ -214,6 +214,8 @@ function archiveFilterValues(filters: ArchiveFilters) {
     p_party: filters.party,
     p_position: filters.position,
     p_hero_id: filters.heroId,
+    p_start_date: filters.period === 'custom' ? filters.startDate : null,
+    p_end_date: filters.period === 'custom' ? filters.endDate : null,
   };
 }
 

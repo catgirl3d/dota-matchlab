@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const FILTER_DROPDOWN_OPEN_EVENT = 'filter-dropdown:open';
+export const FILTER_DROPDOWN_OPEN_EVENT = 'filter-dropdown:open';
 
 type FilterDropdownProps = {
   label: string;

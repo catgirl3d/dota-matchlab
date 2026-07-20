@@ -1,13 +1,13 @@
 begin;
 
-select plan(30);
+select plan(34);
 
-select has_function('public', 'get_match_archive_overview', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint'], 'overview RPC exists');
-select has_function('public', 'get_match_archive_page', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint', 'bigint', 'bigint', 'integer'], 'page RPC exists');
-select ok(has_function_privilege('authenticated', 'public.get_match_archive_overview(uuid, text, text, text, text, text, smallint)', 'execute'), 'authenticated can execute overview RPC');
-select ok(not has_function_privilege('anon', 'public.get_match_archive_overview(uuid, text, text, text, text, text, smallint)', 'execute'), 'anon cannot execute overview RPC');
-select ok(has_function_privilege('authenticated', 'public.get_match_archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer)', 'execute'), 'authenticated can execute page RPC');
-select ok(not has_function_privilege('anon', 'public.get_match_archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer)', 'execute'), 'anon cannot execute page RPC');
+select has_function('public', 'get_match_archive_overview', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint', 'date', 'date'], 'overview RPC exists');
+select has_function('public', 'get_match_archive_page', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint', 'bigint', 'bigint', 'integer', 'date', 'date'], 'page RPC exists');
+select ok(has_function_privilege('authenticated', 'public.get_match_archive_overview(uuid, text, text, text, text, text, smallint, date, date)', 'execute'), 'authenticated can execute overview RPC');
+select ok(not has_function_privilege('anon', 'public.get_match_archive_overview(uuid, text, text, text, text, text, smallint, date, date)', 'execute'), 'anon cannot execute overview RPC');
+select ok(has_function_privilege('authenticated', 'public.get_match_archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer, date, date)', 'execute'), 'authenticated can execute page RPC');
+select ok(not has_function_privilege('anon', 'public.get_match_archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer, date, date)', 'execute'), 'anon cannot execute page RPC');
 
 insert into public.tracked_accounts (id, user_id, steam_id64, dota_account_id)
 values
@@ -53,6 +53,20 @@ select is((public.get_match_archive_overview('00000000-0000-0000-0000-0000000016
 select is((public.get_match_archive_overview('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'mid') #>> '{summary,matches}'), '1', 'position filter is applied in the database');
 select is((public.get_match_archive_overview('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'all', 1::smallint) #>> '{summary,matches}'), '1', 'hero filter is applied in the database');
 select is((public.get_match_archive_overview('00000000-0000-0000-0000-000000001601', '30d') #>> '{summary,matches}'), '0', 'period filter excludes old matches');
+select is((public.get_match_archive_overview('00000000-0000-0000-0000-000000001601', 'custom', 'all', 'all', 'all', 'all', null, '2023-11-14', '2023-11-14') #>> '{summary,matches}'), '2', 'custom overview range includes its UTC end day');
+select is(jsonb_array_length(public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'custom', 'all', 'all', 'all', 'all', null, null, null, 100, '2023-11-14', '2023-11-14') -> 'matches'), 2, 'custom page range excludes older and null timestamps');
+select throws_ok(
+  $$select public.get_match_archive_overview('00000000-0000-0000-0000-000000001601', 'custom')$$,
+  'P0001',
+  'Invalid archive date range',
+  'custom range requires both dates'
+);
+select throws_ok(
+  $$select public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'custom', 'all', 'all', 'all', 'all', null, null, null, 100, '2023-11-15', '2023-11-14')$$,
+  'P0001',
+  'Invalid archive date range',
+  'custom range rejects inverted dates'
+);
 
 create temp table first_page as
 select public.get_match_archive_page('00000000-0000-0000-0000-000000001601', 'all', 'all', 'all', 'all', 'all', null, null, null, 2) as value;
