@@ -8,6 +8,10 @@
   --paper: #e0e6d0;
   --muted: #939c8c;
   --acid: #c6f24a;
+  --radiant: var(--acid);
+  --radiant-rgb: 198, 242, 74;
+  --radiant-strong: var(--acid);
+  --radiant-strong-rgb: 198, 242, 74;
   --rust: #ff6b3d;
   --error: #ff725e;
   --signal-red: #ff365f;

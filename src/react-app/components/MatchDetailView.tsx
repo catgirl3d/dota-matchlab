@@ -185,17 +185,20 @@ export function MatchDetailView({
         <section className="detail-panel detail-lanes" aria-labelledby="lanes-title">
           <DetailHeading eyebrow="LANES / OUTCOME" title="Opening map" id="lanes-title" />
           <div className="detail-lanes__list">
-            {detail.laneOutcomes.map((lane) => (
-              <article key={lane.lane}>
-                <span>{lane.lane}</span>
-                <strong>{formatEnum(lane.outcome)}</strong>
-              </article>
-            ))}
+            {detail.laneOutcomes.map((lane) => {
+              const outcomeClass = lane.outcome.toLowerCase().replace('_', '-');
+              return (
+                <article key={lane.lane} className={`lane-outcome-row lane-outcome-row--${outcomeClass}`}>
+                  <span>{lane.lane}</span>
+                  <strong>{formatEnum(lane.outcome)}</strong>
+                </article>
+              );
+            })}
           </div>
           <div className="detail-events">
             <span className="detail-events__scope">MATCH EVENTS / ALL PLAYERS</span>
             {Object.entries(detail.eventCounts).map(([label, count]) => (
-              <span key={label} title={matchEventDescription(label)}>
+              <span key={label} title={matchEventDescription(label)} className={count === null ? 'is-empty' : 'has-values'}>
                 <strong>{count === null ? 'N/A' : count}</strong>{label}
               </span>
             ))}
@@ -370,7 +373,7 @@ function TeamRoster({
       <span className="team-roster__label">{label}</span>
       {players.map((player) => (
         <article
-          className={`scoreboard-player${currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : ''}`}
+          className={`scoreboard-player ${player.isRadiant ? 'is-radiant' : 'is-dire'}${currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : ''}`}
           key={player.key}
         >
           <MatchDetailHeroMark heroId={player.heroId} heroNames={heroNames} />
