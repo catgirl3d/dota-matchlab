@@ -14,6 +14,14 @@ import { HeroPortrait } from './HeroPortrait';
 import { PlayerSortControls, type PlayerSort } from './PlayerSortControls';
 
 type PerformanceRank = 1 | 2;
+type PlayerAchievement = 'mvp' | 'top-imp' | 'most-damage' | 'most-tower-damage';
+
+const PLAYER_ACHIEVEMENTS: Record<PlayerAchievement, { label: string; title: string }> = {
+  mvp: { label: 'MVP', title: 'Highest Individual Match Performance' },
+  'top-imp': { label: 'TOP 2 IMP', title: 'Second-highest Individual Match Performance' },
+  'most-damage': { label: 'MOST DMG', title: 'Highest hero damage' },
+  'most-tower-damage': { label: 'MOST TD', title: 'Highest tower damage' },
+};
 
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
@@ -57,10 +65,10 @@ export function MatchDetailView({
   const radiantPlayers = detail.players.filter((player) => player.isRadiant);
   const direPlayers = detail.players.filter((player) => !player.isRadiant);
 
-  const heroDamages = [...new Set(detail.players.map((p) => p.heroDamage))].sort((a, b) => b - a);
-  const towerDamages = [...new Set(detail.players.map((p) => p.towerDamage))].sort((a, b) => b - a);
-  const csValues = [...new Set(detail.players.map((p) => p.lastHits))].sort((a, b) => b - a);
-  const skillsValues = [...new Set(detail.players.map((p) => p.abilityBuild.length))].sort((a, b) => b - a);
+  const heroDamages = topPlayerMetricValues(detail.players, (player) => player.heroDamage);
+  const towerDamages = topPlayerMetricValues(detail.players, (player) => player.towerDamage);
+  const csValues = topPlayerMetricValues(detail.players, (player) => player.lastHits);
+  const skillsValues = topPlayerMetricValues(detail.players, (player) => player.abilityBuild.length);
 
   const maxStats = {
     first: {
@@ -357,7 +365,9 @@ function TeamScoreboard({
   currentAccountId: number | null;
 }) {
   const [sort, setSort] = useState<PlayerSort>('slot');
-  const performanceRanks = rankPlayersByImp([...radiantPlayers, ...direPlayers]);
+  const players = [...radiantPlayers, ...direPlayers];
+  const performanceRanks = rankPlayersByImp(players);
+  const playerAchievements = getPlayerAchievements(players, performanceRanks);
 
   return (
     <section className="detail-panel detail-scoreboard" aria-labelledby="scoreboard-title">
@@ -373,6 +383,7 @@ function TeamScoreboard({
           currentAccountId={currentAccountId}
           sort={sort}
           performanceRanks={performanceRanks}
+          playerAchievements={playerAchievements}
         />
         <div className="detail-scoreboard__versus">VS</div>
         <TeamRoster
@@ -382,6 +393,7 @@ function TeamScoreboard({
           currentAccountId={currentAccountId}
           sort={sort}
           performanceRanks={performanceRanks}
+          playerAchievements={playerAchievements}
         />
       </div>
     </section>
@@ -395,6 +407,7 @@ function TeamRoster({
   currentAccountId,
   sort,
   performanceRanks,
+  playerAchievements,
 }: {
   label: string;
   players: MatchDetailPlayer[];
@@ -402,6 +415,7 @@ function TeamRoster({
   currentAccountId: number | null;
   sort: PlayerSort;
   performanceRanks: Map<string, PerformanceRank>;
+  playerAchievements: Map<string, PlayerAchievement[]>;
 }) {
   const orderedPlayers = sortPlayers(players, sort);
 
@@ -410,6 +424,7 @@ function TeamRoster({
       <span className="team-roster__label">{label}</span>
       {orderedPlayers.map((player) => {
         const performanceRank = performanceRanks.get(player.key);
+        const achievements = playerAchievements.get(player.key) ?? [];
         const playerLabel = player.name ?? formatAccount(player.accountId);
         const rankClass = performanceRank === 1 ? ' is-highest' : performanceRank === 2 ? ' is-second' : '';
         const currentClass = currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : '';
@@ -424,7 +439,15 @@ function TeamRoster({
             <div className="scoreboard-player__identity">
               <strong>{playerLabel}</strong>
               <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
-              {performanceRank ? <span className="scoreboard-player__performance-rank">TOP {performanceRank} IMP</span> : null}
+              {achievements.length > 0 ? (
+                <div className="scoreboard-player__achievements">
+                  {achievements.map((achievement) => (
+                    <span className={`scoreboard-player__achievement scoreboard-player__achievement--${achievement}`} key={achievement} title={PLAYER_ACHIEVEMENTS[achievement].title}>
+                      {PLAYER_ACHIEVEMENTS[achievement].label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="scoreboard-player__kda" role="group" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
               <span><small>K</small><strong>{player.kills}</strong></span>
@@ -459,6 +482,44 @@ function rankPlayersByImp(players: MatchDetailPlayer[]): Map<string, Performance
   }
 
   return ranks;
+}
+
+function getPlayerAchievements(
+  players: MatchDetailPlayer[],
+  performanceRanks: Map<string, PerformanceRank>,
+): Map<string, PlayerAchievement[]> {
+  const highestHeroDamage = highestPlayerMetric(players, (player) => player.heroDamage);
+  const highestTowerDamage = highestPlayerMetric(players, (player) => player.towerDamage);
+  const achievements = new Map<string, PlayerAchievement[]>();
+
+  for (const player of players) {
+    const playerAchievements: PlayerAchievement[] = [];
+    const performanceRank = performanceRanks.get(player.key);
+    if (performanceRank === 1) {
+      playerAchievements.push('mvp');
+    } else if (performanceRank === 2) {
+      playerAchievements.push('top-imp');
+    }
+    if (highestHeroDamage > 0 && player.heroDamage === highestHeroDamage) {
+      playerAchievements.push('most-damage');
+    }
+    if (highestTowerDamage > 0 && player.towerDamage === highestTowerDamage) {
+      playerAchievements.push('most-tower-damage');
+    }
+    if (playerAchievements.length > 0) {
+      achievements.set(player.key, playerAchievements);
+    }
+  }
+
+  return achievements;
+}
+
+function highestPlayerMetric(players: MatchDetailPlayer[], getValue: (player: MatchDetailPlayer) => number): number {
+  return topPlayerMetricValues(players, getValue)[0] ?? 0;
+}
+
+function topPlayerMetricValues(players: MatchDetailPlayer[], getValue: (player: MatchDetailPlayer) => number): number[] {
+  return [...new Set(players.map(getValue))].sort((left, right) => right - left);
 }
 
 function AdvantageChart({ networth, experience }: { networth: number[]; experience: number[] }) {

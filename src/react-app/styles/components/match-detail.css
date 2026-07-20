@@ -297,11 +297,6 @@
     box-shadow: inset 3px 0 0 var(--signal-red);
   }
 
-  .scoreboard-player.is-highest {
-    border-top-color: rgba(var(--rank-first-rgb), 0.35);
-    background: linear-gradient(90deg, rgba(var(--rank-first-rgb), 0.1), transparent 62%);
-  }
-
   .scoreboard-player.is-second {
     border-top-color: rgba(var(--rank-second-rgb), 0.3);
     background: linear-gradient(90deg, rgba(var(--rank-second-rgb), 0.08), transparent 62%);
@@ -348,22 +343,39 @@
     color: var(--muted);
   }
 
-  .scoreboard-player__performance-rank {
-    width: fit-content;
+  .scoreboard-player__achievements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+
+  .scoreboard-player__achievement {
     padding: 2px 4px;
     border: 1px solid currentColor;
+    font-family: var(--font-mono);
     font-size: 8px;
     font-weight: 700;
     letter-spacing: 0.06em;
     line-height: 1;
   }
 
-  .scoreboard-player.is-highest .scoreboard-player__performance-rank {
-    color: var(--rank-first);
+  .scoreboard-player__identity .scoreboard-player__achievement--mvp {
+    border-color: var(--rank-first);
+    background: var(--rank-first);
+    box-shadow: 0 0 10px rgba(var(--rank-first-rgb), 0.32);
+    color: var(--ink);
   }
 
-  .scoreboard-player.is-second .scoreboard-player__performance-rank {
+  .scoreboard-player__identity .scoreboard-player__achievement--top-imp {
     color: var(--rank-second);
+  }
+
+  .scoreboard-player__identity .scoreboard-player__achievement--most-damage {
+    color: var(--rust);
+  }
+
+  .scoreboard-player__identity .scoreboard-player__achievement--most-tower-damage {
+    color: var(--acid);
   }
 
   .scoreboard-player.is-highest .scoreboard-player__hero {

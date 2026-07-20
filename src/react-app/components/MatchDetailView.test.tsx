@@ -249,7 +249,7 @@ describe('MatchDetailView', () => {
     expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
   });
 
-  it('sorts scoreboard columns and marks the first two IMP ranks', () => {
+  it('sorts scoreboard columns and calculates player achievement badges', () => {
     render(<MatchDetailView detail={createSortableDetail()} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
     const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
@@ -258,13 +258,32 @@ describe('MatchDetailView', () => {
     expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire low', 'Scoreboard entry for Dire high']);
     expect(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).toHaveClass('is-highest');
     expect(screen.getByRole('article', { name: 'Scoreboard entry for Dire high' })).toHaveClass('is-second');
-    expect(screen.getByText('TOP 1 IMP')).toBeVisible();
-    expect(screen.getByText('TOP 2 IMP')).toBeVisible();
+    const radiantHigh = screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' });
+    const direHigh = screen.getByRole('article', { name: 'Scoreboard entry for Dire high' });
+    expect(within(radiantHigh).getByText('MVP')).toBeVisible();
+    expect(within(radiantHigh).getByText('MOST TD')).toBeVisible();
+    expect(within(direHigh).getByText('TOP 2 IMP')).toBeVisible();
+    expect(within(direHigh).getByText('MOST DMG')).toBeVisible();
 
     const scoreboardSortControls = within(screen.getByRole('group', { name: 'Sort ten-player breakdown' }));
     fireEvent.click(scoreboardSortControls.getByRole('button', { name: 'Hero damage' }));
     expect(scoreboardOrder(radiantRoster)).toEqual(['Scoreboard entry for Radiant low', 'Scoreboard entry for Radiant high']);
     expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire high', 'Scoreboard entry for Dire low']);
+  });
+
+  it('shares achievement badges for tied highs and excludes zero tower damage', () => {
+    const tiedAchievementDetail: MatchDetailSnapshot = {
+      ...detail,
+      players: [
+        createPlayer({ key: 'radiant', accountId: 1, name: 'Radiant', playerSlot: 0, isRadiant: true, imp: 10, heroDamage: 1_000, towerDamage: 0 }),
+        createPlayer({ key: 'dire', accountId: 2, name: 'Dire', playerSlot: 128, isRadiant: false, imp: 5, heroDamage: 1_000, towerDamage: 0 }),
+      ],
+    };
+
+    render(<MatchDetailView detail={tiedAchievementDetail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    expect(screen.getAllByText('MOST DMG')).toHaveLength(2);
+    expect(screen.queryByText('MOST TD')).not.toBeInTheDocument();
   });
 
   it('keeps final loadout but labels progression unavailable for basic and partial data', () => {
