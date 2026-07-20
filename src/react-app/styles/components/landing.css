@@ -247,7 +247,15 @@
     letter-spacing: 0.04em;
   }
 
-  .match-search__example a {
+  .match-search__example a,
+  .match-search__example-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
     color: var(--acid);
     text-decoration: none;
     border-bottom: 1px solid currentColor;
@@ -255,8 +263,9 @@
     transition: color 160ms ease, border-color 160ms ease;
   }
 
-  .match-search__example a:hover {
-    color: var(--paper);
+  .match-search__example a:hover,
+  .match-search__example-btn:hover {
+    color: var(--ink);
   }
 
   .archive-gate {

@@ -73,6 +73,19 @@ export function LandingPage() {
             <p id="match-search-hint" className={error ? 'match-search__hint match-search__hint--error' : 'match-search__hint'}>
               {error ?? 'Новый матч можно загрузить после входа.'}
             </p>
+            <div className="match-search__example">
+              Пример:{' '}
+              <button
+                type="button"
+                className="match-search__example-btn"
+                onClick={() => {
+                  setMatchIdInput('8749050591');
+                  setError(null);
+                }}
+              >
+                8749050591
+              </button>
+            </div>
           </form>
         </div>
 
