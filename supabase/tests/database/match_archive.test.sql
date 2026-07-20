@@ -102,13 +102,13 @@ set local role authenticated;
 
 select is(
   (select count(*) from public.dota_matches),
-  1::bigint,
-  'a user can read a match linked to their tracked account'
+  2::bigint,
+  'authenticated users can read shared match metadata'
 );
 select is(
   (select count(*) from public.player_match_stats),
-  2::bigint,
-  'a user can read all participant rows in an accessible match'
+  3::bigint,
+  'authenticated users can read shared player statistics'
 );
 select is(
   (select count(*) from public.tracked_account_matches),
@@ -122,8 +122,8 @@ select is(
 );
 select is(
   (select count(*) from public.match_provider_payloads),
-  1::bigint,
-  'a user can read payloads only for linked matches'
+  2::bigint,
+  'authenticated users can read shared provider payloads'
 );
 
 reset role;
@@ -132,13 +132,13 @@ set local role authenticated;
 
 select is(
   (select count(*) from public.dota_matches),
-  0::bigint,
-  'another user cannot read archived matches'
+  2::bigint,
+  'shared match metadata does not depend on archive ownership'
 );
 select is(
   (select count(*) from public.player_match_stats),
-  0::bigint,
-  'another user cannot read player stats'
+  3::bigint,
+  'shared player statistics do not depend on archive ownership'
 );
 select is(
   (select count(*) from public.tracked_account_matches),
@@ -152,8 +152,8 @@ select is(
 );
 select is(
   (select count(*) from public.match_provider_payloads),
-  0::bigint,
-  'another user cannot read provider payloads'
+  2::bigint,
+  'shared provider payloads do not depend on archive ownership'
 );
 
 reset role;

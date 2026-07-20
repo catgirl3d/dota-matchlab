@@ -1,6 +1,6 @@
 begin;
 
-select plan(34);
+select plan(36);
 
 select has_function('public', 'get_match_archive_overview', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint', 'date', 'date'], 'overview RPC exists');
 select has_function('public', 'get_match_archive_page', array['uuid', 'text', 'text', 'text', 'text', 'text', 'smallint', 'bigint', 'bigint', 'integer', 'date', 'date'], 'page RPC exists');
@@ -9,10 +9,10 @@ select ok(not has_function_privilege('anon', 'public.get_match_archive_overview(
 select ok(has_function_privilege('authenticated', 'public.get_match_archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer, date, date)', 'execute'), 'authenticated can execute page RPC');
 select ok(not has_function_privilege('anon', 'public.get_match_archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer, date, date)', 'execute'), 'anon cannot execute page RPC');
 
-insert into public.tracked_accounts (id, user_id, steam_id64, dota_account_id)
+insert into public.tracked_accounts (id, user_id, steam_id64)
 values
-  ('00000000-0000-0000-0000-000000001601', 'archive-rpc-a', '76561198083722517', 1601),
-  ('00000000-0000-0000-0000-000000001602', 'archive-rpc-b', '76561198083722518', 1602);
+  ('00000000-0000-0000-0000-000000001601', 'archive-rpc-a', '76561197960267329'),
+  ('00000000-0000-0000-0000-000000001602', 'archive-rpc-b', '76561197960267330');
 
 insert into public.dota_matches (match_id, start_time, duration, radiant_win, game_mode)
 values
@@ -103,6 +103,8 @@ select set_config('request.jwt.claims', '{"sub":"archive-rpc-b"}', true);
 set local role authenticated;
 select is((public.get_match_archive_overview('00000000-0000-0000-0000-000000001601') #>> '{integrity,linked}'), '0', 'RLS prevents another user reading account overview');
 select is(jsonb_array_length(public.get_match_archive_page('00000000-0000-0000-0000-000000001601') -> 'matches'), 0, 'RLS prevents another user reading archive pages');
+select is((archive_private.archive_overview('00000000-0000-0000-0000-000000001601') #>> '{integrity,linked}'), '0', 'RLS protects direct invoker helper calls');
+select is(jsonb_array_length(archive_private.archive_page('00000000-0000-0000-0000-000000001601') -> 'matches'), 0, 'RLS protects direct invoker page helper calls');
 
 reset role;
 select * from finish();

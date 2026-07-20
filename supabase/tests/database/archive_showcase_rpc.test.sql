@@ -50,7 +50,7 @@ select ok(public.resolve_archive_showcase('not valid') is null, 'resolver return
 reset role;
 
 select throws_ok(
-  $$insert into public.archive_showcases (dota_account_id, tracked_account_id, slug) values (2002, '00000000-0000-0000-0000-000000002001', 'mismatched')$$,
+  $$insert into public.archive_showcases (dota_account_id, tracked_account_id, slug) values (2002, '00000000-0000-0000-0000-000000002003', 'mismatched')$$,
   '23503', null, 'mismatched account pair cannot be curated'
 );
 select throws_ok(
