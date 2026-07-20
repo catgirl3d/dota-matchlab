@@ -968,8 +968,16 @@
   }
 
   .build-timeline__token.is-talent {
+    flex-basis: 168px;
+    min-height: 46px;
     border-color: rgba(255, 190, 74, 0.75);
     background: rgba(255, 190, 74, 0.08);
+  }
+
+  .build-timeline__token.is-talent small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .build-timeline__token strong,

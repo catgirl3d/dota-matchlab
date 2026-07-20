@@ -180,7 +180,7 @@ describe('MatchDetailView', () => {
   it('groups compact builds by team, highlights the current account, and discloses long timelines', () => {
     const longPurchases = Array.from({ length: 14 }, (_, index) => ({ time: index * 30, itemId: index === 13 ? 99_999 : 29 }));
     const longAbilities = [
-      { abilityId: 999, time: 10, level: 1, name: null, isTalent: true },
+      { abilityId: 6_900, time: 10, level: 1, name: null, isTalent: true },
       { abilityId: 1_000, time: 20, level: 2, name: null, isTalent: false },
       { abilityId: 1_001, time: 30, level: 3, name: 'missing_ability', isTalent: false },
       ...Array.from({ length: 9 }, (_, index) => ({ abilityId: 2_000 + index, time: 40 + index * 10, level: 3, name: 'missing_ability', isTalent: false })),
@@ -206,6 +206,8 @@ describe('MatchDetailView', () => {
     const currentBuild = screen.getByRole('article', { name: 'Build for Current' });
     expect(currentBuild).toHaveAttribute('aria-current', 'true');
     expect(within(currentBuild).getByText('TALENT')).toBeVisible();
+    expect(within(currentBuild).getByText(/0:10 · \+12 Desolate Damage/)).toBeVisible();
+    expect(within(currentBuild).getByRole('img', { name: 'Talent: +12 Desolate Damage, 0:10' })).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1000')).toBeVisible();
     expect(within(currentBuild).getByText('Ability #1001')).toBeVisible();
     expect(within(currentBuild).queryByRole('img', { name: 'Shrapnel, 2:10 · level 3' })).not.toBeInTheDocument();
