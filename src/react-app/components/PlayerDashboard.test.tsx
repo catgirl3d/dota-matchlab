@@ -187,6 +187,36 @@ describe('PlayerDashboard', () => {
     expect(onPreviousPage).toHaveBeenCalledOnce();
   });
 
+  it('clears the hero filter from Hero Pool', () => {
+    const onFiltersChange = vi.fn();
+    render(
+      <MemoryRouter><PlayerDashboard
+        account={account}
+        overview={overview}
+        page={page}
+        filters={{ ...DEFAULT_ARCHIVE_FILTERS, heroId: 1 }}
+        heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }}
+        isLoading={false}
+        isRefreshing={false}
+        error={null}
+        onRefresh={vi.fn()}
+        onFiltersChange={onFiltersChange}
+        onNextPage={vi.fn()}
+        onPreviousPage={vi.fn()}
+        hasPreviousPage={false}
+        onSyncArchive={vi.fn()}
+        onSyncAllArchive={vi.fn()}
+        archiveSyncError={null}
+        isArchiveSyncing={false}
+        isArchiveSyncingAll={false}
+        archiveSyncProgress={null}
+      /></MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Сбросить фильтр героя' }));
+    expect(onFiltersChange).toHaveBeenCalledWith({ ...DEFAULT_ARCHIVE_FILTERS, heroId: null });
+  });
+
   it('keeps the textual hero mark when an archive hero has no local icon', () => {
     const unknownHeroPage: ArchivePage = {
       ...page,

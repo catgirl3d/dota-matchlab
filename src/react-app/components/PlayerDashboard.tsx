@@ -282,6 +282,17 @@ export function PlayerDashboard({
                 <span className="micro-label">HERO POOL / REPEAT SIGNAL</span>
                 <h3 id="hero-pool-title">Most played</h3>
               </div>
+              {filters.heroId !== null ? (
+                <button
+                  className="hero-pool__reset"
+                  type="button"
+                  aria-label="Сбросить фильтр героя"
+                  title="Сбросить фильтр героя"
+                  onClick={() => onFiltersChange({ ...filters, heroId: null })}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              ) : null}
             </div>
             <HeroPool
               heroes={overview.heroes.slice(0, 6).map((hero) => ({ ...hero, label: heroNames[hero.heroId] ?? `Hero #${hero.heroId}` }))}
