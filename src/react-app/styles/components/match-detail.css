@@ -1441,6 +1441,35 @@
     opacity: 0.8;
   }
 
+  /* Second-best record-holder indicator styling (Silver/Steel Blue) */
+  .player-build__metric.is-second {
+    border: 1px solid rgba(161, 181, 193, 0.25) !important;
+    border-bottom: 2px solid rgba(161, 181, 193, 0.65) !important;
+    background: linear-gradient(to bottom, rgba(16, 18, 20, 0.8), rgba(161, 181, 193, 0.05)) !important;
+    box-shadow: 0 4px 12px rgba(161, 181, 193, 0.06);
+  }
+
+  .player-build__metric.is-second:hover {
+    border-color: rgba(161, 181, 193, 0.5) !important;
+    border-bottom-color: rgba(161, 181, 193, 0.85) !important;
+  }
+
+  .player-build__metric.is-second .player-build__metric-value {
+    color: #a1b5c1 !important;
+    text-shadow: 0 0 6px rgba(161, 181, 193, 0.3), 0 1px 2px rgba(0, 0, 0, 0.8);
+  }
+
+  .player-build__metric.is-second::after {
+    content: '✦';
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    color: #a1b5c1;
+    font-size: 8px;
+    line-height: 1;
+    opacity: 0.65;
+  }
+
   .detail-empty {
     min-height: 120px;
     padding: 22px;
