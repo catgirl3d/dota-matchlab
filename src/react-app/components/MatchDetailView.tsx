@@ -51,6 +51,13 @@ export function MatchDetailView({
 
   const radiantPlayers = detail.players.filter((player) => player.isRadiant);
   const direPlayers = detail.players.filter((player) => !player.isRadiant);
+
+  const maxStats = {
+    heroDamage: Math.max(1, ...detail.players.map((p) => p.heroDamage)),
+    towerDamage: Math.max(1, ...detail.players.map((p) => p.towerDamage)),
+    cs: Math.max(1, ...detail.players.map((p) => p.lastHits)),
+    skills: Math.max(1, ...detail.players.map((p) => p.abilityBuild.length)),
+  };
   const focusedPlayer = currentAccountId === null
     ? null
     : detail.players.find((player) => player.accountId === currentAccountId) ?? null;
@@ -217,12 +224,14 @@ export function MatchDetailView({
             players={radiantPlayers}
             heroNames={heroNames}
             currentAccountId={currentAccountId}
+            maxStats={maxStats}
           />
           <BuildTeamColumn
             side="dire"
             players={direPlayers}
             heroNames={heroNames}
             currentAccountId={currentAccountId}
+            maxStats={maxStats}
           />
         </div>
       </section>
@@ -408,11 +417,18 @@ function BuildTeamColumn({
   players,
   heroNames,
   currentAccountId,
+  maxStats,
 }: {
   side: 'radiant' | 'dire';
   players: MatchDetailPlayer[];
   heroNames: Record<number, string>;
   currentAccountId: number | null;
+  maxStats: {
+    heroDamage: number;
+    towerDamage: number;
+    cs: number;
+    skills: number;
+  };
 }) {
   const orderedPlayers = [...players].sort((left, right) => left.playerSlot - right.playerSlot);
   return (
@@ -429,6 +445,7 @@ function BuildTeamColumn({
           player={player}
           heroNames={heroNames}
           highlighted={currentAccountId !== null && player.accountId === currentAccountId}
+          maxStats={maxStats}
         />
       ))}
     </section>
@@ -439,10 +456,17 @@ function PlayerBuild({
   player,
   heroNames,
   highlighted,
+  maxStats,
 }: {
   player: MatchDetailPlayer;
   heroNames: Record<number, string>;
   highlighted: boolean;
+  maxStats: {
+    heroDamage: number;
+    towerDamage: number;
+    cs: number;
+    skills: number;
+  };
 }) {
   const teamClass = player.isRadiant ? 'player-build--radiant' : 'player-build--dire';
   const impVal = player.imp;
@@ -489,19 +513,19 @@ function PlayerBuild({
           </BuildTimeline>
       </div>
       <div className="player-build__footer">
-        <div className="player-build__metric">
+        <div className={`player-build__metric${player.heroDamage > 0 && player.heroDamage === maxStats.heroDamage ? ' is-highest' : ''}`}>
           <span className="player-build__metric-label">Hero Dmg</span>
           <span className="player-build__metric-value">{formatCompact(player.heroDamage)}</span>
         </div>
-        <div className="player-build__metric">
+        <div className={`player-build__metric${player.towerDamage > 0 && player.towerDamage === maxStats.towerDamage ? ' is-highest' : ''}`}>
           <span className="player-build__metric-label">Tower Dmg</span>
           <span className="player-build__metric-value">{formatCompact(player.towerDamage)}</span>
         </div>
-        <div className="player-build__metric">
+        <div className={`player-build__metric${player.lastHits > 0 && player.lastHits === maxStats.cs ? ' is-highest' : ''}`}>
           <span className="player-build__metric-label">CS</span>
           <span className="player-build__metric-value">{player.lastHits}/{player.denies}</span>
         </div>
-        <div className="player-build__metric">
+        <div className={`player-build__metric${player.abilityBuild.length > 0 && player.abilityBuild.length === maxStats.skills ? ' is-highest' : ''}`}>
           <span className="player-build__metric-label">Skills</span>
           <span className="player-build__metric-value">{player.abilityBuild.length}</span>
         </div>
