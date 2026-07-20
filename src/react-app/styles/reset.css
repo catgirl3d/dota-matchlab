@@ -1,0 +1,31 @@
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: dark;
+    font-size: 106.25%;
+  }
+
+  body,
+  h1,
+  h2,
+  h3,
+  p,
+  ol {
+    margin: 0;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  button {
+    border: 0;
+  }
+}

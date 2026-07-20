@@ -1,0 +1,57 @@
+:root {
+  /* Color system */
+  --ink: #10120f;
+  --ink-soft: #171a16;
+  --panel: #1d211c;
+  --line: rgba(224, 230, 208, 0.18);
+  --line-strong: rgba(224, 230, 208, 0.34);
+  --paper: #e0e6d0;
+  --muted: #939c8c;
+  --acid: #c6f24a;
+  --rust: #ff6b3d;
+  --error: #ff725e;
+  --signal-red: #ff365f;
+  --signal-blue: #49c7e5;
+  --signal-violet: #b57aff;
+
+  /* Typography / Fonts */
+  --font-display: 'Instrument Sans', sans-serif;
+  --font-mono: 'Azeret Mono', monospace;
+
+  /* Font sizes (Typography Scale) */
+  --fs-2xs: 0.62rem;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.82rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.1rem;
+  --fs-xl: 1.2rem;
+  --fs-2xl: 1.35rem;
+  --fs-3xl: 1.45rem;
+  --fs-4xl: 1.8rem;
+
+  /* Specialized font sizes */
+  --fs-button: 0.64rem;
+  --fs-button-sm: 0.62rem;
+  --fs-small-btn: 0.65rem;
+  --fs-medium-btn: 0.66rem;
+  --fs-caption: 0.76rem;
+  --fs-xl-heading: 1.4rem;
+  --fs-lg-header: 1.18rem;
+  --fs-compact-heading: 0.78rem;
+  --fs-button-lg: 0.7rem;
+  --fs-label-lg: 0.7rem;
+  --fs-label-sm: 0.68rem;
+
+  /* Fluid typography (clamp expressions) */
+  --fs-hero-title: clamp(3.4rem, 7.2vw, 7.5rem);
+  --fs-hero-title-sub: clamp(2.8rem, 6vw, 6rem);
+  --fs-hero-lede: clamp(1.05rem, 1.6vw, 1.35rem);
+  --fs-instrument-time: clamp(2rem, 4.5vw, 4.8rem);
+  --fs-section-title: clamp(1.9rem, 3vw, 3.2rem);
+  --fs-winrate-giant: clamp(3.2rem, 5vw, 5.4rem);
+  --fs-detail-title: clamp(2.8rem, 5.5vw, 5.8rem);
+  --fs-identity-title: clamp(2rem, 4vw, 4.2rem);
+  --fs-metric-value: clamp(1.55rem, 2.4vw, 2.45rem);
+  --fs-team-outcome: clamp(1.65rem, 3vw, 3rem);
+  --fs-team-score: clamp(2.5rem, 5vw, 5rem);
+}

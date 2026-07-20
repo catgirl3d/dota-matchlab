@@ -1,0 +1,465 @@
+@layer responsive {
+  @media (max-width: 1180px) {
+    .archive-control-bar {
+      grid-template-columns: minmax(180px, 1fr) repeat(6, minmax(138px, 0.78fr));
+      overflow-x: auto;
+    }
+
+    .filter-heading,
+    .filter-select {
+      min-width: 138px;
+    }
+
+    .filter-heading {
+      min-width: 190px;
+    }
+
+    .dashboard-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-columns {
+      grid-template-columns: minmax(0, 1.35fr) minmax(290px, 0.65fr);
+    }
+
+    .archive-match-row__link {
+      grid-template-columns: 44px 38px minmax(130px, 1fr) 100px 58px;
+    }
+
+    .archive-match-row__metrics {
+      display: none;
+    }
+
+    .scoreboard-player {
+      grid-template-columns: 38px minmax(90px, 1fr) 76px 46px;
+    }
+
+    .scoreboard-player__economy {
+      display: none;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .app-shell {
+      padding: 0 24px;
+    }
+
+    .hero {
+      padding: 72px 0;
+      gap: 52px;
+      grid-template-columns: 1fr;
+    }
+
+    .hero__copy {
+      padding: 0;
+    }
+
+    .hero__instrument {
+      width: min(100%, 520px);
+    }
+
+    .control-grid,
+    .workflow {
+      grid-template-columns: 1fr;
+    }
+
+    .status-panel {
+      border-right: 0;
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .workflow {
+      gap: 52px;
+    }
+
+    .workspace-header,
+    .analysis-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .workspace-header {
+      align-items: start;
+      gap: 44px;
+    }
+
+    .workspace-message {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+      min-height: auto;
+      padding: 24px;
+    }
+
+    .workspace-message__actions {
+      margin-left: 0;
+      width: 100%;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .workspace-message__button {
+      flex: 1 1 auto;
+      width: 100%;
+    }
+
+    .dashboard-columns {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-side-column {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-side-column > .archive-sync {
+      margin: 0;
+    }
+
+    .match-detail__scoreline {
+      grid-template-columns: 1fr 150px 1fr;
+    }
+
+    .team-outcome {
+      padding: 20px;
+      grid-template-columns: 48px 1fr;
+    }
+
+    .team-outcome__crest {
+      width: 46px;
+      height: 46px;
+    }
+
+    .team-outcome__score {
+      grid-column: 1 / -1;
+    }
+
+    .detail-scoreboard__teams,
+    .detail-analysis-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-scoreboard__versus {
+      min-height: 36px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      border-right: 0;
+      border-left: 0;
+      writing-mode: horizontal-tb;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .app-shell {
+      padding: 0 16px;
+    }
+
+    .topbar {
+      min-height: 72px;
+    }
+
+    .wordmark > span:last-child {
+      display: none;
+    }
+
+    .release-tag {
+      display: none;
+    }
+
+    .topbar__actions {
+      gap: 10px;
+    }
+
+    .topbar__auth-button,
+    .topbar__archive-link {
+      min-height: 36px;
+      padding: 0 12px;
+    }
+
+    .hero {
+      min-height: auto;
+      padding: 62px 0;
+    }
+
+    .hero h1 {
+      font-size: clamp(3.1rem, 16vw, 5rem);
+    }
+
+    .hero__lede {
+      margin-top: 28px;
+    }
+
+    .match-search {
+      margin-top: 36px;
+    }
+
+    .match-search__controls {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .match-search input {
+      border-right: 1px solid var(--line-strong);
+    }
+
+    .match-search button {
+      min-height: 54px;
+      grid-column: 1 / -1;
+    }
+
+    .archive-gate {
+      min-height: 460px;
+    }
+
+    .status-panel,
+    .access-panel {
+      min-height: 330px;
+      padding: 34px 22px;
+    }
+
+    .section-heading {
+      display: block;
+    }
+
+    .section-heading h2 {
+      margin-top: 14px;
+    }
+
+    .status-list,
+    .access-copy,
+    .setup-message,
+    .signed-in-card {
+      margin-top: 42px;
+    }
+
+    .workflow {
+      padding: 80px 0;
+    }
+
+    .match-workspace {
+      padding: 72px 0 80px;
+    }
+
+    .player-identity {
+      min-height: auto;
+      padding: 22px;
+      align-items: start;
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .player-identity__avatar {
+      width: 72px;
+      height: 72px;
+    }
+
+    .player-identity__copy h2 {
+      display: grid;
+      font-size: 2rem;
+      gap: 8px;
+    }
+
+    .player-identity__meta {
+      display: grid;
+      margin-top: 12px;
+      gap: 5px;
+    }
+
+    .player-identity__meta span::after {
+      display: none;
+    }
+
+    .player-identity__actions {
+      display: none;
+    }
+
+    .dashboard-metrics,
+    .dashboard-side-column {
+      grid-template-columns: 1fr;
+    }
+
+    .metric-card {
+      min-height: 128px;
+    }
+
+    .form-strip {
+      padding: 18px 14px;
+      gap: 4px;
+    }
+
+    .form-card__footer {
+      display: grid;
+      padding: 12px 18px;
+      gap: 6px;
+    }
+
+    .archive-match-row__link {
+      min-height: 78px;
+      padding: 0 14px;
+      gap: 10px;
+      grid-template-columns: 38px 34px minmax(96px, 1fr) auto;
+    }
+
+    .archive-match-row__hero-mark {
+      width: 32px;
+      height: 32px;
+    }
+
+    .archive-match-row__duration {
+      display: none;
+    }
+
+    .archive-match-row__kda {
+      text-align: right;
+    }
+
+    .match-detail__toolbar {
+      align-items: stretch;
+    }
+
+    .match-detail__signals > span:first-child,
+    .match-detail__signals .detail-status {
+      display: none;
+    }
+
+    .match-detail__scoreline {
+      grid-template-columns: 1fr;
+    }
+
+    .match-detail__clock {
+      min-height: 112px;
+      order: -1;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .team-outcome {
+      min-height: 96px;
+      grid-template-columns: 46px 1fr auto;
+    }
+
+    .team-outcome__score {
+      grid-column: auto;
+    }
+
+    .team-outcome--dire {
+      border-top: 1px solid var(--line);
+    }
+
+    .match-detail__notice {
+      display: grid;
+      padding: 12px 16px;
+      grid-template-columns: 1fr;
+    }
+
+    .scoreboard-player {
+      min-height: 70px;
+      padding: 8px 10px;
+      grid-template-columns: 36px minmax(90px, 1fr) 78px;
+    }
+
+    .scoreboard-player__hero {
+      width: 34px;
+      height: 34px;
+    }
+
+    .scoreboard-player__net {
+      display: none;
+    }
+
+    .advantage-chart svg {
+      height: 190px;
+    }
+
+    .detail-builds__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .player-build__header {
+      grid-template-columns: 76px minmax(0, 1fr) auto;
+    }
+
+    .player-build__portrait {
+      width: 76px;
+      height: 43px;
+    }
+
+    .build-team + .build-team {
+      border-top: 1px solid var(--line);
+      border-left: 0;
+    }
+
+    .full-analysis__summary,
+    .full-analysis__body {
+      grid-template-columns: 1fr;
+    }
+
+    .full-analysis__summary article {
+      min-height: 72px;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .full-analysis__events {
+      border-top: 1px solid var(--line);
+      border-left: 0;
+    }
+
+    .match-chat__header,
+    .match-chat__controls {
+      align-items: stretch;
+      flex-direction: column;
+      padding: 14px;
+    }
+
+    .match-chat__controls {
+      display: flex;
+    }
+
+    .chat-message {
+      padding: 10px 12px;
+      grid-template-columns: 42px 34px minmax(0, 1fr);
+    }
+
+    .steam-form__controls {
+      grid-template-columns: 1fr;
+    }
+
+    .steam-form input {
+      border-right: 1px solid var(--line-strong);
+      border-bottom: 0;
+    }
+
+    .match-row {
+      padding: 16px 0;
+      gap: 12px;
+      grid-template-columns: 50px minmax(120px, 1fr) auto;
+    }
+
+    .match-row__metric {
+      display: none;
+    }
+
+    .workflow__steps {
+      grid-template-columns: 1fr;
+    }
+
+    .workflow-step {
+      min-height: 220px;
+      border-right: 0;
+    }
+
+    .footer {
+      display: grid;
+      padding: 24px 0;
+      gap: 10px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
