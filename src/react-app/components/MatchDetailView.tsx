@@ -11,16 +11,9 @@ import { getItemIcon } from '../lib/item-icons';
 import { talentDescriptions } from '../lib/talent-descriptions';
 import { HeroMark } from './HeroMark';
 import { HeroPortrait } from './HeroPortrait';
+import { PlayerSortControls, type PlayerSort } from './PlayerSortControls';
 
-type BuildSort = 'slot' | 'imp' | 'heroDamage' | 'towerDamage';
 type PerformanceRank = 1 | 2;
-
-const BUILD_SORT_OPTIONS: Array<{ value: BuildSort; label: string; title: string }> = [
-  { value: 'slot', label: 'Order', title: 'Original player order' },
-  { value: 'imp', label: 'IMP', title: 'Sort by Individual Match Performance' },
-  { value: 'heroDamage', label: 'Hero damage', title: 'Sort by hero damage' },
-  { value: 'towerDamage', label: 'Tower damage', title: 'Sort by tower damage' },
-];
 
 type MatchDetailViewProps = {
   detail?: MatchDetailSnapshot;
@@ -363,14 +356,14 @@ function TeamScoreboard({
   heroNames: Record<number, string>;
   currentAccountId: number | null;
 }) {
-  const [sort, setSort] = useState<BuildSort>('slot');
+  const [sort, setSort] = useState<PlayerSort>('slot');
   const performanceRanks = rankPlayersByImp([...radiantPlayers, ...direPlayers]);
 
   return (
     <section className="detail-panel detail-scoreboard" aria-labelledby="scoreboard-title">
       <div className="detail-scoreboard__header">
         <DetailHeading eyebrow="MATCHUP / SCOREBOARD" title="Ten-player breakdown" id="scoreboard-title" />
-        <BuildSortControls value={sort} onChange={setSort} ariaLabel="Sort ten-player breakdown" />
+        <PlayerSortControls value={sort} onChange={setSort} ariaLabel="Sort ten-player breakdown" />
       </div>
       <div className="detail-scoreboard__teams">
         <TeamRoster
@@ -407,10 +400,10 @@ function TeamRoster({
   players: MatchDetailPlayer[];
   heroNames: Record<number, string>;
   currentAccountId: number | null;
-  sort: BuildSort;
+  sort: PlayerSort;
   performanceRanks: Map<string, PerformanceRank>;
 }) {
-  const orderedPlayers = sortBuildPlayers(players, sort);
+  const orderedPlayers = sortPlayers(players, sort);
 
   return (
     <div className="team-roster">
@@ -526,13 +519,13 @@ function TeamBuilds({
   rosterStatus: MatchDetailSnapshot['rosterStatus'];
   playerCount: number;
 }) {
-  const [sort, setSort] = useState<BuildSort>('slot');
+  const [sort, setSort] = useState<PlayerSort>('slot');
 
   return (
     <section className="detail-panel detail-builds" aria-labelledby="builds-title">
       <div className="detail-builds__header">
         <DetailHeading eyebrow="LOADOUT / BUILDS" title="Team builds" id="builds-title" />
-        <BuildSortControls value={sort} onChange={setSort} ariaLabel="Sort team builds" />
+        <PlayerSortControls value={sort} onChange={setSort} ariaLabel="Sort team builds" />
       </div>
       {rosterStatus === 'incomplete' ? (
         <p className="detail-builds__roster-status">{playerCount}/10 players captured</p>
@@ -556,36 +549,6 @@ function TeamBuilds({
         />
       </div>
     </section>
-  );
-}
-
-function BuildSortControls({
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  value: BuildSort;
-  onChange: (value: BuildSort) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <div className="build-sort" role="group" aria-label={ariaLabel}>
-      <span className="micro-label">SORT BY / DESCENDING</span>
-      <div className="build-sort__options">
-        {BUILD_SORT_OPTIONS.map((option) => (
-          <button
-            className={value === option.value ? 'is-active' : ''}
-            type="button"
-            key={option.value}
-            title={option.title}
-            aria-pressed={value === option.value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -615,9 +578,9 @@ function BuildTeamColumn({
       skills: number;
     };
   };
-  sort: BuildSort;
+  sort: PlayerSort;
 }) {
-  const orderedPlayers = sortBuildPlayers(players, sort);
+  const orderedPlayers = sortPlayers(players, sort);
   return (
     <section className={`build-team build-team--${side}`} aria-labelledby={`build-team-${side}`}>
       <header className="build-team__header">
@@ -647,14 +610,14 @@ function BuildTeamColumn({
   );
 }
 
-function sortBuildPlayers(players: MatchDetailPlayer[], sort: BuildSort): MatchDetailPlayer[] {
+function sortPlayers(players: MatchDetailPlayer[], sort: PlayerSort): MatchDetailPlayer[] {
   return [...players].sort((left, right) => {
     if (sort === 'slot') {
       return left.playerSlot - right.playerSlot;
     }
 
-    const leftValue = buildSortValue(left, sort);
-    const rightValue = buildSortValue(right, sort);
+    const leftValue = playerSortValue(left, sort);
+    const rightValue = playerSortValue(right, sort);
     if (leftValue === null && rightValue !== null) {
       return 1;
     }
@@ -668,7 +631,7 @@ function sortBuildPlayers(players: MatchDetailPlayer[], sort: BuildSort): MatchD
   });
 }
 
-function buildSortValue(player: MatchDetailPlayer, sort: Exclude<BuildSort, 'slot'>): number | null {
+function playerSortValue(player: MatchDetailPlayer, sort: Exclude<PlayerSort, 'slot'>): number | null {
   if (sort === 'imp') {
     return player.imp;
   }
