@@ -189,7 +189,7 @@
 
   .hero h1 {
     max-width: 840px;
-    font-size: var(--fs-hero-title);
+    font-size: clamp(2.8rem, 6.9vw, 6.87em);
     font-weight: 520;
     letter-spacing: -0.065em;
     line-height: 0.88;
