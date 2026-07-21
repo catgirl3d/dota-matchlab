@@ -3,6 +3,9 @@
   --ink: #10120f;
   --ink-soft: #171a16;
   --panel: #1d211c;
+
+  /* Panel backgrounds */
+  --detail-panel-bg: #0f0f0f;
   --line: rgba(224, 230, 208, 0.18);
   --line-strong: rgba(224, 230, 208, 0.34);
   --paper: #e0e6d0;

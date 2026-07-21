@@ -394,6 +394,32 @@ describe('MatchDetailView', () => {
     expect(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).toBeVisible();
   });
 
+  it('renders each player position beside the hero portrait with the role on hover', () => {
+    render(<MatchDetailView detail={createSortableDetail()} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const radiantHigh = screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' });
+    const radiantPosition = within(radiantHigh).getByRole('img', { name: 'Mid' });
+    expect(radiantPosition).toHaveClass('scoreboard-player__position');
+    expect(radiantPosition).not.toHaveAttribute('title');
+    const radiantHeroGroup = radiantPosition.closest('.scoreboard-player__hero-with-position');
+    expect(radiantHeroGroup?.firstElementChild).toHaveClass('scoreboard-player__hero');
+    expect(radiantHeroGroup?.lastElementChild).toContainElement(radiantPosition);
+    fireEvent.pointerEnter(radiantPosition.parentElement as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Mid');
+
+    fireEvent.click(within(screen.getByRole('group', { name: 'Scoreboard view' })).getByRole('button', { name: 'Table view' }));
+
+    const direHigh = screen.getByRole('row', { name: 'Scoreboard row for Dire high' });
+    const direPosition = within(direHigh).getByRole('img', { name: 'Light support' });
+    expect(direPosition).toHaveClass('scoreboard-player__position');
+    const direHeroGroup = direPosition.closest('.scoreboard-player__hero-with-position');
+    expect(direHeroGroup?.firstElementChild).toHaveClass('scoreboard-player__hero');
+    expect(direHeroGroup?.lastElementChild).toContainElement(direPosition);
+    fireEvent.pointerEnter(direPosition.parentElement as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Light support');
+    expect(within(direHigh).queryByText('Hero #4 · Light support')).not.toBeInTheDocument();
+  });
+
   it('shares achievement badges for tied highs and excludes zero tower damage', () => {
     const tiedAchievementDetail: MatchDetailSnapshot = {
       ...detail,
@@ -515,10 +541,10 @@ function createSortableDetail(): MatchDetailSnapshot {
   return {
     ...detail,
     players: [
-      createPlayer({ key: 'radiant-low', accountId: 1, name: 'Radiant low', playerSlot: 0, isRadiant: true, imp: 4, heroDamage: 900, towerDamage: 700 }),
-      createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, heroDamage: 500, towerDamage: 900 }),
-      createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, heroDamage: 700, towerDamage: 400 }),
-      createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, heroDamage: 1_200, towerDamage: 800 }),
+      createPlayer({ key: 'radiant-low', accountId: 1, name: 'Radiant low', playerSlot: 0, isRadiant: true, imp: 4, heroDamage: 900, towerDamage: 700, position: 1 }),
+      createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, heroDamage: 500, towerDamage: 900, position: 2, role: 'MID' }),
+      createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, heroDamage: 700, towerDamage: 400, position: 4 }),
+      createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, heroDamage: 1_200, towerDamage: 800, position: 5, role: 'LIGHT_SUPPORT' }),
     ],
   };
 }
@@ -547,6 +573,7 @@ function createPlayer(
     level: 30,
     imp: 5,
     role: 'CORE',
+    position: 1,
     award: null,
     itemIds: [50, 63],
     backpackItemIds: [],

@@ -31,7 +31,7 @@
     }
 
     .scoreboard-player {
-      grid-template-columns: 38px minmax(90px, 1fr) 76px 46px;
+      grid-template-columns: 60px minmax(90px, 1fr) 76px 46px;
     }
 
     .scoreboard-player__economy {
@@ -355,12 +355,17 @@
     .scoreboard-player {
       min-height: 70px;
       padding: 8px 10px;
-      grid-template-columns: 36px minmax(90px, 1fr) 78px;
+      grid-template-columns: 56px minmax(90px, 1fr) 78px;
     }
 
     .scoreboard-player__hero {
       width: 34px;
       height: 34px;
+    }
+
+    .scoreboard-player__position {
+      width: 16px;
+      height: 16px;
     }
 
     .scoreboard-player__net {

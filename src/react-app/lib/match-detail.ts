@@ -10,6 +10,8 @@ import { isShallowObject, readSafeInteger as readInteger } from '../../shared/co
 import { abilityIconSlugs } from './ability-icon-slugs';
 import { repairAbilityEvent, type AbilityEventSource } from './ability-event-repairs';
 
+export type PlayerPosition = 1 | 2 | 3 | 4 | 5;
+
 export type MatchDetailPlayer = {
   key: string;
   accountId: number | null;
@@ -31,6 +33,7 @@ export type MatchDetailPlayer = {
   level: number;
   imp: number | null;
   role: string | null;
+  position: PlayerPosition | null;
   award: string | null;
   itemIds: number[];
   backpackItemIds: number[];
@@ -165,6 +168,7 @@ type PlayerStatsRow = Pick<
   | 'hero_damage'
   | 'tower_damage'
   | 'hero_healing'
+  | 'lane_role'
   | 'level'
   | 'net_worth'
 >;
@@ -186,7 +190,7 @@ export async function fetchMatchDetail(
     client
       .from('player_match_stats')
       .select(
-        'account_id,player_slot,hero_id,kills,deaths,assists,gold_per_min,xp_per_min,last_hits,denies,hero_damage,tower_damage,hero_healing,level,net_worth',
+        'account_id,player_slot,hero_id,kills,deaths,assists,gold_per_min,xp_per_min,last_hits,denies,hero_damage,tower_damage,hero_healing,lane_role,level,net_worth',
       )
       .eq('match_id', matchId)
       .order('player_slot', { ascending: true }),
@@ -522,6 +526,7 @@ function buildPlayer(
     level: readInteger(raw.level) ?? normalized?.level ?? 0,
     imp: readInteger(raw.imp),
     role: readString(raw.role) ?? readString(raw.position),
+    position: readPlayerPosition(raw.position) ?? readPlayerPosition(normalized?.lane_role),
     award: readString(raw.award),
     itemIds: readItemIds(raw, ['item0Id', 'item1Id', 'item2Id', 'item3Id', 'item4Id', 'item5Id']),
     backpackItemIds: readItemIds(raw, ['backpack0Id', 'backpack1Id', 'backpack2Id']),
@@ -703,6 +708,17 @@ function readItemIds(value: Record<string, unknown>, keys: string[]): number[] {
     const itemId = readInteger(value[key]);
     return itemId === null || itemId <= 0 ? [] : [itemId];
   });
+}
+
+function readPlayerPosition(value: unknown): PlayerPosition | null {
+  const numericPosition = readInteger(value);
+  if (numericPosition !== null && numericPosition >= 1 && numericPosition <= 5) {
+    return numericPosition as PlayerPosition;
+  }
+
+  const namedPosition = readString(value);
+  const match = /^POSITION_([1-5])$/.exec(namedPosition ?? '');
+  return match ? Number(match[1]) as PlayerPosition : null;
 }
 
 function sumPlayerKills(players: MatchDetailPlayer[], radiant: boolean): number {

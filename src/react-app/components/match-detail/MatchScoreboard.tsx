@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import type { MatchDetailPlayer } from '../../lib/match-detail';
 import { getItemIcon } from '../../lib/item-icons';
+import { getPositionIcon } from '../../lib/position-icons';
 import { HeroMark } from '../HeroMark';
 import { PlayerSortControls, type PlayerSort } from '../PlayerSortControls';
+import { Tooltip } from '../Tooltip';
 import { formatAccount, formatCompact, formatEnum, heroLabel, heroMark } from './match-detail-display';
 import { sortPlayers } from './match-detail-player';
 import { DetailHeading } from './match-detail-primitives';
@@ -184,7 +186,7 @@ function TeamRoster({
             key={player.key}
             aria-label={`Scoreboard entry for ${playerLabel}`}
           >
-            <ScoreboardHeroMark heroId={player.heroId} heroNames={heroNames} />
+            <ScoreboardHeroWithPosition heroId={player.heroId} heroNames={heroNames} position={player.position} role={player.role} />
             <div className="scoreboard-player__identity">
               <strong>{playerLabel}</strong>
               <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
@@ -300,14 +302,13 @@ function ScoreboardTableRow({
   return (
     <tr className={scoreboardTableRowClass(player, performanceRank, currentAccountId)} aria-label={`Scoreboard row for ${playerLabel}`}>
       <td className="scoreboard-table__hero-cell">
-        <ScoreboardHeroMark heroId={player.heroId} heroNames={heroNames} />
+        <ScoreboardHeroWithPosition heroId={player.heroId} heroNames={heroNames} position={player.position} role={player.role} />
       </td>
       <th className="scoreboard-table__player" scope="row">
         <span className="scoreboard-table__player-content">
           <span className="scoreboard-table__level">{player.level}</span>
           <span className="scoreboard-table__player-copy">
             <strong>{playerLabel}</strong>
-            <small>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</small>
             <AchievementBadges achievements={achievements} />
           </span>
         </span>
@@ -395,6 +396,32 @@ function ScoreboardItemSlot({ itemId, tone }: { itemId: number | null; tone?: 'n
 function ScoreboardHeroMark({ heroId, heroNames }: { heroId: number | null; heroNames: Record<number, string> }) {
   const label = heroLabel(heroId, heroNames);
   return <HeroMark heroId={heroId} label={label} fallback={heroMark(heroId, heroNames)} className="scoreboard-player__hero" />;
+}
+
+function ScoreboardHeroWithPosition({
+  heroId,
+  heroNames,
+  position,
+  role,
+}: {
+  heroId: number | null;
+  heroNames: Record<number, string>;
+  position: MatchDetailPlayer['position'];
+  role: MatchDetailPlayer['role'];
+}) {
+  const positionIcon = position === null ? null : getPositionIcon(position);
+  const positionLabel = role === null ? positionIcon?.label : formatEnum(role);
+
+  return (
+    <span className="scoreboard-player__hero-with-position">
+      <ScoreboardHeroMark heroId={heroId} heroNames={heroNames} />
+      {positionIcon && positionLabel ? (
+        <Tooltip content={positionLabel}>
+          <img className="scoreboard-player__position" src={positionIcon.src} alt={positionLabel} />
+        </Tooltip>
+      ) : null}
+    </span>
+  );
 }
 
 function scoreboardPlayerClass(player: MatchDetailPlayer, performanceRank: PerformanceRank | undefined, currentAccountId: number | null): string {

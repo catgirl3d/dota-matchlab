@@ -221,7 +221,7 @@
   .detail-panel {
     margin-top: 18px;
     border: 1px solid var(--line-strong);
-    background: rgba(23, 26, 22, 0.72);
+    background: var(--detail-panel-bg);
   }
 
   .detail-heading {
@@ -287,7 +287,7 @@
     padding: 10px 14px;
     border-top: 1px solid var(--line);
     gap: 11px;
-    grid-template-columns: 40px minmax(100px, 1fr) 92px 124px 52px;
+    grid-template-columns: 62px minmax(100px, 1fr) 92px 124px 52px;
   }
 
   .scoreboard-player.is-radiant.is-current {
@@ -319,6 +319,19 @@
     overflow: hidden;
   }
 
+  .scoreboard-player__hero-with-position {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .scoreboard-player__position {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    object-fit: contain;
+  }
+
   .scoreboard-player__identity {
     display: grid;
     min-width: 0;
@@ -332,7 +345,7 @@
     white-space: nowrap;
   }
 
-  .scoreboard-player__identity span,
+  .scoreboard-player__identity > span,
   .scoreboard-player__economy,
   .scoreboard-player__net,
   .scoreboard-player__kda {
@@ -341,7 +354,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .scoreboard-player__identity span,
+  .scoreboard-player__identity > span,
   .scoreboard-player__net {
     color: var(--muted);
   }
@@ -359,7 +372,6 @@
     font-size: 8px;
     font-weight: 700;
     letter-spacing: 0.06em;
-    line-height: 1;
   }
 
   .scoreboard-player__achievement--mvp {
@@ -559,7 +571,11 @@
   }
 
   .scoreboard-table__hero-cell {
-    width: 52px;
+    width: 68px;
+  }
+
+  .scoreboard-table__hero-cell .scoreboard-player__hero-with-position {
+    min-width: 62px;
   }
 
   .scoreboard-table .scoreboard-player__hero {
@@ -1179,11 +1195,11 @@
     font-size: var(--fs-2xs);
   }
 
-  .full-analysis {
+  .detail-panel.full-analysis {
     border-color: rgba(73, 199, 229, 0.45);
     background:
       linear-gradient(135deg, rgba(73, 199, 229, 0.07), transparent 42%),
-      rgba(23, 26, 22, 0.82);
+      var(--detail-panel-bg);
   }
 
   .full-analysis__summary {
