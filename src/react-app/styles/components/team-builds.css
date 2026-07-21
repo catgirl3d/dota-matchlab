@@ -32,10 +32,6 @@
     min-width: 0;
   }
 
-  .build-team + .build-team {
-    border-left: 0;
-  }
-
   .build-team__header {
     display: flex;
     align-items: center;
@@ -44,9 +40,8 @@
     padding: 14px 18px;
     margin-bottom: 16px;
     border: 1px solid var(--line);
-    background: rgba(16, 18, 15, 0.45);
     backdrop-filter: blur(8px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .build-team--radiant .build-team__header {
@@ -61,10 +56,6 @@
     border-bottom: 1.5px solid rgba(255, 54, 95, 0.25);
     background: linear-gradient(90deg, rgba(255, 54, 95, 0.03) 0%, rgba(16, 18, 15, 0.45) 100%);
     box-shadow: inset 0 1px 2px rgba(255, 54, 95, 0.02);
-  }
-
-  .build-team__header:hover {
-    border-color: var(--line-strong);
   }
 
   .build-team--radiant .build-team__header:hover {
@@ -113,7 +104,6 @@
     padding: 2px 8px;
     border: 1px solid var(--line);
     border-radius: 6px;
-    background: rgba(224, 230, 208, 0.03);
     font-family: var(--font-mono);
   }
 
@@ -164,7 +154,7 @@
     border: 1px solid var(--line);
     background: linear-gradient(135deg, rgba(29, 33, 28, 0.6) 0%, rgba(16, 18, 15, 0.8) 100%);
     backdrop-filter: blur(10px);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 
@@ -217,7 +207,6 @@
 
   .player-build:hover .player-build__portrait {
     transform: scale(1.02);
-    border-color: rgba(224, 230, 208, 0.5);
   }
 
   .hero-portrait__image {
@@ -390,12 +379,8 @@
   .build-timeline__token {
     display: grid;
     position: relative;
-    flex: 0 0 84px;
     min-height: 34px;
     align-content: center;
-    padding: 4px 6px;
-    border: 1px solid var(--line-strong);
-    background: var(--ink-soft);
     gap: 2px;
   }
 
@@ -412,7 +397,7 @@
     grid-template-rows: minmax(0, 1fr) auto;
     column-gap: 6px;
     row-gap: 2px;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, background 0.2s ease;
   }
 
   .build-timeline__token.is-talent:hover {
@@ -489,7 +474,7 @@
     border-radius: 4px;
     background: rgba(23, 26, 22, 0.8);
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease;
   }
 
   .build-timeline__token--item {
@@ -566,7 +551,7 @@
     background: linear-gradient(145deg, rgba(73, 199, 229, 0.14), rgba(181, 122, 255, 0.1));
     overflow: hidden;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .item-token:hover {
@@ -649,7 +634,7 @@
     background: rgba(7, 9, 7, 0.7);
     border: 1px solid rgba(224, 230, 208, 0.06);
     border-radius: 6px;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .player-build__metric:hover {
@@ -676,19 +661,19 @@
   }
 
   .player-build__metric.is-highest {
-    border: 1px solid rgba(var(--rank-first-rgb), 0.3) !important;
-    border-bottom: 2px solid rgba(var(--rank-first-rgb), 0.8) !important;
-    background: linear-gradient(to bottom, rgba(20, 18, 12, 0.8), rgba(var(--rank-first-rgb), 0.08)) !important;
+    border: 1px solid rgba(var(--rank-first-rgb), 0.3);
+    border-bottom: 2px solid rgba(var(--rank-first-rgb), 0.8);
+    background: linear-gradient(to bottom, rgba(20, 18, 12, 0.8), rgba(var(--rank-first-rgb), 0.08));
     box-shadow: 0 4px 12px rgba(var(--rank-first-rgb), 0.12);
   }
 
   .player-build__metric.is-highest:hover {
-    border-color: rgba(var(--rank-first-rgb), 0.6) !important;
-    border-bottom-color: rgba(var(--rank-first-rgb), 1) !important;
+    border-color: rgba(var(--rank-first-rgb), 0.6);
+    border-bottom-color: rgba(var(--rank-first-rgb), 1);
   }
 
   .player-build__metric.is-highest .player-build__metric-value {
-    color: var(--rank-first) !important;
+    color: var(--rank-first);
     text-shadow: 0 0 6px rgba(var(--rank-first-rgb), 0.35), 0 1px 2px rgba(0, 0, 0, 0.8);
   }
 
@@ -704,19 +689,19 @@
   }
 
   .player-build__metric.is-second {
-    border: 1px solid rgba(var(--rank-second-rgb), 0.25) !important;
-    border-bottom: 2px solid rgba(var(--rank-second-rgb), 0.65) !important;
-    background: linear-gradient(to bottom, rgba(16, 18, 20, 0.8), rgba(var(--rank-second-rgb), 0.05)) !important;
+    border: 1px solid rgba(var(--rank-second-rgb), 0.25);
+    border-bottom: 2px solid rgba(var(--rank-second-rgb), 0.65);
+    background: linear-gradient(to bottom, rgba(16, 18, 20, 0.8), rgba(var(--rank-second-rgb), 0.05));
     box-shadow: 0 4px 12px rgba(var(--rank-second-rgb), 0.06);
   }
 
   .player-build__metric.is-second:hover {
-    border-color: rgba(var(--rank-second-rgb), 0.5) !important;
-    border-bottom-color: rgba(var(--rank-second-rgb), 0.85) !important;
+    border-color: rgba(var(--rank-second-rgb), 0.5);
+    border-bottom-color: rgba(var(--rank-second-rgb), 0.85);
   }
 
   .player-build__metric.is-second .player-build__metric-value {
-    color: var(--rank-second) !important;
+    color: var(--rank-second);
     text-shadow: 0 0 6px rgba(var(--rank-second-rgb), 0.3), 0 1px 2px rgba(0, 0, 0, 0.8);
   }
 

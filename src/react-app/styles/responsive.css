@@ -447,7 +447,6 @@
 
     .build-team + .build-team {
       border-top: 1px solid var(--line);
-      border-left: 0;
     }
 
     .full-analysis__body {
