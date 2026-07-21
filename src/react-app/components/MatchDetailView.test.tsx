@@ -130,6 +130,15 @@ describe('MatchDetailView', () => {
     expect(lanesPanel).toContainElement(eventGrid);
     expect(eventGrid?.children).toHaveLength(7);
     expect(within(eventGrid as HTMLElement).getAllByText('N/A')).toHaveLength(4);
+    const matchDetail = screen.getByRole('region', { name: 'Match detail' });
+    expect(matchDetail.querySelectorAll('[title]')).toHaveLength(0);
+    const tableViewTrigger = within(screen.getByRole('group', { name: 'Scoreboard view' })).getByRole('button', { name: 'Table view' }).closest<HTMLElement>('.app-tooltip__trigger');
+    fireEvent.pointerEnter(tableViewTrigger as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Table view');
+    fireEvent.pointerLeave(tableViewTrigger as HTMLElement);
+    const chatEventTrigger = within(eventGrid as HTMLElement).getByText('chat').closest<HTMLElement>('.detail-events__item');
+    fireEvent.pointerEnter(chatEventTrigger as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Global chat and chat-wheel events');
 
     fireEvent.click(screen.getByRole('button', { name: /Back to archive/i }));
     expect(onBack).toHaveBeenCalledOnce();

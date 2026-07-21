@@ -20,18 +20,19 @@ export function PlayerSortControls({ value, onChange, ariaLabel }: PlayerSortCon
       <span className="micro-label">SORT BY / DESCENDING</span>
       <div className="player-sort__options">
         {PLAYER_SORT_OPTIONS.map((option) => (
-          <button
-            className={value === option.value ? 'is-active' : ''}
-            type="button"
-            key={option.value}
-            title={option.title}
-            aria-pressed={value === option.value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </button>
+          <Tooltip content={option.title} focusable={false} key={option.value}>
+            <button
+              className={value === option.value ? 'is-active' : ''}
+              type="button"
+              aria-pressed={value === option.value}
+              onClick={() => onChange(option.value)}
+            >
+              {option.label}
+            </button>
+          </Tooltip>
         ))}
       </div>
     </div>
   );
 }
+import { Tooltip } from './Tooltip';

@@ -4,6 +4,7 @@ import { buildLaneAnalysis, getLanePlayerMetrics, LANE_ANALYSIS_MINUTE, type Lan
 import { getPositionIcon, getPositionLabel } from '../../lib/position-icons';
 import { useTranslation, type TranslationKey } from '../../lib/i18n';
 import { HeroMark } from '../HeroMark';
+import { Tooltip } from '../Tooltip';
 import { formatCompact, formatEnum, heroLabel, heroMark } from './match-detail-display';
 import { DetailHeading } from './match-detail-primitives';
 
@@ -38,9 +39,14 @@ export function LaneAnalysisPanel({ players, heroNames, laneOutcomes, eventCount
       <div className="detail-events">
         <span className="detail-events__scope">{t('matchEventsAllPlayers')}</span>
         {Object.entries(eventCounts).map(([label, count]) => (
-          <span key={label} title={matchEventDescription(label, t)} className={count === null ? 'is-empty' : 'has-values'}>
+          <Tooltip
+            className={`detail-events__item ${count === null ? 'is-empty' : 'has-values'}`}
+            content={matchEventDescription(label, t)}
+            focusable={false}
+            key={label}
+          >
             <strong>{count === null ? 'N/A' : count}</strong>{label}
-          </span>
+          </Tooltip>
         ))}
       </div>
     </section>

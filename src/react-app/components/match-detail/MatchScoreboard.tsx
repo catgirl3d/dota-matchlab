@@ -134,26 +134,28 @@ function ScoreboardViewControls({
     <div className="scoreboard-view-switch" role="group" aria-label="Scoreboard view">
       <span className="micro-label">VIEW</span>
       <div className="scoreboard-view-switch__options">
-        <button
-          className={value === 'roster' ? 'is-active' : ''}
-          type="button"
-          title="Split roster view"
-          aria-label="Split roster view"
-          aria-pressed={value === 'roster'}
-          onClick={() => onChange('roster')}
-        >
-          <SplitRosterIcon />
-        </button>
-        <button
-          className={value === 'table' ? 'is-active' : ''}
-          type="button"
-          title="Table view"
-          aria-label="Table view"
-          aria-pressed={value === 'table'}
-          onClick={() => onChange('table')}
-        >
-          <TableIcon />
-        </button>
+        <Tooltip content="Split roster view" focusable={false}>
+          <button
+            className={value === 'roster' ? 'is-active' : ''}
+            type="button"
+            aria-label="Split roster view"
+            aria-pressed={value === 'roster'}
+            onClick={() => onChange('roster')}
+          >
+            <SplitRosterIcon />
+          </button>
+        </Tooltip>
+        <Tooltip content="Table view" focusable={false}>
+          <button
+            className={value === 'table' ? 'is-active' : ''}
+            type="button"
+            aria-label="Table view"
+            aria-pressed={value === 'table'}
+            onClick={() => onChange('table')}
+          >
+            <TableIcon />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );
@@ -614,9 +616,11 @@ function AchievementBadges({ achievements }: { achievements: PlayerAchievement[]
   return (
     <div className="scoreboard-player__achievements">
       {achievements.map((achievement) => (
-        <span className={`scoreboard-player__achievement scoreboard-player__achievement--${achievement}`} key={achievement} title={PLAYER_ACHIEVEMENTS[achievement].title}>
-          {PLAYER_ACHIEVEMENTS[achievement].label}
-        </span>
+        <Tooltip content={PLAYER_ACHIEVEMENTS[achievement].title} ariaLabel={PLAYER_ACHIEVEMENTS[achievement].title} key={achievement}>
+          <span className={`scoreboard-player__achievement scoreboard-player__achievement--${achievement}`}>
+            {PLAYER_ACHIEVEMENTS[achievement].label}
+          </span>
+        </Tooltip>
       ))}
     </div>
   );
@@ -651,11 +655,18 @@ function ScoreboardInventory({
 
 function ScoreboardItemSlot({ itemId, tone }: { itemId: number | null; tone?: 'neutral' }) {
   const item = itemId === null ? null : getItemIcon(itemId);
+  const label = item?.label ?? (itemId === null ? null : `Item #${itemId}`);
+
+  if (label === null) {
+    return <span className={`scoreboard-table__item${tone ? ` is-${tone}` : ''}`} />;
+  }
 
   return (
-    <span className={`scoreboard-table__item${tone ? ` is-${tone}` : ''}`} title={item?.label ?? (itemId === null ? undefined : `Item #${itemId}`)}>
-      {item ? <img src={item.src} alt={item.label} /> : itemId === null ? null : <strong>#{itemId}</strong>}
-    </span>
+    <Tooltip content={label} ariaLabel={label} focusable={false}>
+      <span className={`scoreboard-table__item${tone ? ` is-${tone}` : ''}`}>
+        {item ? <img src={item.src} alt={item.label} /> : <strong>#{itemId}</strong>}
+      </span>
+    </Tooltip>
   );
 }
 

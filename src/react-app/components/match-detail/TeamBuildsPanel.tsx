@@ -193,13 +193,7 @@ function PlayerBuild({
           {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
         </BuildTimeline>
         <BuildTimeline label="PURCHASES" emptyLabel="No purchase events" unavailableLabel="Purchase progression unavailable." available={player.hasPurchaseEventsData} events={player.purchaseEvents} total={player.purchaseEvents.length}>
-          {(purchase, index) => (
-            <span className="build-timeline__token build-timeline__token--item" key={`${purchase.time}-${purchase.itemId}-${index}`} title={`Item #${purchase.itemId} at ${formatEventTime(purchase.time)}`}>
-              <ItemIcon itemId={purchase.itemId} className="build-timeline__item-icon" />
-              {getItemIcon(purchase.itemId) === null ? <strong>#{purchase.itemId}</strong> : null}
-              <small>{formatEventTime(purchase.time)}</small>
-            </span>
-          )}
+          {(purchase, index) => <PurchaseToken purchase={purchase} key={`${purchase.time}-${purchase.itemId}-${index}`} />}
         </BuildTimeline>
       </div>
       <div className="player-build__footer">
@@ -327,22 +321,34 @@ function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][
   const timing = ability.isTalent ? formatEventTime(ability.time) : `${formatEventTime(ability.time)} · level ${ability.level + 1}`;
 
   return (
-    <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : ' build-timeline__token--ability'}`} role="img" aria-label={`${label}, ${timing}`} title={label}>
-      {ability.isTalent ? (
-        <>
-          <span className="build-timeline__talent-mark" aria-hidden="true">T</span>
-          <strong className="build-timeline__talent-description">{talentDescription ?? 'Talent'}</strong>
-        </>
-      ) : abilityIcon ? <img className="build-timeline__ability-icon" src={abilityIcon.src} alt="" /> : <strong>{label}</strong>}
-      {!ability.isTalent ? <span className="build-timeline__ability-level" aria-hidden="true">{ability.level + 1}</span> : null}
-      <small>{formatEventTime(ability.time)}</small>
-    </span>
+    <Tooltip content={`${label} · ${timing}`} focusable={false}>
+      <span className={`build-timeline__token${ability.isTalent ? ' is-talent' : ' build-timeline__token--ability'}`} role="img" aria-label={`${label}, ${timing}`}>
+        {ability.isTalent ? (
+          <>
+            <span className="build-timeline__talent-mark" aria-hidden="true">T</span>
+            <strong className="build-timeline__talent-description">{talentDescription ?? 'Talent'}</strong>
+          </>
+        ) : abilityIcon ? <img className="build-timeline__ability-icon" src={abilityIcon.src} alt="" /> : <strong>{label}</strong>}
+        {!ability.isTalent ? <span className="build-timeline__ability-level" aria-hidden="true">{ability.level + 1}</span> : null}
+        <small>{formatEventTime(ability.time)}</small>
+      </span>
+    </Tooltip>
   );
 }
 
-function ItemIcon({ itemId, className }: { itemId: number; className: string }) {
-  const item = getItemIcon(itemId);
-  return item ? <img className={className} src={item.src} alt={item.label} /> : null;
+function PurchaseToken({ purchase }: { purchase: MatchDetailPlayer['purchaseEvents'][number] }) {
+  const item = getItemIcon(purchase.itemId);
+  const label = item?.label ?? `Item #${purchase.itemId}`;
+  const time = formatEventTime(purchase.time);
+
+  return (
+    <Tooltip content={`${label} · ${time}`} focusable={false}>
+      <span className="build-timeline__token build-timeline__token--item" role="img" aria-label={`${label}, ${time}`}>
+        {item ? <img className="build-timeline__item-icon" src={item.src} alt={item.label} /> : <strong>#{purchase.itemId}</strong>}
+        <small>{time}</small>
+      </span>
+    </Tooltip>
+  );
 }
 
 function formatAbilityName(name: string | null, abilityId: number): string {

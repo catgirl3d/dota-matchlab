@@ -1,4 +1,5 @@
 import { getHeroPortrait } from '../lib/hero-icons';
+import { Tooltip } from './Tooltip';
 
 type HeroPortraitProps = {
   heroId: number | null;
@@ -11,8 +12,10 @@ export function HeroPortrait({ heroId, label, fallback, className }: HeroPortrai
   const portrait = heroId === null ? null : getHeroPortrait(heroId, label);
 
   return (
-    <span className={className} aria-hidden="true">
-      {portrait ? <img className="hero-portrait__image" src={portrait.src} alt="" title={portrait.label} /> : fallback}
-    </span>
+    <Tooltip className={className} content={portrait?.label ?? label} focusable={false}>
+      <span aria-hidden="true">
+        {portrait ? <img className="hero-portrait__image" src={portrait.src} alt="" /> : fallback}
+      </span>
+    </Tooltip>
   );
 }
