@@ -29,7 +29,7 @@ describe('archive RPC adapter', () => {
     const client = createFakeClient({ matches: [{ dataStatus: 'missing_player_stats', matchId: 9, startTime: null, durationSeconds: null, radiantWin: null, gameMode: null, lobbyType: null, averageRank: null, radiantScore: null, direScore: null, playerSlot: null, heroId: null, heroVariant: null, kills: null, deaths: null, assists: null, goldPerMinute: null, xpPerMinute: null, lastHits: null, denies: null, heroDamage: null, towerDamage: null, heroHealing: null, level: null, netWorth: null, leaverStatus: null, partySize: null, lane: null, laneRole: null, isRoaming: null, won: null }], nextCursor: { startTime: null, matchId: 9 } });
     const customRange = { ...DEFAULT_ARCHIVE_FILTERS, period: 'custom' as const, startDate: '2026-01-10', endDate: '2026-02-20', result: 'wins' as const };
     await expect(fetchArchivePage(client, 'account', customRange, { startTime: 100, matchId: 10 })).resolves.toMatchObject({ nextCursor: { matchId: 9 }, matches: [{ matchId: 9, dataStatus: 'missing_player_stats' }] });
-    expect(client.rpc).toHaveBeenCalledWith('get_match_archive_page', expect.objectContaining({ p_period: 'custom', p_start_date: '2026-01-10', p_end_date: '2026-02-20', p_result: 'wins', p_cursor_start_time: 100, p_cursor_match_id: 10, p_limit: 100 }));
+    expect(client.rpc).toHaveBeenCalledWith('get_match_archive_page', expect.objectContaining({ p_period: 'custom', p_start_date: '2026-01-10', p_end_date: '2026-02-20', p_result: 'wins', p_cursor_start_time: 100, p_cursor_match_id: 10, p_limit: 30 }));
   });
 
   it('maps a nullable public showcase without tracked-account identifiers', async () => {
@@ -40,6 +40,9 @@ describe('archive RPC adapter', () => {
     const customRange = { ...DEFAULT_ARCHIVE_FILTERS, period: 'custom' as const, startDate: '2026-01-10', endDate: '2026-02-20' };
     await expect(fetchArchiveShowcaseOverview(client, 77, customRange)).resolves.toMatchObject({ account: { dotaAccountId: 77, personaName: 'Curated' } });
     expect(client.rpc).toHaveBeenCalledWith('get_archive_showcase_overview', expect.objectContaining({ p_dota_account_id: 77, p_period: 'custom', p_start_date: '2026-01-10', p_end_date: '2026-02-20' }));
+    const showcasePage = createFakeClient({ matches: [], nextCursor: null });
+    await expect(fetchArchiveShowcasePage(showcasePage, 77, customRange, null)).resolves.toEqual({ matches: [], nextCursor: null });
+    expect(showcasePage.rpc).toHaveBeenCalledWith('get_archive_showcase_page', expect.objectContaining({ p_dota_account_id: 77, p_limit: 30 }));
     const missing = createFakeClient(null);
     await expect(fetchArchiveShowcasePage(missing, 77, customRange, null)).resolves.toBeNull();
   });

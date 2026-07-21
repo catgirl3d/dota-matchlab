@@ -74,6 +74,7 @@ export type ArchiveShowcaseOverview = {
 };
 
 type UserSupabaseClient = SupabaseClient<AppDatabase>;
+const ARCHIVE_PAGE_SIZE = 30;
 
 export async function fetchArchiveOverview(
   client: UserSupabaseClient,
@@ -100,7 +101,7 @@ export async function fetchArchivePage(
       ...archiveFilterArgs(trackedAccountId, filters),
       p_cursor_start_time: cursor?.startTime ?? null,
       p_cursor_match_id: cursor?.matchId ?? null,
-      p_limit: 100,
+      p_limit: ARCHIVE_PAGE_SIZE,
     })
     .abortSignal(signal ?? new AbortController().signal);
   if (error) throw new Error(`Failed to load archive page: ${error.message}`);
@@ -144,7 +145,7 @@ export async function fetchArchiveShowcasePage(
       ...archiveShowcaseFilterArgs(dotaAccountId, filters),
       p_cursor_start_time: cursor?.startTime ?? null,
       p_cursor_match_id: cursor?.matchId ?? null,
-      p_limit: 100,
+      p_limit: ARCHIVE_PAGE_SIZE,
     })
     .abortSignal(signal ?? new AbortController().signal);
   if (error) throw new Error(`Failed to load public showcase page: ${error.message}`);
