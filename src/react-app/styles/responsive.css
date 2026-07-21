@@ -132,9 +132,12 @@
       grid-column: 1 / -1;
     }
 
-    .detail-scoreboard__teams,
-    .detail-analysis-grid {
+    .detail-scoreboard__teams {
       grid-template-columns: 1fr;
+    }
+
+    .lane-matchup__teams {
+      grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr);
     }
 
     .detail-scoreboard__versus {
@@ -374,6 +377,25 @@
 
     .detail-builds__grid {
       grid-template-columns: 1fr;
+    }
+
+    .lane-analysis {
+      grid-template-columns: 1fr;
+    }
+
+    .lane-matchup {
+      padding: 12px;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .lane-matchup:last-child {
+      border-bottom: 0;
+    }
+
+    .lane-matchup__source {
+      max-width: 94px;
+      font-size: 7px;
     }
 
     .detail-scoreboard__header,

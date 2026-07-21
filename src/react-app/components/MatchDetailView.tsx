@@ -83,6 +83,8 @@ export function MatchDetailView({
         experience={detail.radiantExperienceLeads}
         durationSeconds={detail.durationSeconds}
         events={detail.timelineEvents}
+        players={detail.players}
+        heroNames={heroNames}
         laneOutcomes={detail.laneOutcomes}
         eventCounts={detail.eventCounts}
       />

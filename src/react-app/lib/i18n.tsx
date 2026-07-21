@@ -193,6 +193,18 @@ export const translations = {
     economyTimeline: 'ECONOMY / TIMELINE',
     lanesOutcome: 'LANES / OUTCOME',
     matchEventsAllPlayers: 'MATCH EVENTS / ALL PLAYERS',
+    laneAnalysisEyebrow: 'LANES / 10:00 ECONOMY',
+    laneAnalysisTitle: 'Lane breakdown',
+    laneAnalysisNetWorth: 'Net worth',
+    laneAnalysisLastHits: 'Last hits',
+    laneAnalysisRadiantLead: 'Radiant +{value}',
+    laneAnalysisDireLead: 'Dire +{value}',
+    laneAnalysisEven: 'Even lane',
+    laneAnalysisNoData: 'No lane data',
+    laneAnalysisCalculatedSource: 'Calculated at 10:00',
+    laneAnalysisProviderSource: 'Provider outcome',
+    laneAnalysisUnavailableSource: 'Insufficient data',
+    laneAnalysisMissingRole: 'Role unavailable',
 
     // MatchDetailHeader
     headerPartialTitle: 'Partial Parse',

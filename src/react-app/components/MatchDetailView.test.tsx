@@ -86,7 +86,7 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('68')).toBeVisible();
     expect(screen.getByText('46')).toBeVisible();
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
-    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
+    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(3);
     const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
     const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
     expect(currentBuild.querySelector('img[src*="antimage_horz_gMtz"]')).toBeInTheDocument();
@@ -104,17 +104,44 @@ describe('MatchDetailView', () => {
     expect(draftPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getByText('Base Parse')).toBeVisible();
     expect(screen.getByText('2/10 players captured')).toBeVisible();
-    expect(screen.getAllByText('N/A')).toHaveLength(4);
     expect(screen.getAllByRole('img', { name: 'Phase Boots' })).toHaveLength(2);
     expect(screen.getAllByRole('img', { name: 'Power Treads' })).toHaveLength(2);
     expect(screen.getAllByRole('img', { name: 'Keen Optic' })).toHaveLength(2);
-    const lanesPanel = screen.getByRole('heading', { name: 'Opening map' }).closest('section');
+    const lanesPanel = screen.getByRole('heading', { name: 'Lane breakdown' }).closest('section');
     const eventGrid = screen.getByText('MATCH EVENTS / ALL PLAYERS').closest<HTMLElement>('.detail-events');
     expect(lanesPanel).toContainElement(eventGrid);
     expect(eventGrid?.children).toHaveLength(7);
+    expect(within(eventGrid as HTMLElement).getAllByText('N/A')).toHaveLength(4);
 
     fireEvent.click(screen.getByRole('button', { name: /Back to archive/i }));
     expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  it('shows the 10-minute economy and role matchup for each lane', () => {
+    const laneDetail: MatchDetailSnapshot = {
+      ...detail,
+      players: [
+        createPlayer({ key: 'radiant-offlane', accountId: 1, heroId: 1, position: 3, lane: 3, minuteSeries: laneMinuteSeries(6_200, 62) }),
+        createPlayer({ key: 'radiant-soft-support', accountId: 2, heroId: 2, position: 4, lane: 3, minuteSeries: laneMinuteSeries(2_800, 4) }),
+        createPlayer({ key: 'dire-carry', accountId: 3, heroId: 1, playerSlot: 128, isRadiant: false, position: 1, lane: 1, minuteSeries: laneMinuteSeries(6_100, 68) }),
+        createPlayer({ key: 'dire-hard-support', accountId: 4, heroId: 2, playerSlot: 129, isRadiant: false, position: 5, lane: 1, minuteSeries: laneMinuteSeries(2_400, 2) }),
+      ],
+    };
+
+    render(<MatchDetailView detail={laneDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={1} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const lanesPanel = screen.getByRole('heading', { name: 'Lane breakdown' }).closest('section');
+    const topLane = within(lanesPanel as HTMLElement).getByRole('article', { name: 'Top lane: Radiant +500' });
+
+    expect(topLane).toHaveTextContent('Calculated at 10:00');
+    expect(topLane).toHaveTextContent('Offlane');
+    expect(topLane).toHaveTextContent('Soft support');
+    expect(topLane).toHaveTextContent('Carry');
+    expect(topLane).toHaveTextContent('Hard support');
+    expect(topLane).toHaveTextContent('9K');
+    expect(topLane).toHaveTextContent('8.5K');
+    expect(topLane).toHaveTextContent('66');
+    expect(topLane).toHaveTextContent('70');
   });
 
   it('always renders three subdued permanent-upgrade placeholders in the table inventory', () => {
@@ -281,7 +308,7 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('Chat wheel #71')).toBeVisible();
     const chatTranscript = screen.getByRole('log', { name: 'Match chat log' });
     expect(chatTranscript.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
-    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
+    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(5);
   });
 
   it('marks the XP tail as level cap only for a max-level player', () => {
@@ -625,7 +652,7 @@ describe('MatchDetailView', () => {
 
     render(<MatchDetailView detail={unknownHeroDetail} heroNames={{ 999_999: 'Unknown hero' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
-    expect(screen.getAllByText('UN')).toHaveLength(3);
+    expect(screen.getAllByText('UN')).toHaveLength(4);
     expect(document.querySelector('img[src*="999999"]')).not.toBeInTheDocument();
     expect(document.querySelector('.player-build__portrait img')).not.toBeInTheDocument();
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
@@ -686,6 +713,7 @@ function createPlayer(
     imp: 5,
     role: 'CORE',
     position: 1,
+    lane: null,
     award: null,
     itemIds: [50, 63],
     backpackItemIds: [],
@@ -715,5 +743,16 @@ function createPlayer(
     dotaPlusLevel: null,
     totalActions: null,
     ...overrides,
+  };
+}
+
+function laneMinuteSeries(netWorth: number, lastHits: number) {
+  return {
+    gold: [],
+    experience: [],
+    netWorth: Array.from({ length: 11 }, () => netWorth),
+    lastHits: Array.from({ length: 11 }, (_, minute) => minute < 10 ? Math.floor(lastHits / 10) : lastHits % 10),
+    heroDamage: [],
+    imp: [],
   };
 }

@@ -53,6 +53,7 @@ describe('match detail read model', () => {
                 item0Id: 50,
                 item1Id: 63,
                 neutral0Id: 287,
+                lane: 'SAFE_LANE',
                 role: 'CORE',
                 position: 'POSITION_1',
               },
@@ -87,6 +88,7 @@ describe('match detail read model', () => {
           goldPerMinute: 700,
           itemIds: [50, 63],
           neutralItemId: 287,
+          lane: 1,
           position: 1,
         }),
         expect.objectContaining({ accountId: 222, isRadiant: false, heroId: 2 }),
@@ -506,7 +508,7 @@ describe('match detail read model', () => {
 
     expect(snapshot.rosterStatus).toBe('incomplete');
     expect(snapshot.players.map((player) => [player.accountId, player.heroId])).toEqual([[901, 11], [902, 2], [903, 3]]);
-    expect(snapshot.players[2]).toMatchObject({ position: 3 });
+    expect(snapshot.players[2]).toMatchObject({ lane: 3, position: 3 });
   });
 
   it('marks a standard ten-player merged roster as complete', () => {
@@ -609,6 +611,6 @@ function normalizedPlayer(accountId: number, playerSlot: number) {
   return {
     account_id: accountId, player_slot: playerSlot, hero_id: 3, kills: 0, deaths: 0, assists: 0,
     gold_per_min: 0, xp_per_min: 0, last_hits: 0, denies: 0, hero_damage: 0, tower_damage: 0,
-    hero_healing: 0, lane_role: 3, level: 0, net_worth: 0,
+    hero_healing: 0, lane: 3, lane_role: 3, level: 0, net_worth: 0,
   };
 }

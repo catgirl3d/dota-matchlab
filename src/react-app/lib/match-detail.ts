@@ -12,6 +12,7 @@ import { repairAbilityEvent, type AbilityEventSource } from './ability-event-rep
 import { getPermanentUpgradeItemIds, type PermanentUpgradeItemIds } from './permanent-upgrades';
 
 export type PlayerPosition = 1 | 2 | 3 | 4 | 5;
+export type PlayerLane = 1 | 2 | 3;
 
 export type MatchDetailPlayer = {
   key: string;
@@ -35,6 +36,7 @@ export type MatchDetailPlayer = {
   imp: number | null;
   role: string | null;
   position: PlayerPosition | null;
+  lane: PlayerLane | null;
   award: string | null;
   itemIds: number[];
   backpackItemIds: number[];
@@ -170,6 +172,7 @@ type PlayerStatsRow = Pick<
   | 'hero_damage'
   | 'tower_damage'
   | 'hero_healing'
+  | 'lane'
   | 'lane_role'
   | 'level'
   | 'net_worth'
@@ -192,7 +195,7 @@ export async function fetchMatchDetail(
     client
       .from('player_match_stats')
       .select(
-        'account_id,player_slot,hero_id,kills,deaths,assists,gold_per_min,xp_per_min,last_hits,denies,hero_damage,tower_damage,hero_healing,lane_role,level,net_worth',
+        'account_id,player_slot,hero_id,kills,deaths,assists,gold_per_min,xp_per_min,last_hits,denies,hero_damage,tower_damage,hero_healing,lane,lane_role,level,net_worth',
       )
       .eq('match_id', matchId)
       .order('player_slot', { ascending: true }),
@@ -529,6 +532,7 @@ function buildPlayer(
     imp: readInteger(raw.imp),
     role: readString(raw.role) ?? readString(raw.position),
     position: readPlayerPosition(raw.position) ?? readPlayerPosition(normalized?.lane_role),
+    lane: readPlayerLane(raw.lane) ?? readPlayerLane(normalized?.lane),
     award: readString(raw.award),
     itemIds: readItemIds(raw, ['item0Id', 'item1Id', 'item2Id', 'item3Id', 'item4Id', 'item5Id']),
     backpackItemIds: readItemIds(raw, ['backpack0Id', 'backpack1Id', 'backpack2Id']),
@@ -732,6 +736,21 @@ function readPlayerPosition(value: unknown): PlayerPosition | null {
   const namedPosition = readString(value);
   const match = /^POSITION_([1-5])$/.exec(namedPosition ?? '');
   return match ? Number(match[1]) as PlayerPosition : null;
+}
+
+function readPlayerLane(value: unknown): PlayerLane | null {
+  const numericLane = readInteger(value);
+  if (numericLane !== null && numericLane >= 1 && numericLane <= 3) {
+    return numericLane as PlayerLane;
+  }
+
+  const namedLane = readString(value);
+  const laneMap: Record<string, PlayerLane> = {
+    SAFE_LANE: 1,
+    MID_LANE: 2,
+    OFF_LANE: 3,
+  };
+  return namedLane === null ? null : laneMap[namedLane] ?? null;
 }
 
 function sumPlayerKills(players: MatchDetailPlayer[], radiant: boolean): number {
