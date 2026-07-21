@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLaneAnalysis, LANE_ANALYSIS_MINUTE, type LaneAnalysisPlayer } from './lane-analysis';
+import { buildLaneAnalysis, getLanePlayerMetrics, LANE_ANALYSIS_MINUTE, type LaneAnalysisPlayer } from './lane-analysis';
 
 describe('lane analysis', () => {
   it('builds physical lane matchups and calculates their 10-minute economy', () => {
@@ -32,6 +32,7 @@ describe('lane analysis', () => {
       source: 'calculated',
     });
     expect(analysis[0].radiantPlayers.map((player) => player.minuteSeries.lastHits[LANE_ANALYSIS_MINUTE])).toEqual([0, 5]);
+    expect(getLanePlayerMetrics(analysis[0].radiantPlayers[0])).toEqual({ netWorth: 6_300, lastHits: 70 });
     expect(analysis[1]).toMatchObject({
       id: 'mid',
       radiantPlayers: [expect.objectContaining({ position: 2 })],

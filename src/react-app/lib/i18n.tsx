@@ -205,6 +205,7 @@ export const translations = {
     laneAnalysisProviderSource: 'Provider outcome',
     laneAnalysisUnavailableSource: 'Insufficient data',
     laneAnalysisMissingRole: 'Role unavailable',
+    laneAnalysisFocusAriaLabel: 'Show {hero} lane stats',
 
     // MatchDetailHeader
     headerPartialTitle: 'Partial Parse',

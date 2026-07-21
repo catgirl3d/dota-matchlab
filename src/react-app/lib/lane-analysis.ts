@@ -103,6 +103,13 @@ export function buildLaneAnalysis(
   });
 }
 
+export function getLanePlayerMetrics(player: LaneAnalysisPlayer): { netWorth: number | null; lastHits: number | null } {
+  return {
+    netWorth: minuteMetricValue(player.minuteSeries.netWorth, 'netWorth'),
+    lastHits: minuteMetricValue(player.minuteSeries.lastHits, 'lastHits'),
+  };
+}
+
 function selectLanePlayers(
   players: readonly LaneAnalysisPlayer[],
   isRadiant: boolean,

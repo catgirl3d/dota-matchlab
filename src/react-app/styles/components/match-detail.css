@@ -788,6 +788,7 @@
     border-left: 3px solid var(--line-strong);
     background: rgba(7, 9, 7, 0.24);
     gap: 12px;
+    transition: opacity 180ms ease, filter 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .lane-matchup:last-child {
@@ -806,6 +807,26 @@
 
   .lane-matchup--even {
     border-left-color: var(--muted);
+  }
+
+  .lane-matchup.is-focused {
+    position: relative;
+    z-index: 1;
+    box-shadow: inset 0 0 0 1px rgba(224, 230, 208, 0.16), 0 14px 30px rgba(0, 0, 0, 0.34);
+    transform: scale(1.025);
+  }
+
+  .lane-matchup.is-player-focused {
+    box-shadow: inset 0 0 0 1px rgba(224, 230, 208, 0.12), 0 10px 24px rgba(0, 0, 0, 0.22);
+  }
+
+  .lane-matchup.is-focused.is-player-focused {
+    box-shadow: inset 0 0 0 1px rgba(224, 230, 208, 0.16), 0 14px 30px rgba(0, 0, 0, 0.34);
+  }
+
+  .lane-matchup.is-muted {
+    filter: saturate(0.45);
+    opacity: 0.38;
   }
 
   .lane-matchup__header,
@@ -898,6 +919,7 @@
 
   .lane-matchup__roles {
     display: grid;
+    min-height: 53px;
     min-width: 0;
     gap: 5px;
   }
@@ -908,14 +930,49 @@
     align-items: center;
     gap: 6px;
     grid-template-columns: 24px minmax(0, 1fr);
+    transition: opacity 160ms ease, filter 160ms ease, transform 180ms ease;
   }
 
   .lane-matchup__team--dire .lane-role {
     grid-template-columns: minmax(0, 1fr) 24px;
   }
 
-  .lane-matchup__team--dire .lane-role__hero {
+  .lane-matchup__team--dire .lane-role__trigger {
     order: 2;
+  }
+
+  .lane-role.is-muted {
+    filter: grayscale(0.8);
+    opacity: 0.28;
+  }
+
+  .lane-role.is-highlighted {
+    transform: translateY(-1px);
+  }
+
+  .lane-role__trigger {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .lane-role__trigger:focus-visible {
+    outline: 1px solid var(--acid);
+    outline-offset: 3px;
+  }
+
+  .lane-matchup__team--radiant .lane-role.is-highlighted .lane-role__hero {
+    border-color: var(--radiant-strong);
+    box-shadow: 0 0 0 2px rgba(var(--radiant-rgb), 0.14), 0 0 14px rgba(var(--radiant-rgb), 0.25);
+  }
+
+  .lane-matchup__team--dire .lane-role.is-highlighted .lane-role__hero {
+    border-color: #ff5e82;
+    box-shadow: 0 0 0 2px rgba(255, 54, 95, 0.14), 0 0 14px rgba(255, 54, 95, 0.25);
   }
 
   .lane-role__hero {
@@ -1020,10 +1077,28 @@
   }
 
   .lane-metric__value {
+    display: grid;
+    min-height: 28px;
+    align-content: end;
     color: var(--paper);
     font-family: var(--font-mono);
-    font-size: var(--fs-label-sm);
+    gap: 1px;
     font-variant-numeric: tabular-nums;
+  }
+
+  .lane-metric__value strong {
+    color: inherit;
+    font-size: var(--fs-label-sm);
+  }
+
+  .lane-metric__value small {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 7px;
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .lane-metric__value--radiant {
@@ -1033,6 +1108,18 @@
   .lane-metric__value--dire {
     color: #ff5e82;
     text-align: right;
+  }
+
+  .lane-metric__value.is-player {
+    transform: translateY(-1px);
+    text-shadow: 0 0 8px currentColor;
+    animation: lane-player-stat-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .lane-metric.is-player-radiant .lane-metric__value--dire,
+  .lane-metric.is-player-dire .lane-metric__value--radiant {
+    filter: grayscale(0.9);
+    opacity: 0.28;
   }
 
   .lane-metric__versus {
@@ -1048,7 +1135,9 @@
   }
 
   .lane-metric__track-value {
+    position: relative;
     display: block;
+    overflow: hidden;
   }
 
   .lane-metric__track-value--radiant {
@@ -1057,6 +1146,61 @@
 
   .lane-metric__track-value--dire {
     background: var(--signal-red);
+  }
+
+  .lane-metric.is-player-radiant .lane-metric__track-value--radiant {
+    background: rgba(var(--radiant-rgb), 0.26);
+  }
+
+  .lane-metric.is-player-dire .lane-metric__track-value--dire {
+    background: rgba(255, 54, 95, 0.24);
+  }
+
+  .lane-metric.is-player-radiant .lane-metric__track-value--dire,
+  .lane-metric.is-player-dire .lane-metric__track-value--radiant {
+    filter: grayscale(0.9);
+    opacity: 0.14;
+  }
+
+  .lane-metric__player-share {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: block;
+    background: var(--paper);
+    animation: lane-player-share-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .lane-metric__player-share--radiant {
+    background: var(--radiant-strong);
+    left: 0;
+    transform-origin: left center;
+  }
+
+  .lane-metric__player-share--dire {
+    background: #ff5e82;
+    right: 0;
+    transform-origin: right center;
+  }
+
+  @keyframes lane-player-stat-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+  }
+
+  @keyframes lane-player-share-in {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
   }
 
   .detail-events {

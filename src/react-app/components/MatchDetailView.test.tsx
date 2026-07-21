@@ -142,6 +142,25 @@ describe('MatchDetailView', () => {
     expect(topLane).toHaveTextContent('8.5K');
     expect(topLane).toHaveTextContent('66');
     expect(topLane).toHaveTextContent('70');
+
+    fireEvent.pointerEnter(topLane);
+    expect(topLane).toHaveClass('is-focused');
+    fireEvent.pointerLeave(topLane);
+    expect(topLane).not.toHaveClass('is-focused');
+
+    const offlanePortrait = within(topLane).getByRole('button', { name: 'Show Anti-Mage lane stats: Offlane' });
+    fireEvent.pointerEnter(offlanePortrait);
+
+    expect(topLane).toHaveTextContent('6.2K');
+    expect(topLane).toHaveTextContent('62');
+    expect(topLane).toHaveTextContent('8.5K');
+    expect(topLane.querySelectorAll('.lane-metric__value.is-player')).toHaveLength(2);
+    expect(topLane.querySelectorAll('.lane-role.is-muted')).toHaveLength(3);
+
+    fireEvent.pointerLeave(offlanePortrait);
+    expect(topLane).toHaveTextContent('8.5K');
+    expect(topLane.querySelectorAll('.lane-metric__value.is-player')).toHaveLength(0);
+    expect(topLane.querySelectorAll('.lane-role.is-muted')).toHaveLength(0);
   });
 
   it('always renders three subdued permanent-upgrade placeholders in the table inventory', () => {
