@@ -1,5 +1,6 @@
 node_modules/
 dist/
+doc/internal/*
 .wrangler/
 .dev.vars
 .dev.vars.*
@@ -13,3 +14,6 @@ worker-configuration.d.ts
 api-dota-2-*.json
 .history/*
 .kilo/agent-manager.json
+*/__pycache__/*
+.omp/mcp.json
+*failed.txt
