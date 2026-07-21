@@ -137,9 +137,12 @@ function sumMinuteMetric(
   if (players.length === 0) return null;
 
   const values = players.map((player) => minuteMetricValue(player.minuteSeries[metric], metric));
-  return values.every((value) => typeof value === 'number' && Number.isFinite(value))
-    ? values.reduce((total, value) => total + value, 0)
-    : null;
+  let total = 0;
+  for (const value of values) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    total += value;
+  }
+  return total;
 }
 
 function minuteMetricValue(values: number[], metric: 'netWorth' | 'lastHits'): number | null {
