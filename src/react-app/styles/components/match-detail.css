@@ -1054,23 +1054,34 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .lane-matchup__header > div {
+  .lane-matchup__title {
     display: grid;
-    gap: 5px;
   }
 
-  .lane-matchup__header strong {
+  .lane-matchup__status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .lane-matchup__verdict {
+    padding: 3px 5px;
+    border: 1px solid var(--line);
     color: var(--paper);
     font-family: var(--font-mono);
-    font-size: var(--fs-label-sm);
-    letter-spacing: 0.02em;
+    font-size: 8px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
-  .team-comparison-card--radiant .lane-matchup__header strong {
+  .team-comparison-card--radiant .lane-matchup__verdict {
+    border-color: rgba(var(--radiant-rgb), 0.38);
     color: var(--radiant-strong);
   }
 
-  .team-comparison-card--dire .lane-matchup__header strong {
+  .team-comparison-card--dire .lane-matchup__verdict {
+    border-color: rgba(255, 54, 95, 0.36);
     color: #ff5e82;
   }
 

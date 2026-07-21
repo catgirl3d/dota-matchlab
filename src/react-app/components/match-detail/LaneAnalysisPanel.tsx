@@ -77,11 +77,13 @@ function LaneMatchup({
       onPointerLeave={() => onFocusChange(null)}
     >
       <header className="lane-matchup__header">
-        <div>
+        <div className="lane-matchup__title">
           <span className="micro-label">{lane.label}</span>
-          <strong>{laneVerdict(lane, t)}</strong>
         </div>
-        <span className={`lane-matchup__source lane-matchup__source--${lane.source}`}>{laneSource(lane, t)}</span>
+        <div className="lane-matchup__status">
+          <strong className="lane-matchup__verdict">{laneVerdict(lane, t)}</strong>
+          <span className={`lane-matchup__source lane-matchup__source--${lane.source}`}>{laneSource(lane, t)}</span>
+        </div>
       </header>
       <div className="lane-matchup__teams">
         <LaneTeam team="radiant" players={lane.radiantPlayers} heroNames={heroNames} isPlayerFocusedOnLane={highlightedPlayer !== null} highlightedPlayerKey={highlightedPlayerKey} onHighlight={onHighlight} />
