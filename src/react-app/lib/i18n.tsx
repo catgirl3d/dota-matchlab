@@ -238,6 +238,14 @@ export const translations = {
     scoreboardTeamDire: 'Dire',
     scoreboardTeamTotals: 'Team totals',
     scoreboardTeamTotal: '{team} total',
+    scoreboardPermanentUpgradesAriaLabel: 'Permanent upgrades',
+    scoreboardAghanimScepterLabel: "Aghanim's Scepter",
+    scoreboardAghanimShardLabel: "Aghanim's Shard",
+    scoreboardMoonShardLabel: 'Moon Shard',
+    scoreboardPermanentUpgradeAriaLabel: '{upgrade}: {item}',
+    scoreboardPermanentUpgradeEmptyAriaLabel: '{upgrade} not acquired',
+    scoreboardPermanentUpgradeTooltip: 'Permanent {upgrade} upgrade',
+    scoreboardPermanentUpgradeEmptyTooltip: 'No permanent {upgrade} upgrade',
 
   }
 } as const;

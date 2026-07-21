@@ -281,6 +281,71 @@ describe('match detail read model', () => {
     ]);
   });
 
+  it('maps permanent Aghanim upgrades from same-account player-stat purchases', () => {
+    const snapshot = buildMatchDetailSnapshot(
+      baseMatch(8_749_050_591),
+      [],
+      [
+        detailPayload('players', { players: [
+          { steamAccountId: 93_447_624, playerSlot: 0, heroId: 35 },
+          { steamAccountId: 93_447_625, playerSlot: 128, heroId: 1 },
+        ] }),
+        detailPayload('player_stats', { players: [
+          { stats: { steamAccountId: 93_447_625, itemPurchases: [{ time: 30, itemId: 725 }] } },
+          { stats: { steamAccountId: 93_447_624, itemPurchases: [
+            { time: 691, itemId: 108 },
+            { time: 934, itemId: 609 },
+            { time: 1_797, itemId: 271 },
+          ] } },
+        ] }),
+      ],
+    );
+
+    const sniper = snapshot.players.find((player) => player.accountId === 93_447_624);
+    const teammate = snapshot.players.find((player) => player.accountId === 93_447_625);
+
+    expect(sniper?.permanentUpgradeItemIds).toEqual({ scepterItemId: 271, shardItemId: 609, moonShardItemId: null });
+    expect(teammate?.permanentUpgradeItemIds).toEqual({ scepterItemId: null, shardItemId: 725, moonShardItemId: null });
+  });
+
+  it('does not turn a normal Scepter purchase into a permanent upgrade', () => {
+    const snapshot = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_014),
+      [],
+      [
+        detailPayload('players', { players: [{ steamAccountId: 1_014, playerSlot: 0, heroId: 35 }] }),
+        detailPayload('player_stats', { players: [
+          { stats: { steamAccountId: 1_014, itemPurchases: [{ time: 691, itemId: 108 }] } },
+        ] }),
+      ],
+    );
+
+    expect(snapshot.players[0]).toMatchObject({
+      itemIds: [],
+      permanentUpgradeItemIds: { scepterItemId: null, shardItemId: null, moonShardItemId: null },
+    });
+  });
+
+  it('maps a consumed Moon Shard from same-account buff events only', () => {
+    const snapshot = buildMatchDetailSnapshot(
+      baseMatch(9_000_000_015),
+      [],
+      [
+        detailPayload('players', { players: [
+          { steamAccountId: 1_015, playerSlot: 0, heroId: 35 },
+          { steamAccountId: 1_016, playerSlot: 128, heroId: 1 },
+        ] }),
+        detailPayload('player_stats', { players: [
+          { stats: { steamAccountId: 1_016, matchPlayerBuffEvent: [{ time: 900, itemId: 247, abilityId: null, stackCount: 1 }] } },
+          { stats: { steamAccountId: 1_015, itemPurchases: [{ time: 691, itemId: 247 }] } },
+        ] }),
+      ],
+    );
+
+    expect(snapshot.players.find((player) => player.accountId === 1_015)?.permanentUpgradeItemIds.moonShardItemId).toBeNull();
+    expect(snapshot.players.find((player) => player.accountId === 1_016)?.permanentUpgradeItemIds.moonShardItemId).toBe(247);
+  });
+
   it('enriches playback-only ability events from same-account outer player abilities', () => {
     const snapshot = buildMatchDetailSnapshot(
       baseMatch(9_000_000_009),

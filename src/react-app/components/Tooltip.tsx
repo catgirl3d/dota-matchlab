@@ -5,6 +5,7 @@ type TooltipProps = {
   content: string;
   children: ReactNode;
   focusable?: boolean;
+  ariaLabel?: string;
 };
 
 type TooltipPosition = {
@@ -12,7 +13,7 @@ type TooltipPosition = {
   top: number;
 };
 
-export function Tooltip({ content, children, focusable = true }: TooltipProps) {
+export function Tooltip({ content, children, focusable = true, ariaLabel }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
@@ -46,6 +47,7 @@ export function Tooltip({ content, children, focusable = true }: TooltipProps) {
         className="app-tooltip__trigger"
         ref={triggerRef}
         tabIndex={focusable ? 0 : undefined}
+        aria-label={ariaLabel}
         aria-describedby={isOpen ? tooltipId : undefined}
         onPointerEnter={() => setIsOpen(true)}
         onPointerLeave={() => setIsOpen(false)}

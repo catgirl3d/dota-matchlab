@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MatchDetailSnapshot } from '../lib/match-detail';
+import { getItemIcon } from '../lib/item-icons';
 import { render } from '../test/setup';
 import { MatchDetailView } from './MatchDetailView';
 
@@ -114,6 +115,71 @@ describe('MatchDetailView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Back to archive/i }));
     expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  it('always renders three subdued permanent-upgrade placeholders in the table inventory', () => {
+    render(
+      <MatchDetailView
+        detail={detail}
+        heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }}
+        currentAccountId={111}
+        isLoading={false}
+        error={null}
+        parseError={null}
+        isParsing={false}
+        onBack={vi.fn()}
+        onRefresh={vi.fn()}
+        onParse={vi.fn()}
+      />,
+    );
+
+    const row = screen.getByRole('row', { name: 'Scoreboard row for Player #111' });
+    const upgrades = within(row).getByRole('group', { name: 'Permanent upgrades' });
+
+    expect(upgrades.querySelectorAll('.scoreboard-table__permanent-upgrade')).toHaveLength(3);
+    expect(upgrades.querySelectorAll('.scoreboard-table__permanent-upgrade.is-empty')).toHaveLength(3);
+    expect(upgrades.querySelectorAll('.scoreboard-table__permanent-placeholder')).toHaveLength(3);
+  });
+
+  it('shows permanent Aghanim icons separately from a normal final-inventory Scepter', () => {
+    const upgradesDetail: MatchDetailSnapshot = {
+      ...detail,
+      players: [createPlayer({
+        key: '111',
+        accountId: 111,
+        playerSlot: 0,
+        heroId: 1,
+        itemIds: [108],
+        neutralItemId: null,
+        permanentUpgradeItemIds: { scepterItemId: 271, shardItemId: 609, moonShardItemId: 247 },
+      })],
+    };
+    render(
+      <MatchDetailView
+        detail={upgradesDetail}
+        heroNames={{ 1: 'Anti-Mage' }}
+        currentAccountId={111}
+        isLoading={false}
+        error={null}
+        parseError={null}
+        isParsing={false}
+        onBack={vi.fn()}
+        onRefresh={vi.fn()}
+        onParse={vi.fn()}
+      />,
+    );
+
+    const row = screen.getByRole('row', { name: 'Scoreboard row for Player #111' });
+    const normalInventory = row.querySelector('.scoreboard-table__inventory-items');
+    const upgrades = within(row).getByRole('group', { name: 'Permanent upgrades' });
+    const upgradeSlots = upgrades.querySelectorAll<HTMLElement>('.scoreboard-table__permanent-upgrade');
+
+    expect(normalInventory?.querySelector('img')).toHaveAttribute('src', getItemIcon(108)?.src);
+    expect(upgradeSlots[0]?.querySelector('img')).toHaveAttribute('src', getItemIcon(271)?.src);
+    expect(upgradeSlots[1]?.querySelector('img')).toHaveAttribute('src', getItemIcon(609)?.src);
+    expect(upgradeSlots[2]?.querySelector('img')).toHaveAttribute('src', getItemIcon(247)?.src);
+    expect(upgrades.querySelector('.scoreboard-table__permanent-placeholder')).not.toBeInTheDocument();
+    expect(upgrades.querySelector('[title]')).not.toBeInTheDocument();
   });
 
   it('renders visibly different player timelines for a complete detail payload', () => {
@@ -608,6 +674,7 @@ function createPlayer(
     itemIds: [50, 63],
     backpackItemIds: [],
     neutralItemId: 287,
+    permanentUpgradeItemIds: { scepterItemId: null, shardItemId: null, moonShardItemId: null },
     abilityBuild: [],
     hasAbilityBuildData: false,
     purchaseEvents: [],

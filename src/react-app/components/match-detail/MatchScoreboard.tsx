@@ -351,7 +351,13 @@ function ScoreboardTableRow({
       <td className="scoreboard-table__numeric">
         <ScoreboardRecordValue value={formatCompact(player.heroHealing)} isRecord={isScoreboardRecord(records, 'heroHealing', player.heroHealing)} />
       </td>
-      <td><ScoreboardInventory itemIds={player.itemIds} neutralItemId={player.neutralItemId} /></td>
+      <td>
+        <ScoreboardInventory
+          itemIds={player.itemIds}
+          neutralItemId={player.neutralItemId}
+          permanentUpgradeItemIds={player.permanentUpgradeItemIds}
+        />
+      </td>
     </tr>
   );
 }
@@ -464,14 +470,64 @@ function AchievementBadges({ achievements }: { achievements: PlayerAchievement[]
   );
 }
 
-function ScoreboardInventory({ itemIds, neutralItemId }: { itemIds: number[]; neutralItemId: number | null }) {
+function ScoreboardInventory({
+  itemIds,
+  neutralItemId,
+  permanentUpgradeItemIds,
+}: {
+  itemIds: number[];
+  neutralItemId: number | null;
+  permanentUpgradeItemIds: MatchDetailPlayer['permanentUpgradeItemIds'];
+}) {
+  const { t } = useTranslation();
   const slots = Array.from({ length: 6 }, (_, index) => itemIds[index] ?? null);
 
   return (
     <div className="scoreboard-table__inventory">
-      {slots.map((itemId, index) => <ScoreboardItemSlot itemId={itemId} key={index} />)}
-      {neutralItemId !== null ? <ScoreboardItemSlot itemId={neutralItemId} tone="neutral" /> : null}
+      <div className="scoreboard-table__inventory-items">
+        {slots.map((itemId, index) => <ScoreboardItemSlot itemId={itemId} key={index} />)}
+        {neutralItemId !== null ? <ScoreboardItemSlot itemId={neutralItemId} tone="neutral" /> : null}
+      </div>
+      <div className="scoreboard-table__permanent-upgrades" role="group" aria-label={t('scoreboardPermanentUpgradesAriaLabel')}>
+        <ScoreboardPermanentUpgradeSlot kind="scepter" itemId={permanentUpgradeItemIds.scepterItemId} />
+        <ScoreboardPermanentUpgradeSlot kind="shard" itemId={permanentUpgradeItemIds.shardItemId} />
+        <ScoreboardPermanentUpgradeSlot kind="moonShard" itemId={permanentUpgradeItemIds.moonShardItemId} />
+      </div>
     </div>
+  );
+}
+
+function ScoreboardPermanentUpgradeSlot({
+  kind,
+  itemId,
+}: {
+  kind: 'scepter' | 'shard' | 'moonShard';
+  itemId: number | null;
+}) {
+  const { t } = useTranslation();
+  const upgradeLabel = t(
+    kind === 'scepter'
+      ? 'scoreboardAghanimScepterLabel'
+      : kind === 'shard'
+        ? 'scoreboardAghanimShardLabel'
+        : 'scoreboardMoonShardLabel',
+  );
+  const item = itemId === null ? null : getItemIcon(itemId);
+  const itemLabel = item?.label ?? (itemId === null ? null : `Item #${itemId}`);
+  const isEmpty = itemId === null;
+  const tooltip = isEmpty
+    ? t('scoreboardPermanentUpgradeEmptyTooltip', { upgrade: upgradeLabel })
+    : t('scoreboardPermanentUpgradeTooltip', { upgrade: upgradeLabel });
+  const ariaLabel = isEmpty
+    ? t('scoreboardPermanentUpgradeEmptyAriaLabel', { upgrade: upgradeLabel })
+    : t('scoreboardPermanentUpgradeAriaLabel', { upgrade: upgradeLabel, item: itemLabel ?? '' });
+
+  return (
+    <Tooltip content={tooltip} ariaLabel={ariaLabel}>
+      <span className={`scoreboard-table__item scoreboard-table__permanent-upgrade${isEmpty ? ' is-empty' : ''}`}>
+        {item ? <img src={item.src} alt={item.label} /> : isEmpty ? <span className="scoreboard-table__permanent-placeholder" aria-hidden="true">{kind === 'scepter' ? 'S' : kind === 'shard' ? 'SH' : 'M'}</span> : <strong>#{itemId}</strong>}
+      </span>
+    </Tooltip>
   );
 }
 

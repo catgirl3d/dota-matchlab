@@ -505,7 +505,7 @@
 
   .scoreboard-table {
     width: 100%;
-    min-width: 1060px;
+    min-width: 1145px;
     border-collapse: collapse;
     font-family: var(--font-mono);
     font-size: var(--fs-2xs);
@@ -711,9 +711,23 @@
   }
 
   .scoreboard-table__inventory {
+    display: flex;
+    min-width: 237px;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .scoreboard-table__inventory-items {
     display: grid;
-    min-width: 158px;
     grid-template-columns: repeat(7, 20px);
+    gap: 3px;
+  }
+
+  .scoreboard-table__permanent-upgrades {
+    display: grid;
+    padding-left: 6px;
+    border-left: 1px solid rgba(224, 230, 208, 0.15);
+    grid-template-columns: repeat(3, 20px);
     gap: 3px;
   }
 
@@ -729,6 +743,24 @@
 
   .scoreboard-table__item.is-neutral {
     border-color: var(--acid);
+  }
+
+  .scoreboard-table__permanent-upgrade {
+    border-color: rgba(73, 199, 229, 0.3);
+  }
+
+  .scoreboard-table__permanent-upgrade.is-empty {
+    border-style: dashed;
+    border-color: rgba(224, 230, 208, 0.16);
+    background: rgba(7, 9, 7, 0.28);
+    color: rgba(224, 230, 208, 0.36);
+  }
+
+  .scoreboard-table__permanent-placeholder {
+    font-family: var(--font-mono);
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
 
   .scoreboard-table__item img {

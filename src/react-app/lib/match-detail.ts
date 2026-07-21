@@ -9,6 +9,7 @@ import {
 import { isShallowObject, readSafeInteger as readInteger } from '../../shared/contracts/json';
 import { abilityIconSlugs } from './ability-icon-slugs';
 import { repairAbilityEvent, type AbilityEventSource } from './ability-event-repairs';
+import { getPermanentUpgradeItemIds, type PermanentUpgradeItemIds } from './permanent-upgrades';
 
 export type PlayerPosition = 1 | 2 | 3 | 4 | 5;
 
@@ -38,6 +39,7 @@ export type MatchDetailPlayer = {
   itemIds: number[];
   backpackItemIds: number[];
   neutralItemId: number | null;
+  permanentUpgradeItemIds: PermanentUpgradeItemIds;
   abilityBuild: Array<{
     abilityId: number;
     time: number;
@@ -531,6 +533,10 @@ function buildPlayer(
     itemIds: readItemIds(raw, ['item0Id', 'item1Id', 'item2Id', 'item3Id', 'item4Id', 'item5Id']),
     backpackItemIds: readItemIds(raw, ['backpack0Id', 'backpack1Id', 'backpack2Id']),
     neutralItemId: readInteger(raw.neutral0Id),
+    permanentUpgradeItemIds: getPermanentUpgradeItemIds(
+      fallbackPurchases,
+      readItemIdsFromEvents(detailStats?.matchPlayerBuffEvent),
+    ),
     abilityBuild: hasPlaybackAbilities ? playbackAbilities : fallbackAbilityBuild,
     hasAbilityBuildData: hasPlaybackAbilities || hasFallbackAbilities,
     purchaseEvents: hasPlaybackPurchases ? playbackPurchases : fallbackPurchases,
@@ -706,6 +712,13 @@ function readPurchaseEvents(value: unknown): MatchDetailPlayer['purchaseEvents']
 function readItemIds(value: Record<string, unknown>, keys: string[]): number[] {
   return keys.flatMap((key) => {
     const itemId = readInteger(value[key]);
+    return itemId === null || itemId <= 0 ? [] : [itemId];
+  });
+}
+
+function readItemIdsFromEvents(value: unknown): number[] {
+  return readObjectArray(value).flatMap((event) => {
+    const itemId = readInteger(event.itemId);
     return itemId === null || itemId <= 0 ? [] : [itemId];
   });
 }
