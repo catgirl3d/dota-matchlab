@@ -1,8 +1,9 @@
-export type PlayerSort = 'slot' | 'imp' | 'heroDamage' | 'towerDamage';
+export type PlayerSort = 'slot' | 'imp' | 'netWorth' | 'heroDamage' | 'towerDamage';
 
 const PLAYER_SORT_OPTIONS: Array<{ value: PlayerSort; label: string; title: string }> = [
   { value: 'slot', label: 'Order', title: 'Original player order' },
   { value: 'imp', label: 'IMP', title: 'Sort by Individual Match Performance' },
+  { value: 'netWorth', label: 'NET', title: 'Sort by net worth' },
   { value: 'heroDamage', label: 'Hero damage', title: 'Sort by hero damage' },
   { value: 'towerDamage', label: 'Tower damage', title: 'Sort by tower damage' },
 ];

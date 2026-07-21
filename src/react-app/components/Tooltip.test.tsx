@@ -29,9 +29,9 @@ describe('Tooltip', () => {
   });
 
   it('can keep static labels out of keyboard navigation', () => {
-    render(<Tooltip content="Net worth" focusable={false}><span>NW</span></Tooltip>);
+    render(<Tooltip content="Net worth" focusable={false}><span>NET</span></Tooltip>);
 
-    const trigger = screen.getByText('NW').parentElement as HTMLElement;
+    const trigger = screen.getByText('NET').parentElement as HTMLElement;
     expect(trigger).not.toHaveAttribute('tabindex');
 
     fireEvent.pointerEnter(trigger);

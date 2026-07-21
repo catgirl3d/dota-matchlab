@@ -202,7 +202,7 @@ function TeamRoster({
               <span><ScoreboardMetricLabel label="GPM" tooltipKey="scoreboardMetricGoldPerMinute" compact /><strong>{player.goldPerMinute}</strong></span>
               <span><ScoreboardMetricLabel label="XPM" tooltipKey="scoreboardMetricExperiencePerMinute" compact /><strong>{player.xpPerMinute}</strong></span>
             </div>
-            <span className="scoreboard-player__net"><ScoreboardMetricLabel label="NW" tooltipKey="scoreboardMetricNetWorth" compact /><strong>{formatCompact(player.netWorth)}</strong></span>
+            <span className="scoreboard-player__net"><ScoreboardMetricLabel label="NET" tooltipKey="scoreboardMetricNetWorth" compact /><strong>{formatCompact(player.netWorth)}</strong></span>
           </article>
         );
       })}
@@ -239,7 +239,7 @@ function ScoreboardTable({
             <ScoreboardTableHeader label="Hero" tooltipKey="scoreboardMetricHero" />
             <ScoreboardTableHeader label="Player" tooltipKey="scoreboardMetricPlayer" />
             <ScoreboardTableHeader label="K / D / A" tooltipKey="scoreboardMetricKda" />
-            <ScoreboardTableHeader label="NW" tooltipKey="scoreboardMetricNetWorth" />
+            <ScoreboardTableHeader label="NET" tooltipKey="scoreboardMetricNetWorth" />
             <ScoreboardTableHeader label="IMP" tooltipKey="scoreboardMetricImp" />
             <ScoreboardTableHeader label="LH / DN" tooltipKey="scoreboardMetricLastHitsDenies" />
             <ScoreboardTableHeader label="GPM / XPM" tooltipKey="scoreboardMetricGoldExperiencePerMinute" />

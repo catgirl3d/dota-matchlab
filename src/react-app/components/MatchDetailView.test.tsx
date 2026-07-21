@@ -96,7 +96,7 @@ describe('MatchDetailView', () => {
     expect(within(scoreboardEntry).getByRole('group', { name: '22 kills, 2 deaths, 8 assists' })).toBeVisible();
     expect(within(scoreboardEntry).getByText('GPM')).toBeVisible();
     expect(within(scoreboardEntry).getByText('XPM')).toBeVisible();
-    expect(within(scoreboardEntry).getByText('NW')).toBeVisible();
+    expect(within(scoreboardEntry).getByText('NET')).toBeVisible();
     const advantageChart = screen.getByRole('group', { name: 'Team advantage timeline' });
     expect(advantageChart).toHaveClass('advantage-timeline__canvas');
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
@@ -356,6 +356,10 @@ describe('MatchDetailView', () => {
     fireEvent.click(scoreboardSortControls.getByRole('button', { name: 'Hero damage' }));
     expect(scoreboardOrder(radiantRoster)).toEqual(['Scoreboard entry for Radiant low', 'Scoreboard entry for Radiant high']);
     expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire high', 'Scoreboard entry for Dire low']);
+
+    fireEvent.click(scoreboardSortControls.getByRole('button', { name: 'NET' }));
+    expect(scoreboardOrder(radiantRoster)).toEqual(['Scoreboard entry for Radiant high', 'Scoreboard entry for Radiant low']);
+    expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire high', 'Scoreboard entry for Dire low']);
   });
 
   it('shows the complete stat table by default without changing team-aware sorting', () => {
@@ -380,7 +384,7 @@ describe('MatchDetailView', () => {
     const radiantTotal = table.querySelector('[aria-label="Radiant total"]') as HTMLElement;
     const direTotal = table.querySelector('[aria-label="Dire total"]') as HTMLElement;
     expect(radiantTotal).toHaveTextContent('0 / 4 / 16');
-    expect(radiantTotal).toHaveTextContent('40K');
+    expect(radiantTotal).toHaveTextContent('42K');
     expect(radiantTotal).toHaveTextContent('+9.5');
     expect(radiantTotal).toHaveTextContent('1.4K / 1.6K');
     expect(radiantTotal.querySelectorAll('td')).toHaveLength(9);
@@ -404,7 +408,7 @@ describe('MatchDetailView', () => {
 
     fireEvent.click(viewControls.getByRole('button', { name: 'Split roster view' }));
     expect(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).toBeVisible();
-    const netWorthLabel = within(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).getByText('NW');
+    const netWorthLabel = within(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).getByText('NET');
     fireEvent.pointerEnter(netWorthLabel.parentElement as HTMLElement);
     expect(screen.getByRole('tooltip')).toHaveTextContent('Net worth');
   });
@@ -567,10 +571,10 @@ function createSortableDetail(): MatchDetailSnapshot {
   return {
     ...detail,
     players: [
-      createPlayer({ key: 'radiant-low', accountId: 1, name: 'Radiant low', playerSlot: 0, isRadiant: true, imp: 4, heroDamage: 900, towerDamage: 700, position: 1 }),
-      createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, heroDamage: 500, towerDamage: 900, position: 2, role: 'MID' }),
-      createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, heroDamage: 700, towerDamage: 400, position: 4 }),
-      createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, heroDamage: 1_200, towerDamage: 800, position: 5, role: 'LIGHT_SUPPORT' }),
+      createPlayer({ key: 'radiant-low', accountId: 1, name: 'Radiant low', playerSlot: 0, isRadiant: true, imp: 4, netWorth: 18_000, heroDamage: 900, towerDamage: 700, position: 1 }),
+      createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, netWorth: 24_000, heroDamage: 500, towerDamage: 900, position: 2, role: 'MID' }),
+      createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, netWorth: 14_000, heroDamage: 700, towerDamage: 400, position: 4 }),
+      createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, netWorth: 22_000, heroDamage: 1_200, towerDamage: 800, position: 5, role: 'LIGHT_SUPPORT' }),
     ],
   };
 }

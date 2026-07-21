@@ -26,6 +26,9 @@ function playerSortValue(player: MatchDetailPlayer, sort: Exclude<PlayerSort, 's
   if (sort === 'imp') {
     return player.imp;
   }
+  if (sort === 'netWorth') {
+    return player.netWorth;
+  }
   if (sort === 'heroDamage') {
     return player.heroDamage;
   }
