@@ -252,6 +252,66 @@ describe('MatchDetailView', () => {
     expect(buildUpgradeSlots[2]?.querySelector('img')).toHaveAttribute('src', getItemIcon(247)?.src);
   });
 
+  it('renders a chronological kill history beside the advantage curve', () => {
+    const killHistoryDetail: MatchDetailSnapshot = {
+      ...detail,
+      availableSections: ['player_stats'],
+      players: [
+        ...detail.players,
+        createPlayer({ key: '333', accountId: 333, playerSlot: 2, heroId: 3, name: 'Bane player' }),
+      ],
+      timelineEvents: [
+        {
+          key: 'kill-1',
+          time: 65,
+          type: 'kill',
+          actor: { accountId: 111, heroId: 1, name: 'Radiant killer', isRadiant: true },
+          target: { accountId: 222, heroId: 2, name: 'Dire target', isRadiant: false },
+          isRadiant: true,
+          targetIsRadiant: false,
+        },
+        {
+          key: 'tower-1',
+          time: 90,
+          type: 'tower',
+          actor: { accountId: 111, heroId: 1, name: 'Radiant killer', isRadiant: true },
+          target: null,
+          isRadiant: true,
+          targetIsRadiant: false,
+        },
+        {
+          key: 'kill-2',
+          time: 125,
+          type: 'kill',
+          actor: { accountId: 222, heroId: 2, name: 'Dire killer', isRadiant: false },
+          target: { accountId: 111, heroId: 1, name: 'Radiant target', isRadiant: true },
+          isRadiant: false,
+          targetIsRadiant: true,
+        },
+      ],
+    };
+
+    render(<MatchDetailView detail={killHistoryDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const killHistory = screen.getByRole('region', { name: 'Kill history' });
+    const entries = within(killHistory).getAllByRole('listitem');
+
+    expect(killHistory).toHaveClass('detail-kill-history');
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toHaveAccessibleName('Radiant killer killed Dire target at 1:05');
+    expect(entries[0]).toHaveClass('is-radiant');
+    expect(entries[1]).toHaveAccessibleName('Dire killer killed Radiant target at 2:05');
+    expect(entries[1]).toHaveClass('is-dire');
+
+    fireEvent.click(within(killHistory).getByRole('button', { name: 'Hero: All heroes' }));
+    const heroOptions = screen.getByRole('group', { name: 'Hero options' });
+    expect(within(heroOptions).getByRole('button', { name: 'Bane' })).toBeVisible();
+    expect(within(heroOptions).queryByRole('button', { name: 'Lina' })).not.toBeInTheDocument();
+    fireEvent.click(within(heroOptions).getByRole('button', { name: 'Bane' }));
+    expect(within(killHistory).queryAllByRole('listitem')).toHaveLength(0);
+    expect(within(killHistory).getByText('No kills for this hero.')).toBeVisible();
+  });
+
   it('shows a custom tooltip for final-loadout item tokens', () => {
     render(<MatchDetailView detail={detail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 

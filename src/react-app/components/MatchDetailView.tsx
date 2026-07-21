@@ -87,6 +87,7 @@ export function MatchDetailView({
         heroNames={heroNames}
         laneOutcomes={detail.laneOutcomes}
         eventCounts={detail.eventCounts}
+        hasPlayerStats={hasPlayerStats}
       />
 
       {hasPlayerStats && focusedPlayer ? (

@@ -136,6 +136,15 @@
       grid-template-columns: 1fr;
     }
 
+    .detail-insights__primary {
+      height: auto;
+      grid-template-columns: 1fr;
+    }
+
+    .detail-kill-history {
+      height: 360px;
+    }
+
     .lane-matchup__teams {
       grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr);
     }

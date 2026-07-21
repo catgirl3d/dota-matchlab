@@ -3,6 +3,7 @@ import { AdvantageTimeline } from '../AdvantageTimeline';
 import { DetailHeading } from './match-detail-primitives';
 import { useTranslation } from '../../lib/i18n';
 import { LaneAnalysisPanel } from './LaneAnalysisPanel';
+import { KillHistoryPanel } from './KillHistoryPanel';
 
 type MatchInsightsPanelProps = {
   networth: number[];
@@ -13,6 +14,7 @@ type MatchInsightsPanelProps = {
   heroNames: Record<number, string>;
   laneOutcomes: MatchDetailSnapshot['laneOutcomes'];
   eventCounts: MatchDetailSnapshot['eventCounts'];
+  hasPlayerStats: boolean;
 };
 
 export function MatchInsightsPanel({
@@ -24,19 +26,23 @@ export function MatchInsightsPanel({
   heroNames,
   laneOutcomes,
   eventCounts,
+  hasPlayerStats,
 }: MatchInsightsPanelProps) {
   const { t } = useTranslation();
   return (
     <>
-      <section className="detail-panel detail-advantage" aria-labelledby="advantage-title">
-        <DetailHeading eyebrow={t('economyTimeline')} title={t('advantageCurve')} id="advantage-title" />
-        <AdvantageTimeline
-          networth={networth}
-          experience={experience}
-          durationSeconds={durationSeconds}
-          events={events}
-        />
-      </section>
+      <div className="detail-insights__primary">
+        <section className="detail-panel detail-advantage" aria-labelledby="advantage-title">
+          <DetailHeading eyebrow={t('economyTimeline')} title={t('advantageCurve')} id="advantage-title" />
+          <AdvantageTimeline
+            networth={networth}
+            experience={experience}
+            durationSeconds={durationSeconds}
+            events={events}
+          />
+        </section>
+        <KillHistoryPanel events={events} players={players} heroNames={heroNames} isAvailable={hasPlayerStats} />
+      </div>
 
       <LaneAnalysisPanel players={players} heroNames={heroNames} laneOutcomes={laneOutcomes} eventCounts={eventCounts} />
     </>
