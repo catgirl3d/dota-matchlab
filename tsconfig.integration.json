@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.integration.tsbuildinfo",
+    "types": ["node", "vitest/globals", "./worker-configuration.d.ts"]
+  },
+  "include": [
+    "src/worker/services/**/*.integration.test.ts",
+    "src/shared"
+  ]
+}

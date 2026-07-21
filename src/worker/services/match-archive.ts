@@ -212,25 +212,24 @@ async function recordSyncFailure(
       p_error_message: errorMessage,
     });
 
-    if (!response.error) {
-      const recorded = readRecordMatchSyncFailureResponse(response);
-      if (!recorded.recorded) {
-        throw new MatchArchiveError(
-          'Match sync failure was not recorded',
-          502,
-          'MATCH_ARCHIVE_RECORD_FAILURE_FAILED',
-        );
-      }
+    if (response.error) {
+      console.error(
+        JSON.stringify({
+          message: 'Could not record match sync failure',
+          error: response.error.message,
+          errorCode,
+        }),
+      );
       return;
     }
 
-    console.error(
-      JSON.stringify({
-        message: 'Could not record match sync failure',
-        error: response.error.message,
+    const recorded = readRecordMatchSyncFailureResponse(response);
+    if (!recorded.recorded) {
+      console.error(JSON.stringify({
+        message: 'Match sync failure was not recorded',
         errorCode,
-      }),
-    );
+      }));
+    }
   } catch (recordError) {
     console.error(
       JSON.stringify({

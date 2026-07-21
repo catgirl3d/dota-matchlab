@@ -8,6 +8,7 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ['src/worker/**/*.test.ts'],
+    include: ['src/{shared,worker}/**/*.test.ts'],
+    exclude: ['src/**/*.integration.test.ts'],
   },
 });

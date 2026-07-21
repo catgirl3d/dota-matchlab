@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(20);
 
 select has_function(
   'public',
@@ -9,9 +9,13 @@ select has_function(
   'public match import RPC exists'
 );
 
-select public.apply_public_match_import(
-  8749050700,
-  '{"status":"available","normalized_match":{"match_id":8749050700,"duration":2100,"radiant_win":true,"game_mode":23,"radiant_score":31,"dire_score":20},"normalized_players":[{"match_id":8749050700,"account_id":77,"player_slot":0,"hero_id":1,"kills":9,"leaver_status":0}],"payloads":[{"payload_section":"opaque_detail","schema_version":"stratz.match.detail.v2","payload":{"unrelated":{"provider":"opaque"}}}]}'::jsonb
+select is(
+  public.apply_public_match_import(
+    8749050700,
+    '{"status":"available","normalized_match":{"match_id":8749050700,"duration":2100,"radiant_win":true,"game_mode":23,"radiant_score":31,"dire_score":20},"normalized_players":[{"match_id":8749050700,"account_id":77,"player_slot":0,"hero_id":1,"kills":9,"leaver_status":0}],"payloads":[{"payload_section":"opaque_detail","schema_version":"stratz.match.detail.v2","payload":{"unrelated":{"provider":"opaque"}}}]}'::jsonb
+  ),
+  '{"match_id":8749050700,"status":"available"}'::jsonb,
+  'public import returns canonical available response'
 );
 
 select is(

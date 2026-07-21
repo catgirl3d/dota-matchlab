@@ -20,6 +20,7 @@
   "include": [
     "vite.config.ts",
     "vitest.config.ts",
+    "vitest.integration.config.ts",
     "vitest.frontend.config.ts",
     "eslint.config.js"
   ]

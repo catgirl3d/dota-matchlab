@@ -1,5 +1,7 @@
 import * as v from 'valibot';
 
+// Read-only archive projections tolerate additive SQL fields; lease and write RPCs use strict schemas.
+
 const NumberSchema = v.pipe(v.number(), v.finite());
 const NullableNumberSchema = v.nullable(NumberSchema);
 const NullableStringSchema = v.nullable(v.string());

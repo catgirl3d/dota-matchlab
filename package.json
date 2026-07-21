@@ -11,9 +11,11 @@
     "test": "pnpm test:worker && pnpm test:frontend && pnpm test:talent-descriptions",
     "test:worker": "vitest run --config vitest.config.ts",
     "test:frontend": "vitest run --config vitest.frontend.config.ts",
+    "test:integration": "supabase stop --no-backup && supabase start --exclude edge-runtime,imgproxy,logflare,mailpit,postgres-meta,realtime,storage-api,studio,supavisor,vector --ignore-health-check && supabase db reset --local && vitest run --config vitest.integration.config.ts",
     "test:talent-descriptions": "node --test scripts/generate-talent-descriptions.test.mjs",
     "generate:talent-descriptions": "node scripts/generate-talent-descriptions.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && wrangler deploy --dry-run",
+    "check:integration": "pnpm check && pnpm test:integration && supabase test db --local",
     "deploy": "pnpm build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "db:push": "supabase db push --linked"
