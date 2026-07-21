@@ -247,64 +247,65 @@ function ScoreboardTable({
     : selectedPlayer.name ?? heroLabel(selectedPlayer.heroId, heroNames);
 
   return (
-    <div className="scoreboard-table-scroll">
-      <table className="scoreboard-table" aria-label="Ten-player scoreboard table">
-        <thead>
-          <tr>
-            <ScoreboardTableHeader label="Hero" tooltipKey="scoreboardMetricHero" />
-            <ScoreboardTableHeader label="Player" tooltipKey="scoreboardMetricPlayer" />
-            <ScoreboardTableHeader label="K / D / A" tooltipKey="scoreboardMetricKda" />
-            <ScoreboardTableHeader label="NET" tooltipKey="scoreboardMetricNetWorth" />
-            <ScoreboardTableHeader label="IMP" tooltipKey="scoreboardMetricImp" />
-            <ScoreboardTableHeader label="LH / DN" tooltipKey="scoreboardMetricLastHitsDenies" />
-            <ScoreboardTableHeader label="GPM / XPM" tooltipKey="scoreboardMetricGoldExperiencePerMinute" />
-            <ScoreboardTableHeader label="HD" tooltipKey="scoreboardMetricHeroDamage" />
-            <ScoreboardTableHeader label="TD" tooltipKey="scoreboardMetricTowerDamage" />
-            <ScoreboardTableHeader label="HH" tooltipKey="scoreboardMetricHeroHealing" />
-            <ScoreboardTableHeader label="Inventory" tooltipKey="scoreboardMetricInventory" />
-          </tr>
-        </thead>
-        <tbody>
-          {orderedRadiantPlayers.map((player) => (
-            <ScoreboardTableRow
-              player={player}
-              heroNames={heroNames}
-              currentAccountId={currentAccountId}
-              performanceRank={performanceRanks.get(player.key)}
-              achievements={playerAchievements.get(player.key) ?? []}
-              records={records}
-              isContributionSelected={selectedPlayerKey === player.key}
-              onContributionSelect={() => onPlayerSelect(selectedPlayerKey === player.key ? null : player.key)}
-              key={player.key}
-            />
-          ))}
-          {orderedDirePlayers.length > 0 ? (
-            <tr className="scoreboard-table__team-break">
-              <td colSpan={11}>Dire</td>
+    <>
+      <div className="scoreboard-table-scroll">
+        <table className="scoreboard-table" aria-label="Ten-player scoreboard table">
+          <thead>
+            <tr>
+              <ScoreboardTableHeader label="Hero" tooltipKey="scoreboardMetricHero" />
+              <ScoreboardTableHeader label="Player" tooltipKey="scoreboardMetricPlayer" />
+              <ScoreboardTableHeader label="K / D / A" tooltipKey="scoreboardMetricKda" />
+              <ScoreboardTableHeader label="NET" tooltipKey="scoreboardMetricNetWorth" />
+              <ScoreboardTableHeader label="IMP" tooltipKey="scoreboardMetricImp" />
+              <ScoreboardTableHeader label="LH / DN" tooltipKey="scoreboardMetricLastHitsDenies" />
+              <ScoreboardTableHeader label="GPM / XPM" tooltipKey="scoreboardMetricGoldExperiencePerMinute" />
+              <ScoreboardTableHeader label="HD" tooltipKey="scoreboardMetricHeroDamage" />
+              <ScoreboardTableHeader label="TD" tooltipKey="scoreboardMetricTowerDamage" />
+              <ScoreboardTableHeader label="HH" tooltipKey="scoreboardMetricHeroHealing" />
+              <ScoreboardTableHeader label="Inventory" tooltipKey="scoreboardMetricInventory" />
             </tr>
-          ) : null}
-          {orderedDirePlayers.map((player) => (
-            <ScoreboardTableRow
-              player={player}
-              heroNames={heroNames}
-              currentAccountId={currentAccountId}
-              performanceRank={performanceRanks.get(player.key)}
-              achievements={playerAchievements.get(player.key) ?? []}
-              records={records}
-              isContributionSelected={selectedPlayerKey === player.key}
-              onContributionSelect={() => onPlayerSelect(selectedPlayerKey === player.key ? null : player.key)}
-              key={player.key}
-            />
-          ))}
-        </tbody>
-        <tfoot>
-          {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsHeading /> : null}
-          {radiantPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="radiant" players={radiantPlayers} /> : null}
-          {direPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="dire" players={direPlayers} /> : null}
-          {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsPreview radiantPlayers={radiantPlayers} direPlayers={direPlayers} selectedPlayer={selectedPlayer} selectedPlayerLabel={selectedPlayerLabel} /> : null}
-        </tfoot>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {orderedRadiantPlayers.map((player) => (
+              <ScoreboardTableRow
+                player={player}
+                heroNames={heroNames}
+                currentAccountId={currentAccountId}
+                performanceRank={performanceRanks.get(player.key)}
+                achievements={playerAchievements.get(player.key) ?? []}
+                records={records}
+                isContributionSelected={selectedPlayerKey === player.key}
+                onContributionSelect={() => onPlayerSelect(selectedPlayerKey === player.key ? null : player.key)}
+                key={player.key}
+              />
+            ))}
+            {orderedDirePlayers.length > 0 ? (
+              <tr className="scoreboard-table__team-break">
+                <td colSpan={11}>Dire</td>
+              </tr>
+            ) : null}
+            {orderedDirePlayers.map((player) => (
+              <ScoreboardTableRow
+                player={player}
+                heroNames={heroNames}
+                currentAccountId={currentAccountId}
+                performanceRank={performanceRanks.get(player.key)}
+                achievements={playerAchievements.get(player.key) ?? []}
+                records={records}
+                isContributionSelected={selectedPlayerKey === player.key}
+                onContributionSelect={() => onPlayerSelect(selectedPlayerKey === player.key ? null : player.key)}
+                key={player.key}
+              />
+            ))}
+          </tbody>
+          <tfoot>
+            {radiantPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="radiant" players={radiantPlayers} /> : null}
+            {direPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="dire" players={direPlayers} /> : null}
+          </tfoot>
+        </table>
+      </div>
+      {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsPreview radiantPlayers={radiantPlayers} direPlayers={direPlayers} selectedPlayer={selectedPlayer} selectedPlayerLabel={selectedPlayerLabel} /> : null}
+    </>
   );
 }
 
@@ -423,11 +424,6 @@ function ScoreboardMetricLabel({
   );
 }
 
-function ScoreboardTeamTotalsHeading() {
-  const { t } = useTranslation();
-  return <tr className="scoreboard-table__totals-heading"><th colSpan={11} scope="rowgroup">{t('scoreboardTeamTotals')}</th></tr>;
-}
-
 function ScoreboardTeamTotalsRow({
   team,
   players,
@@ -490,37 +486,30 @@ function ScoreboardTeamTotalsPreview({
     : { team: selectedPlayer.isRadiant ? 'radiant' as const : 'dire' as const, playerLabel: selectedPlayerLabel, value };
 
   return (
-    <tr className="scoreboard-table__totals-preview">
-      <td colSpan={11}>
-        <section className="scoreboard-team-totals" aria-label={t('scoreboardTeamTotals')}>
-          <header className="scoreboard-team-totals__header">
-            <span className="micro-label">{t('scoreboardTeamTotals')}</span>
-            <strong>{t('scoreboardTeamPerformance')}</strong>
-          </header>
-          <div className="scoreboard-team-totals__groups">
-            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsKda')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
-              { label: t('scoreboardMetricKills'), radiant: radiant.kills, dire: dire.kills, contribution: contribution(selectedPlayer?.kills ?? 0) },
-              { label: t('scoreboardMetricDeaths'), radiant: radiant.deaths, dire: dire.deaths, direction: 'lowest', contribution: contribution(selectedPlayer?.deaths ?? 0) },
-              { label: t('scoreboardMetricAssists'), radiant: radiant.assists, dire: dire.assists, contribution: contribution(selectedPlayer?.assists ?? 0) },
-            ]} />
-            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsEconomy')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
-              { label: t('scoreboardMetricNetWorth'), radiant: radiant.netWorth, dire: dire.netWorth, format: 'compact', contribution: contribution(selectedPlayer?.netWorth ?? 0) },
-              { label: t('scoreboardMetricGoldPerMinute'), radiant: radiant.goldPerMinute, dire: dire.goldPerMinute, format: 'compact', contribution: contribution(selectedPlayer?.goldPerMinute ?? 0) },
-              { label: t('scoreboardMetricExperiencePerMinute'), radiant: radiant.xpPerMinute, dire: dire.xpPerMinute, format: 'compact', contribution: contribution(selectedPlayer?.xpPerMinute ?? 0) },
-            ]} />
-            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsFarm')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
-              { label: t('scoreboardMetricLastHits'), radiant: radiant.lastHits, dire: dire.lastHits, format: 'compact', contribution: contribution(selectedPlayer?.lastHits ?? 0) },
-              { label: t('scoreboardMetricDenies'), radiant: radiant.denies, dire: dire.denies, format: 'compact', contribution: contribution(selectedPlayer?.denies ?? 0) },
-            ]} />
-            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsDamage')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
-              { label: t('scoreboardMetricHeroDamage'), radiant: radiant.heroDamage, dire: dire.heroDamage, format: 'compact', contribution: contribution(selectedPlayer?.heroDamage ?? 0) },
-              { label: t('scoreboardMetricTowerDamage'), radiant: radiant.towerDamage, dire: dire.towerDamage, format: 'compact', contribution: contribution(selectedPlayer?.towerDamage ?? 0) },
-              { label: t('scoreboardMetricHeroHealing'), radiant: radiant.heroHealing, dire: dire.heroHealing, format: 'compact', contribution: contribution(selectedPlayer?.heroHealing ?? 0) },
-            ]} />
-          </div>
-        </section>
-      </td>
-    </tr>
+    <section className="detail-panel scoreboard-team-totals" aria-label={t('scoreboardTeamTotals')}>
+      <DetailHeading eyebrow={t('scoreboardTeamTotals')} title={t('scoreboardTeamPerformance')} id="team-totals-title" />
+      <div className="scoreboard-team-totals__groups">
+        <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsKda')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
+          { label: t('scoreboardMetricKills'), radiant: radiant.kills, dire: dire.kills, contribution: contribution(selectedPlayer?.kills ?? 0) },
+          { label: t('scoreboardMetricDeaths'), radiant: radiant.deaths, dire: dire.deaths, direction: 'lowest', contribution: contribution(selectedPlayer?.deaths ?? 0) },
+          { label: t('scoreboardMetricAssists'), radiant: radiant.assists, dire: dire.assists, contribution: contribution(selectedPlayer?.assists ?? 0) },
+        ]} />
+        <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsEconomy')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
+          { label: t('scoreboardMetricNetWorth'), radiant: radiant.netWorth, dire: dire.netWorth, format: 'compact', contribution: contribution(selectedPlayer?.netWorth ?? 0) },
+          { label: t('scoreboardMetricGoldPerMinute'), radiant: radiant.goldPerMinute, dire: dire.goldPerMinute, format: 'compact', contribution: contribution(selectedPlayer?.goldPerMinute ?? 0) },
+          { label: t('scoreboardMetricExperiencePerMinute'), radiant: radiant.xpPerMinute, dire: dire.xpPerMinute, format: 'compact', contribution: contribution(selectedPlayer?.xpPerMinute ?? 0) },
+        ]} />
+        <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsFarm')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
+          { label: t('scoreboardMetricLastHits'), radiant: radiant.lastHits, dire: dire.lastHits, format: 'compact', contribution: contribution(selectedPlayer?.lastHits ?? 0) },
+          { label: t('scoreboardMetricDenies'), radiant: radiant.denies, dire: dire.denies, format: 'compact', contribution: contribution(selectedPlayer?.denies ?? 0) },
+        ]} />
+        <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsDamage')} focusedMetricId={focusedMetricId} onFocusChange={setFocusedMetricId} metrics={[
+          { label: t('scoreboardMetricHeroDamage'), radiant: radiant.heroDamage, dire: dire.heroDamage, format: 'compact', contribution: contribution(selectedPlayer?.heroDamage ?? 0) },
+          { label: t('scoreboardMetricTowerDamage'), radiant: radiant.towerDamage, dire: dire.towerDamage, format: 'compact', contribution: contribution(selectedPlayer?.towerDamage ?? 0) },
+          { label: t('scoreboardMetricHeroHealing'), radiant: radiant.heroHealing, dire: dire.heroHealing, format: 'compact', contribution: contribution(selectedPlayer?.heroHealing ?? 0) },
+        ]} />
+      </div>
+    </section>
   );
 }
 

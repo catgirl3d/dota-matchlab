@@ -598,7 +598,6 @@ describe('MatchDetailView', () => {
     expect(within(table).getByText('LH / DN')).toBeVisible();
     expect(within(table).getByText('Inventory')).toBeVisible();
     expect(table.querySelector('.scoreboard-table__team-break')).toHaveTextContent('Dire');
-    expect(table.querySelector('.scoreboard-table__totals-heading')).toHaveTextContent('Team totals');
     const economyHeader = within(table).getByRole('columnheader', { name: 'GPM / XPM' });
     fireEvent.pointerEnter(economyHeader.querySelector('.app-tooltip__trigger') as HTMLElement);
     expect(screen.getByRole('tooltip')).toHaveTextContent('Gold per minute / Experience per minute');
@@ -608,8 +607,10 @@ describe('MatchDetailView', () => {
       'Scoreboard row for Dire low',
       'Scoreboard row for Dire high',
     ]);
-    const totalsPreview = within(table).getByRole('region', { name: 'Team totals' });
+    const totalsPreview = screen.getByRole('region', { name: 'Team totals' });
+    expect(table).not.toContainElement(totalsPreview);
     expect(totalsPreview).toHaveTextContent('Team performance');
+    expect(within(totalsPreview).getByRole('heading', { name: 'Team performance', level: 3 })).toBeVisible();
     expect(within(totalsPreview).getByRole('article', { name: 'KDA Kills comparison' })).toBeVisible();
     expect(within(totalsPreview).getByRole('article', { name: 'KDA Deaths comparison' })).toBeVisible();
     expect(within(totalsPreview).getByRole('article', { name: 'KDA Assists comparison' })).toBeVisible();
@@ -693,7 +694,7 @@ describe('MatchDetailView', () => {
 
     const table = screen.getByRole('table', { name: 'Ten-player scoreboard table' });
     expect(table.querySelector('[aria-label="Radiant total"]')).toHaveTextContent('N/A');
-    expect(within(table).getByRole('region', { name: 'Team totals' })).toHaveTextContent('KDA / Kills');
+    expect(screen.getByRole('region', { name: 'Team totals' })).toHaveTextContent('KDA / Kills');
   });
 
   it('renders each player position beside the hero portrait with the role on hover', () => {

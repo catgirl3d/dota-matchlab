@@ -850,21 +850,6 @@
     text-transform: uppercase;
   }
 
-  .scoreboard-table__totals-heading th {
-    padding: 18px 12px 7px;
-    border-top: 10px solid rgba(7, 9, 7, 0.72);
-    border-bottom: 1px solid var(--line-strong);
-    background:
-      linear-gradient(90deg, rgba(73, 199, 229, 0.08), transparent 42%),
-      rgba(7, 9, 7, 0.72);
-    color: var(--muted);
-    font-size: var(--detail-fs-small);
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-align: left;
-    text-transform: uppercase;
-  }
-
   .scoreboard-table__team-total > th,
   .scoreboard-table__team-total > td {
     padding-top: 10px;
@@ -901,33 +886,14 @@
     color: var(--signal-red);
   }
 
-  .scoreboard-table__totals-preview > td {
-    padding: 0;
-    border-top: 10px solid rgba(7, 9, 7, 0.72);
-    border-bottom: 0;
-    background: rgba(7, 9, 7, 0.72);
-  }
-
   .scoreboard-team-totals {
     display: grid;
-    padding: 18px;
-    gap: 10px;
   }
 
-  .scoreboard-team-totals__header,
   .scoreboard-total-card > header,
   .scoreboard-total-card__values {
     display: grid;
     align-items: center;
-  }
-
-  .scoreboard-team-totals__header {
-    gap: 4px;
-  }
-
-  .scoreboard-team-totals__header strong {
-    color: var(--paper);
-    font-size: var(--fs-label-sm);
   }
 
   .scoreboard-team-totals__groups,
@@ -936,6 +902,7 @@
   }
 
   .scoreboard-team-totals__groups {
+    padding: 18px;
     gap: 14px;
   }
 
