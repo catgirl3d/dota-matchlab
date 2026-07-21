@@ -2,8 +2,8 @@
   .match-detail {
     margin-top: 34px;
     --detail-fs-nano: 0.41rem;
-    --detail-fs-micro: 0.47rem;
-    --detail-fs-small: 0.53rem;
+    --detail-fs-micro: 0.475rem;
+    --detail-fs-small: 0.55rem;
     animation: detail-enter 320ms ease both;
   }
 
