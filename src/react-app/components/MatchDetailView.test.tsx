@@ -355,6 +355,40 @@ describe('MatchDetailView', () => {
     expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire high', 'Scoreboard entry for Dire low']);
   });
 
+  it('switches the scoreboard to a complete stat table without changing team-aware sorting', () => {
+    render(<MatchDetailView detail={createSortableDetail()} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const viewControls = within(screen.getByRole('group', { name: 'Scoreboard view' }));
+    expect(viewControls.getByRole('button', { name: 'Split roster view' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(viewControls.getByRole('button', { name: 'Table view' }));
+
+    const table = screen.getByRole('table', { name: 'Ten-player scoreboard table' });
+    expect(viewControls.getByRole('button', { name: 'Table view' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(table).getByText('LH / DN')).toBeVisible();
+    expect(within(table).getByText('Inventory')).toBeVisible();
+    expect(within(table).getByText('Dire')).toBeVisible();
+    expect(tableRows(table)).toEqual([
+      'Scoreboard row for Radiant low',
+      'Scoreboard row for Radiant high',
+      'Scoreboard row for Dire low',
+      'Scoreboard row for Dire high',
+    ]);
+    expect(within(table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement).getByText('MVP')).toBeVisible();
+    expect(within(table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement).getByRole('img', { name: 'Phase Boots' })).toBeVisible();
+
+    fireEvent.click(within(screen.getByRole('group', { name: 'Sort ten-player breakdown' })).getByRole('button', { name: 'Hero damage' }));
+    expect(tableRows(table)).toEqual([
+      'Scoreboard row for Radiant low',
+      'Scoreboard row for Radiant high',
+      'Scoreboard row for Dire high',
+      'Scoreboard row for Dire low',
+    ]);
+
+    fireEvent.click(viewControls.getByRole('button', { name: 'Split roster view' }));
+    expect(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).toBeVisible();
+  });
+
   it('shares achievement badges for tied highs and excludes zero tower damage', () => {
     const tiedAchievementDetail: MatchDetailSnapshot = {
       ...detail,
@@ -459,6 +493,11 @@ function buildOrder(column: HTMLElement | null): string[] {
 function scoreboardOrder(roster: HTMLElement | undefined): string[] {
   return Array.from(roster?.querySelectorAll<HTMLElement>('.scoreboard-player') ?? [])
     .map((player) => player.getAttribute('aria-label') ?? '');
+}
+
+function tableRows(table: HTMLElement): string[] {
+  return Array.from(table.querySelectorAll<HTMLTableRowElement>('tbody tr[aria-label]'))
+    .map((row) => row.getAttribute('aria-label') ?? '');
 }
 
 function createSortableDetail(): MatchDetailSnapshot {

@@ -248,6 +248,11 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
+  .detail-scoreboard__controls {
+    display: flex;
+    min-width: 0;
+  }
+
   .detail-scoreboard__header .detail-heading,
   .detail-builds__header .detail-heading {
     border-bottom: 0;
@@ -357,22 +362,22 @@
     line-height: 1;
   }
 
-  .scoreboard-player__identity .scoreboard-player__achievement--mvp {
+  .scoreboard-player__achievement--mvp {
     border-color: var(--rank-first);
     background: var(--rank-first);
     box-shadow: 0 0 10px rgba(var(--rank-first-rgb), 0.32);
     color: var(--ink);
   }
 
-  .scoreboard-player__identity .scoreboard-player__achievement--top-imp {
+  .scoreboard-player__achievement--top-imp {
     color: var(--rank-second);
   }
 
-  .scoreboard-player__identity .scoreboard-player__achievement--most-damage {
+  .scoreboard-player__achievement--most-damage {
     color: var(--rust);
   }
 
-  .scoreboard-player__identity .scoreboard-player__achievement--most-tower-damage {
+  .scoreboard-player__achievement--most-tower-damage {
     color: var(--acid);
   }
 
@@ -436,6 +441,230 @@
     justify-items: end;
     gap: 3px;
     text-align: right;
+  }
+
+  .scoreboard-view-switch {
+    display: grid;
+    align-content: center;
+    min-width: 76px;
+    padding: 12px;
+    border-left: 1px solid var(--line);
+    gap: 8px;
+  }
+
+  .scoreboard-view-switch__options {
+    display: flex;
+    gap: 4px;
+  }
+
+  .scoreboard-view-switch button {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .scoreboard-view-switch button:hover,
+  .scoreboard-view-switch button.is-active {
+    border-color: var(--signal-blue);
+    color: var(--signal-blue);
+  }
+
+  .scoreboard-view-switch svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.25;
+  }
+
+  .scoreboard-table-scroll {
+    overflow-x: auto;
+  }
+
+  .scoreboard-table {
+    width: 100%;
+    min-width: 1060px;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scoreboard-table th,
+  .scoreboard-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  .scoreboard-table thead th {
+    height: 44px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .scoreboard-table thead th:nth-child(2) {
+    text-align: left;
+  }
+
+  .scoreboard-table__row {
+    background: rgba(7, 9, 7, 0.18);
+  }
+
+  .scoreboard-table__row.is-radiant {
+    box-shadow: inset 2px 0 0 rgba(var(--radiant-rgb), 0.7);
+  }
+
+  .scoreboard-table__row.is-dire {
+    box-shadow: inset 2px 0 0 rgba(255, 54, 95, 0.72);
+  }
+
+  .scoreboard-table__row:hover {
+    background: rgba(224, 230, 208, 0.035);
+  }
+
+  .scoreboard-table__row.is-current {
+    background: linear-gradient(90deg, rgba(var(--radiant-rgb), 0.1), transparent 62%);
+  }
+
+  .scoreboard-table__row.is-dire.is-current {
+    background: linear-gradient(90deg, rgba(255, 54, 95, 0.1), transparent 62%);
+  }
+
+  .scoreboard-table__row.is-second {
+    background: linear-gradient(90deg, rgba(var(--rank-second-rgb), 0.075), transparent 62%);
+  }
+
+  .scoreboard-table__team-break td {
+    height: 36px;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(255, 54, 95, 0.22);
+    background: linear-gradient(90deg, rgba(255, 54, 95, 0.09), transparent 48%);
+    color: var(--signal-red);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .scoreboard-table__hero-cell {
+    width: 52px;
+  }
+
+  .scoreboard-table .scoreboard-player__hero {
+    width: 40px;
+    height: 40px;
+  }
+
+  .scoreboard-table__player {
+    min-width: 170px;
+    color: var(--paper);
+    font-weight: 400;
+    text-align: left;
+  }
+
+  .scoreboard-table__player-content {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .scoreboard-table__level {
+    display: grid;
+    width: 23px;
+    height: 23px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    color: var(--paper);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .scoreboard-table__player-copy {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .scoreboard-table__player-copy > strong {
+    overflow: hidden;
+    font-size: var(--fs-label-sm);
+    text-overflow: ellipsis;
+  }
+
+  .scoreboard-table__player-copy > small {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 9px;
+    text-overflow: ellipsis;
+  }
+
+  .scoreboard-table .scoreboard-player__achievements {
+    margin-top: 1px;
+  }
+
+  .scoreboard-table__numeric {
+    color: var(--paper);
+    text-align: center;
+  }
+
+  .scoreboard-table__imp.is-positive {
+    color: var(--signal-blue);
+  }
+
+  .scoreboard-table__imp.is-negative {
+    color: var(--rust);
+  }
+
+  .scoreboard-table__imp.is-unavailable {
+    color: var(--muted);
+  }
+
+  .scoreboard-table__inventory {
+    display: grid;
+    min-width: 158px;
+    grid-template-columns: repeat(7, 20px);
+    gap: 3px;
+  }
+
+  .scoreboard-table__item {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border: 1px solid rgba(224, 230, 208, 0.08);
+    background: rgba(7, 9, 7, 0.48);
+    overflow: hidden;
+  }
+
+  .scoreboard-table__item.is-neutral {
+    border-color: var(--acid);
+  }
+
+  .scoreboard-table__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .scoreboard-table__item strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 7px;
+    text-overflow: ellipsis;
   }
 
   .detail-analysis-grid {

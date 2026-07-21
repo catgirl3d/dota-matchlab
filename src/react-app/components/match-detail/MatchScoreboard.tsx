@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { MatchDetailPlayer } from '../../lib/match-detail';
+import { getItemIcon } from '../../lib/item-icons';
 import { HeroMark } from '../HeroMark';
 import { PlayerSortControls, type PlayerSort } from '../PlayerSortControls';
 import { formatAccount, formatCompact, formatEnum, heroLabel, heroMark } from './match-detail-display';
@@ -8,6 +9,7 @@ import { DetailHeading } from './match-detail-primitives';
 
 type PerformanceRank = 1 | 2;
 type PlayerAchievement = 'mvp' | 'top-imp' | 'most-damage' | 'most-tower-damage';
+type ScoreboardView = 'roster' | 'table';
 
 const PLAYER_ACHIEVEMENTS: Record<PlayerAchievement, { label: string; title: string }> = {
   mvp: { label: 'MVP', title: 'Highest Individual Match Performance' },
@@ -30,6 +32,7 @@ export function MatchScoreboard({
   currentAccountId,
 }: MatchScoreboardProps) {
   const [sort, setSort] = useState<PlayerSort>('slot');
+  const [view, setView] = useState<ScoreboardView>('roster');
   const players = [...radiantPlayers, ...direPlayers];
   const performanceRanks = rankPlayersByImp(players);
   const playerAchievements = getPlayerAchievements(players, performanceRanks);
@@ -38,30 +41,81 @@ export function MatchScoreboard({
     <section className="detail-panel detail-scoreboard" aria-labelledby="scoreboard-title">
       <div className="detail-scoreboard__header">
         <DetailHeading eyebrow="MATCHUP / SCOREBOARD" title="Ten-player breakdown" id="scoreboard-title" />
-        <PlayerSortControls value={sort} onChange={setSort} ariaLabel="Sort ten-player breakdown" />
+        <div className="detail-scoreboard__controls">
+          <PlayerSortControls value={sort} onChange={setSort} ariaLabel="Sort ten-player breakdown" />
+          <ScoreboardViewControls value={view} onChange={setView} />
+        </div>
       </div>
-      <div className="detail-scoreboard__teams">
-        <TeamRoster
-          label="Radiant"
-          players={radiantPlayers}
+      {view === 'roster' ? (
+        <div className="detail-scoreboard__teams">
+          <TeamRoster
+            label="Radiant"
+            players={radiantPlayers}
+            heroNames={heroNames}
+            currentAccountId={currentAccountId}
+            sort={sort}
+            performanceRanks={performanceRanks}
+            playerAchievements={playerAchievements}
+          />
+          <div className="detail-scoreboard__versus">VS</div>
+          <TeamRoster
+            label="Dire"
+            players={direPlayers}
+            heroNames={heroNames}
+            currentAccountId={currentAccountId}
+            sort={sort}
+            performanceRanks={performanceRanks}
+            playerAchievements={playerAchievements}
+          />
+        </div>
+      ) : (
+        <ScoreboardTable
+          radiantPlayers={radiantPlayers}
+          direPlayers={direPlayers}
           heroNames={heroNames}
           currentAccountId={currentAccountId}
           sort={sort}
           performanceRanks={performanceRanks}
           playerAchievements={playerAchievements}
         />
-        <div className="detail-scoreboard__versus">VS</div>
-        <TeamRoster
-          label="Dire"
-          players={direPlayers}
-          heroNames={heroNames}
-          currentAccountId={currentAccountId}
-          sort={sort}
-          performanceRanks={performanceRanks}
-          playerAchievements={playerAchievements}
-        />
-      </div>
+      )}
     </section>
+  );
+}
+
+function ScoreboardViewControls({
+  value,
+  onChange,
+}: {
+  value: ScoreboardView;
+  onChange: (value: ScoreboardView) => void;
+}) {
+  return (
+    <div className="scoreboard-view-switch" role="group" aria-label="Scoreboard view">
+      <span className="micro-label">VIEW</span>
+      <div className="scoreboard-view-switch__options">
+        <button
+          className={value === 'roster' ? 'is-active' : ''}
+          type="button"
+          title="Split roster view"
+          aria-label="Split roster view"
+          aria-pressed={value === 'roster'}
+          onClick={() => onChange('roster')}
+        >
+          <SplitRosterIcon />
+        </button>
+        <button
+          className={value === 'table' ? 'is-active' : ''}
+          type="button"
+          title="Table view"
+          aria-label="Table view"
+          aria-pressed={value === 'table'}
+          onClick={() => onChange('table')}
+        >
+          <TableIcon />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -91,12 +145,10 @@ function TeamRoster({
         const performanceRank = performanceRanks.get(player.key);
         const achievements = playerAchievements.get(player.key) ?? [];
         const playerLabel = player.name ?? formatAccount(player.accountId);
-        const rankClass = performanceRank === 1 ? ' is-highest' : performanceRank === 2 ? ' is-second' : '';
-        const currentClass = currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : '';
 
         return (
           <article
-            className={`scoreboard-player ${player.isRadiant ? 'is-radiant' : 'is-dire'}${rankClass}${currentClass}`}
+            className={scoreboardPlayerClass(player, performanceRank, currentAccountId)}
             key={player.key}
             aria-label={`Scoreboard entry for ${playerLabel}`}
           >
@@ -104,15 +156,7 @@ function TeamRoster({
             <div className="scoreboard-player__identity">
               <strong>{playerLabel}</strong>
               <span>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</span>
-              {achievements.length > 0 ? (
-                <div className="scoreboard-player__achievements">
-                  {achievements.map((achievement) => (
-                    <span className={`scoreboard-player__achievement scoreboard-player__achievement--${achievement}`} key={achievement} title={PLAYER_ACHIEVEMENTS[achievement].title}>
-                      {PLAYER_ACHIEVEMENTS[achievement].label}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
+              <AchievementBadges achievements={achievements} />
             </div>
             <div className="scoreboard-player__kda" role="group" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
               <span><small>K</small><strong>{player.kills}</strong></span>
@@ -131,9 +175,194 @@ function TeamRoster({
   );
 }
 
+function ScoreboardTable({
+  radiantPlayers,
+  direPlayers,
+  heroNames,
+  currentAccountId,
+  sort,
+  performanceRanks,
+  playerAchievements,
+}: {
+  radiantPlayers: MatchDetailPlayer[];
+  direPlayers: MatchDetailPlayer[];
+  heroNames: Record<number, string>;
+  currentAccountId: number | null;
+  sort: PlayerSort;
+  performanceRanks: Map<string, PerformanceRank>;
+  playerAchievements: Map<string, PlayerAchievement[]>;
+}) {
+  const orderedRadiantPlayers = sortPlayers(radiantPlayers, sort);
+  const orderedDirePlayers = sortPlayers(direPlayers, sort);
+
+  return (
+    <div className="scoreboard-table-scroll">
+      <table className="scoreboard-table" aria-label="Ten-player scoreboard table">
+        <thead>
+          <tr>
+            <th scope="col">Hero</th>
+            <th scope="col">Player</th>
+            <th scope="col">K / D / A</th>
+            <th scope="col">NW</th>
+            <th scope="col">IMP</th>
+            <th scope="col">LH / DN</th>
+            <th scope="col">GPM / XPM</th>
+            <th scope="col">HD</th>
+            <th scope="col">TD</th>
+            <th scope="col">HH</th>
+            <th scope="col">Inventory</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orderedRadiantPlayers.map((player) => (
+            <ScoreboardTableRow
+              player={player}
+              heroNames={heroNames}
+              currentAccountId={currentAccountId}
+              performanceRank={performanceRanks.get(player.key)}
+              achievements={playerAchievements.get(player.key) ?? []}
+              key={player.key}
+            />
+          ))}
+          {orderedDirePlayers.length > 0 ? (
+            <tr className="scoreboard-table__team-break">
+              <td colSpan={11}>Dire</td>
+            </tr>
+          ) : null}
+          {orderedDirePlayers.map((player) => (
+            <ScoreboardTableRow
+              player={player}
+              heroNames={heroNames}
+              currentAccountId={currentAccountId}
+              performanceRank={performanceRanks.get(player.key)}
+              achievements={playerAchievements.get(player.key) ?? []}
+              key={player.key}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ScoreboardTableRow({
+  player,
+  heroNames,
+  currentAccountId,
+  performanceRank,
+  achievements,
+}: {
+  player: MatchDetailPlayer;
+  heroNames: Record<number, string>;
+  currentAccountId: number | null;
+  performanceRank: PerformanceRank | undefined;
+  achievements: PlayerAchievement[];
+}) {
+  const playerLabel = player.name ?? formatAccount(player.accountId);
+
+  return (
+    <tr className={scoreboardTableRowClass(player, performanceRank, currentAccountId)} aria-label={`Scoreboard row for ${playerLabel}`}>
+      <td className="scoreboard-table__hero-cell">
+        <ScoreboardHeroMark heroId={player.heroId} heroNames={heroNames} />
+      </td>
+      <th className="scoreboard-table__player" scope="row">
+        <span className="scoreboard-table__player-content">
+          <span className="scoreboard-table__level">{player.level}</span>
+          <span className="scoreboard-table__player-copy">
+            <strong>{playerLabel}</strong>
+            <small>{heroLabel(player.heroId, heroNames)} · {formatEnum(player.role ?? 'UNKNOWN')}</small>
+            <AchievementBadges achievements={achievements} />
+          </span>
+        </span>
+      </th>
+      <td className="scoreboard-table__numeric" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
+        {player.kills} / {player.deaths} / {player.assists}
+      </td>
+      <td className="scoreboard-table__numeric">{formatCompact(player.netWorth)}</td>
+      <td className={`scoreboard-table__numeric scoreboard-table__imp${player.imp === null ? ' is-unavailable' : player.imp > 0 ? ' is-positive' : player.imp < 0 ? ' is-negative' : ''}`}>
+        {formatImp(player.imp)}
+      </td>
+      <td className="scoreboard-table__numeric">{player.lastHits} / {player.denies}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(player.goldPerMinute)} / {formatCompact(player.xpPerMinute)}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(player.heroDamage)}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(player.towerDamage)}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(player.heroHealing)}</td>
+      <td><ScoreboardInventory itemIds={player.itemIds} neutralItemId={player.neutralItemId} /></td>
+    </tr>
+  );
+}
+
+function AchievementBadges({ achievements }: { achievements: PlayerAchievement[] }) {
+  if (achievements.length === 0) return null;
+
+  return (
+    <div className="scoreboard-player__achievements">
+      {achievements.map((achievement) => (
+        <span className={`scoreboard-player__achievement scoreboard-player__achievement--${achievement}`} key={achievement} title={PLAYER_ACHIEVEMENTS[achievement].title}>
+          {PLAYER_ACHIEVEMENTS[achievement].label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ScoreboardInventory({ itemIds, neutralItemId }: { itemIds: number[]; neutralItemId: number | null }) {
+  const slots = Array.from({ length: 6 }, (_, index) => itemIds[index] ?? null);
+
+  return (
+    <div className="scoreboard-table__inventory">
+      {slots.map((itemId, index) => <ScoreboardItemSlot itemId={itemId} key={index} />)}
+      {neutralItemId !== null ? <ScoreboardItemSlot itemId={neutralItemId} tone="neutral" /> : null}
+    </div>
+  );
+}
+
+function ScoreboardItemSlot({ itemId, tone }: { itemId: number | null; tone?: 'neutral' }) {
+  const item = itemId === null ? null : getItemIcon(itemId);
+
+  return (
+    <span className={`scoreboard-table__item${tone ? ` is-${tone}` : ''}`} title={item?.label ?? (itemId === null ? undefined : `Item #${itemId}`)}>
+      {item ? <img src={item.src} alt={item.label} /> : itemId === null ? null : <strong>#{itemId}</strong>}
+    </span>
+  );
+}
+
 function ScoreboardHeroMark({ heroId, heroNames }: { heroId: number | null; heroNames: Record<number, string> }) {
   const label = heroLabel(heroId, heroNames);
   return <HeroMark heroId={heroId} label={label} fallback={heroMark(heroId, heroNames)} className="scoreboard-player__hero" />;
+}
+
+function scoreboardPlayerClass(player: MatchDetailPlayer, performanceRank: PerformanceRank | undefined, currentAccountId: number | null): string {
+  const rankClass = performanceRank === 1 ? ' is-highest' : performanceRank === 2 ? ' is-second' : '';
+  const currentClass = currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : '';
+  return `scoreboard-player ${player.isRadiant ? 'is-radiant' : 'is-dire'}${rankClass}${currentClass}`;
+}
+
+function scoreboardTableRowClass(player: MatchDetailPlayer, performanceRank: PerformanceRank | undefined, currentAccountId: number | null): string {
+  const rankClass = performanceRank === 1 ? ' is-highest' : performanceRank === 2 ? ' is-second' : '';
+  const currentClass = currentAccountId !== null && player.accountId === currentAccountId ? ' is-current' : '';
+  return `scoreboard-table__row ${player.isRadiant ? 'is-radiant' : 'is-dire'}${rankClass}${currentClass}`;
+}
+
+function formatImp(value: number | null): string {
+  if (value === null) return 'N/A';
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function SplitRosterIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M1.5 2.5h5v4h-5zm8 0h5v4h-5zm-8 7h5v4h-5zm8 0h5v4h-5z" />
+    </svg>
+  );
+}
+
+function TableIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M2 2.5h12v11H2zM2 6.2h12M5.7 2.5v11M9.8 2.5v11" />
+    </svg>
+  );
 }
 
 function rankPlayersByImp(players: MatchDetailPlayer[]): Map<string, PerformanceRank> {

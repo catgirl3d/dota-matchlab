@@ -376,6 +376,20 @@
       grid-template-columns: 1fr;
     }
 
+    .detail-scoreboard__controls {
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+    }
+
+    .detail-scoreboard .player-sort {
+      flex: 1;
+      border: 0;
+    }
+
+    .detail-scoreboard .scoreboard-view-switch {
+      border-left: 1px solid var(--line);
+    }
+
     .player-sort {
       justify-items: start;
       border-top: 1px solid var(--line);
