@@ -237,6 +237,9 @@ describe('MatchDetailView', () => {
     const normalInventory = row.querySelector('.scoreboard-table__inventory-items');
     const upgrades = within(row).getByRole('group', { name: 'Permanent upgrades' });
     const upgradeSlots = upgrades.querySelectorAll<HTMLElement>('.scoreboard-table__permanent-upgrade');
+    const playerBuild = screen.getByRole('article', { name: 'Build for Player #111' });
+    const buildUpgrades = within(playerBuild).getByRole('group', { name: 'Permanent upgrades' });
+    const buildUpgradeSlots = buildUpgrades.querySelectorAll<HTMLElement>('.player-build__permanent-upgrade');
 
     expect(normalInventory?.querySelector('img')).toHaveAttribute('src', getItemIcon(108)?.src);
     expect(upgradeSlots[0]?.querySelector('img')).toHaveAttribute('src', getItemIcon(271)?.src);
@@ -244,6 +247,9 @@ describe('MatchDetailView', () => {
     expect(upgradeSlots[2]?.querySelector('img')).toHaveAttribute('src', getItemIcon(247)?.src);
     expect(upgrades.querySelector('.scoreboard-table__permanent-placeholder')).not.toBeInTheDocument();
     expect(upgrades.querySelector('[title]')).not.toBeInTheDocument();
+    expect(buildUpgradeSlots[0]?.querySelector('img')).toHaveAttribute('src', getItemIcon(271)?.src);
+    expect(buildUpgradeSlots[1]?.querySelector('img')).toHaveAttribute('src', getItemIcon(609)?.src);
+    expect(buildUpgradeSlots[2]?.querySelector('img')).toHaveAttribute('src', getItemIcon(247)?.src);
   });
 
   it('renders visibly different player timelines for a complete detail payload', () => {

@@ -2,12 +2,14 @@ import { useState, type ReactNode } from 'react';
 import type { MatchDetailPlayer, MatchDetailSnapshot } from '../../lib/match-detail';
 import { getAbilityIcon } from '../../lib/ability-icons';
 import { getItemIcon } from '../../lib/item-icons';
+import { useTranslation } from '../../lib/i18n';
 import { talentDescriptions } from '../../lib/talent-descriptions';
 import { HeroPortrait } from '../HeroPortrait';
 import { PlayerSortControls, type PlayerSort } from '../PlayerSortControls';
 import { formatAccount, formatCompact, formatEventTime, heroLabel, heroMark } from './match-detail-display';
 import { sortPlayers } from './match-detail-player';
 import { DetailHeading } from './match-detail-primitives';
+import { PermanentUpgradeSlot } from './PermanentUpgradeSlot';
 
 type BuildMetricRanks = {
   first: {
@@ -183,6 +185,7 @@ function PlayerBuild({
           {player.itemIds.map((itemId, index) => <ItemToken itemId={itemId} key={`${itemId}-${index}`} />)}
           {player.backpackItemIds.map((itemId, index) => <ItemToken itemId={itemId} tone="backpack" key={`b-${itemId}-${index}`} />)}
           {player.neutralItemId ? <ItemToken itemId={player.neutralItemId} tone="neutral" /> : null}
+          <PlayerBuildPermanentUpgrades permanentUpgradeItemIds={player.permanentUpgradeItemIds} />
         </div>
       </div>
       <div className="player-build__progression">
@@ -267,6 +270,22 @@ function ItemToken({ itemId, tone }: { itemId: number; tone?: 'backpack' | 'neut
       <ItemIcon itemId={itemId} className="item-token__icon" />
       {getItemIcon(itemId) === null ? `#${itemId}` : null}
     </span>
+  );
+}
+
+function PlayerBuildPermanentUpgrades({
+  permanentUpgradeItemIds,
+}: {
+  permanentUpgradeItemIds: MatchDetailPlayer['permanentUpgradeItemIds'];
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="player-build__permanent-upgrades" role="group" aria-label={t('scoreboardPermanentUpgradesAriaLabel')}>
+      <PermanentUpgradeSlot kind="scepter" itemId={permanentUpgradeItemIds.scepterItemId} slotClassName="item-token player-build__permanent-upgrade" placeholderClassName="player-build__permanent-placeholder" itemIconClassName="item-token__icon" />
+      <PermanentUpgradeSlot kind="shard" itemId={permanentUpgradeItemIds.shardItemId} slotClassName="item-token player-build__permanent-upgrade" placeholderClassName="player-build__permanent-placeholder" itemIconClassName="item-token__icon" />
+      <PermanentUpgradeSlot kind="moonShard" itemId={permanentUpgradeItemIds.moonShardItemId} slotClassName="item-token player-build__permanent-upgrade" placeholderClassName="player-build__permanent-placeholder" itemIconClassName="item-token__icon" />
+    </div>
   );
 }
 

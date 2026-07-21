@@ -9,6 +9,7 @@ import { Tooltip } from '../Tooltip';
 import { formatAccount, formatCompact, formatEnum, heroLabel, heroMark } from './match-detail-display';
 import { sortPlayers } from './match-detail-player';
 import { DetailHeading } from './match-detail-primitives';
+import { PermanentUpgradeSlot } from './PermanentUpgradeSlot';
 import { ScoreboardTeamMetricCard, type ScoreboardTeamMetric } from './ScoreboardTeamMetricCard';
 
 type PerformanceRank = 1 | 2;
@@ -640,45 +641,11 @@ function ScoreboardInventory({
         {neutralItemId !== null ? <ScoreboardItemSlot itemId={neutralItemId} tone="neutral" /> : null}
       </div>
       <div className="scoreboard-table__permanent-upgrades" role="group" aria-label={t('scoreboardPermanentUpgradesAriaLabel')}>
-        <ScoreboardPermanentUpgradeSlot kind="scepter" itemId={permanentUpgradeItemIds.scepterItemId} />
-        <ScoreboardPermanentUpgradeSlot kind="shard" itemId={permanentUpgradeItemIds.shardItemId} />
-        <ScoreboardPermanentUpgradeSlot kind="moonShard" itemId={permanentUpgradeItemIds.moonShardItemId} />
+        <PermanentUpgradeSlot kind="scepter" itemId={permanentUpgradeItemIds.scepterItemId} slotClassName="scoreboard-table__item scoreboard-table__permanent-upgrade" placeholderClassName="scoreboard-table__permanent-placeholder" />
+        <PermanentUpgradeSlot kind="shard" itemId={permanentUpgradeItemIds.shardItemId} slotClassName="scoreboard-table__item scoreboard-table__permanent-upgrade" placeholderClassName="scoreboard-table__permanent-placeholder" />
+        <PermanentUpgradeSlot kind="moonShard" itemId={permanentUpgradeItemIds.moonShardItemId} slotClassName="scoreboard-table__item scoreboard-table__permanent-upgrade" placeholderClassName="scoreboard-table__permanent-placeholder" />
       </div>
     </div>
-  );
-}
-
-function ScoreboardPermanentUpgradeSlot({
-  kind,
-  itemId,
-}: {
-  kind: 'scepter' | 'shard' | 'moonShard';
-  itemId: number | null;
-}) {
-  const { t } = useTranslation();
-  const upgradeLabel = t(
-    kind === 'scepter'
-      ? 'scoreboardAghanimScepterLabel'
-      : kind === 'shard'
-        ? 'scoreboardAghanimShardLabel'
-        : 'scoreboardMoonShardLabel',
-  );
-  const item = itemId === null ? null : getItemIcon(itemId);
-  const itemLabel = item?.label ?? (itemId === null ? null : `Item #${itemId}`);
-  const isEmpty = itemId === null;
-  const tooltip = isEmpty
-    ? t('scoreboardPermanentUpgradeEmptyTooltip', { upgrade: upgradeLabel })
-    : t('scoreboardPermanentUpgradeTooltip', { upgrade: upgradeLabel });
-  const ariaLabel = isEmpty
-    ? t('scoreboardPermanentUpgradeEmptyAriaLabel', { upgrade: upgradeLabel })
-    : t('scoreboardPermanentUpgradeAriaLabel', { upgrade: upgradeLabel, item: itemLabel ?? '' });
-
-  return (
-    <Tooltip content={tooltip} ariaLabel={ariaLabel}>
-      <span className={`scoreboard-table__item scoreboard-table__permanent-upgrade${isEmpty ? ' is-empty' : ''}`}>
-        {item ? <img src={item.src} alt={item.label} /> : isEmpty ? <span className="scoreboard-table__permanent-placeholder" aria-hidden="true">{kind === 'scepter' ? 'S' : kind === 'shard' ? 'SH' : 'M'}</span> : <strong>#{itemId}</strong>}
-      </span>
-    </Tooltip>
   );
 }
 

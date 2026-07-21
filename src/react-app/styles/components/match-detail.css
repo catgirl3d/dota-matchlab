@@ -1067,7 +1067,7 @@
 
   .scoreboard-table__inventory-items {
     display: grid;
-    grid-template-columns: repeat(7, 20px);
+    grid-template-columns: repeat(7, 27px);
     gap: 3px;
   }
 
@@ -1075,13 +1075,13 @@
     display: grid;
     padding-left: 6px;
     border-left: 1px solid rgba(224, 230, 208, 0.15);
-    grid-template-columns: repeat(3, 20px);
+    grid-template-columns: repeat(3, 27px);
     gap: 3px;
   }
 
   .scoreboard-table__item {
     display: grid;
-    width: 20px;
+    width: 27px;
     height: 20px;
     place-items: center;
     border: 1px solid rgba(224, 230, 208, 0.08);
@@ -2449,6 +2449,14 @@
     padding: 4px 8px;
   }
 
+  .player-build__permanent-upgrades {
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255, 209, 128, 0.25);
+    gap: 4px;
+  }
+
   .player-build__loadout {
     display: grid;
     align-items: center;
@@ -2724,7 +2732,7 @@
     display: grid;
     flex: 0 0 42px;
     width: 42px;
-    height: 26px;
+    height: 30px;
     place-items: center;
     border: 1px solid var(--line-strong);
     border-radius: 3px;
@@ -2769,11 +2777,30 @@
     background: rgba(255, 107, 61, 0.25);
   }
 
-  .item-token.is-empty {
+  .item-token.is-empty:not(.player-build__permanent-upgrade) {
     flex-basis: auto;
     width: auto;
     padding: 0 8px;
     color: var(--muted);
+  }
+
+  .item-token.player-build__permanent-upgrade {
+    border-color: rgba(255, 209, 128, 0.34);
+    background: linear-gradient(145deg, rgba(255, 209, 128, 0.14), rgba(255, 209, 128, 0.04));
+  }
+
+  .item-token.player-build__permanent-upgrade.is-empty {
+    border-style: dashed;
+    border-color: rgba(255, 209, 128, 0.18);
+    background: rgba(255, 209, 128, 0.035);
+  }
+
+  .player-build__permanent-placeholder {
+    color: rgba(255, 209, 128, 0.52);
+    font-family: var(--font-mono);
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
   }
 
   .player-build__footer {
