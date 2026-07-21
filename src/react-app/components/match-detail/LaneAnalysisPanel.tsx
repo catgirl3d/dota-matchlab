@@ -71,7 +71,7 @@ function LaneMatchup({
 
   return (
     <article
-      className={`lane-matchup lane-matchup--${laneResult(lane)}${isFocused ? ' is-focused' : ''}${highlightedPlayer ? ' is-player-focused' : ''}${isMuted ? ' is-muted' : ''}`}
+      className={`lane-matchup team-comparison-card team-comparison-card--${laneResult(lane)}${isFocused ? ' is-focused' : ''}${highlightedPlayer ? ' is-player-focused' : ''}${isMuted ? ' is-muted' : ''}`}
       aria-label={`${lane.label}: ${laneVerdict(lane, t)}`}
       onPointerEnter={() => onFocusChange(lane.id)}
       onPointerLeave={() => onFocusChange(null)}

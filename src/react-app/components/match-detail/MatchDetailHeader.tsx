@@ -5,7 +5,6 @@ import type { MatchDetailSnapshot } from '../../lib/match-detail';
 import { formatGameMode } from '../../lib/game-mode';
 import { formatEnum } from './match-detail-display';
 import { useTranslation, type TranslationKey } from '../../lib/i18n';
-import { Tooltip } from '../Tooltip';
 
 type MatchDetailHeaderProps = {
   detail: MatchDetailSnapshot;
@@ -88,7 +87,7 @@ export function MatchDetailHeader({
           onFocusChange={setHighlightedTeam}
         />
       </header>
-      <MatchKillStrip radiantScore={detail.radiantScore} direScore={detail.direScore} highlightedTeam={highlightedTeam} />
+      <MatchKillStrip radiantScore={detail.radiantScore} direScore={detail.direScore} highlightedTeam={highlightedTeam} onFocusChange={setHighlightedTeam} />
 
       {detailNotice ? (
         <div className="match-detail__notice">
@@ -114,22 +113,30 @@ function MatchKillStrip({
   radiantScore,
   direScore,
   highlightedTeam,
+  onFocusChange,
 }: {
   radiantScore: number;
   direScore: number;
   highlightedTeam: 'radiant' | 'dire' | null;
+  onFocusChange: (team: 'radiant' | 'dire' | null) => void;
 }) {
   const { t } = useTranslation();
   const trackColumns = `${Math.max(radiantScore, 1)}fr ${Math.max(direScore, 1)}fr`;
 
   return (
     <section className={`match-detail__kill-strip${highlightedTeam ? ` is-${highlightedTeam}-focused` : ''}`} aria-label={t('headerTeamKills')}>
-      <Tooltip content={t('headerTeamKillsTooltip', { radiant: radiantScore, dire: direScore })} ariaLabel={t('headerTeamKills')}>
-        <div className="match-detail__kill-strip-track" style={{ gridTemplateColumns: trackColumns }}>
-          <span className="match-detail__kill-strip-track-value match-detail__kill-strip-track-value--radiant" />
-          <span className="match-detail__kill-strip-track-value match-detail__kill-strip-track-value--dire" />
-        </div>
-      </Tooltip>
+      <div className="match-detail__kill-strip-track" style={{ gridTemplateColumns: trackColumns }}>
+        <span
+          className="match-detail__kill-strip-track-value match-detail__kill-strip-track-value--radiant"
+          onPointerEnter={() => onFocusChange('radiant')}
+          onPointerLeave={() => onFocusChange(null)}
+        />
+        <span
+          className="match-detail__kill-strip-track-value match-detail__kill-strip-track-value--dire"
+          onPointerEnter={() => onFocusChange('dire')}
+          onPointerLeave={() => onFocusChange(null)}
+        />
+      </div>
     </section>
   );
 }

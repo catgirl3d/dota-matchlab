@@ -176,24 +176,21 @@
       rgba(7, 9, 7, 0.76);
   }
 
-  .match-detail__kill-strip .app-tooltip__trigger {
-    display: grid;
-    width: 100%;
-  }
-
   .match-detail__kill-strip-track {
     display: grid;
     min-height: 5px;
     gap: 2px;
-    cursor: help;
+    cursor: pointer;
   }
 
   .match-detail__kill-strip-track-value--radiant {
     background: var(--radiant);
+    transition: box-shadow 180ms ease, filter 180ms ease, opacity 180ms ease;
   }
 
   .match-detail__kill-strip-track-value--dire {
     background: var(--signal-red);
+    transition: box-shadow 180ms ease, filter 180ms ease, opacity 180ms ease;
   }
 
   .match-detail__kill-strip.is-radiant-focused .match-detail__kill-strip-track-value--radiant {
@@ -707,9 +704,6 @@
     display: grid;
     padding: 18px;
     gap: 10px;
-    background:
-      linear-gradient(90deg, rgba(73, 199, 229, 0.08), transparent 42%),
-      rgba(7, 9, 7, 0.72);
   }
 
   .scoreboard-team-totals__header,
@@ -747,12 +741,47 @@
     gap: 8px;
   }
 
+  .team-comparison-card {
+    border-left: 3px solid var(--line-strong);
+    background: #161616;
+  }
+
+  .team-comparison-card--radiant {
+    border-left-color: var(--radiant);
+    background: linear-gradient(90deg, rgba(var(--radiant-rgb), 0.07), rgba(7, 9, 7, 0.46) 72%);
+  }
+
+  .team-comparison-card--dire {
+    border-left-color: var(--signal-red);
+    background: linear-gradient(90deg, rgba(255, 54, 95, 0.09), rgba(7, 9, 7, 0.46) 72%);
+  }
+
+  .team-comparison-card--even {
+    border-left-color: var(--muted);
+  }
+
   .scoreboard-total-card {
     display: grid;
     padding: 12px;
-    border-left: 3px solid var(--line-strong);
-    background: rgba(7, 9, 7, 0.46);
     gap: 9px;
+    transition: opacity 180ms ease, filter 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .scoreboard-total-card:focus-visible {
+    outline: 1px solid var(--paper);
+    outline-offset: 3px;
+  }
+
+  .scoreboard-total-card.is-focused {
+    position: relative;
+    z-index: 1;
+    box-shadow: inset 0 0 0 1px rgba(224, 230, 208, 0.16), 0 12px 26px rgba(0, 0, 0, 0.32);
+    transform: scale(1.025);
+  }
+
+  .scoreboard-total-card.is-muted {
+    filter: saturate(0.42);
+    opacity: 0.32;
   }
 
   .scoreboard-total-card > header {
@@ -789,6 +818,15 @@
     font-family: var(--font-mono);
     font-size: var(--fs-lg);
     font-variant-numeric: tabular-nums;
+  }
+
+  .scoreboard-total-card__percentage {
+    margin-left: 4px;
+    color: currentColor;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0;
   }
 
   .scoreboard-total-card__team--radiant small,
@@ -969,34 +1007,19 @@
   .lane-analysis {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .lane-matchup {
     display: grid;
     padding: 14px 16px;
     border-right: 1px solid var(--line);
-    border-left: 3px solid var(--line-strong);
-    background: rgba(7, 9, 7, 0.24);
     gap: 12px;
     transition: opacity 180ms ease, filter 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .lane-matchup:last-child {
     border-right: 0;
-  }
-
-  .lane-matchup--radiant {
-    border-left-color: var(--radiant);
-    background: linear-gradient(90deg, rgba(var(--radiant-rgb), 0.075), transparent 62%);
-  }
-
-  .lane-matchup--dire {
-    border-left-color: var(--signal-red);
-    background: linear-gradient(90deg, rgba(255, 54, 95, 0.065), transparent 62%);
-  }
-
-  .lane-matchup--even {
-    border-left-color: var(--muted);
   }
 
   .lane-matchup.is-focused {
@@ -1043,11 +1066,11 @@
     letter-spacing: 0.02em;
   }
 
-  .lane-matchup--radiant .lane-matchup__header strong {
+  .team-comparison-card--radiant .lane-matchup__header strong {
     color: var(--radiant-strong);
   }
 
-  .lane-matchup--dire .lane-matchup__header strong {
+  .team-comparison-card--dire .lane-matchup__header strong {
     color: #ff5e82;
   }
 
@@ -1395,8 +1418,7 @@
 
   .detail-events {
     display: grid;
-    padding: 0 18px 18px;
-    gap: 8px;
+    gap: 10px;
     grid-template-columns: repeat(3, 1fr);
   }
 
@@ -1441,6 +1463,7 @@
     background: transparent;
     color: var(--muted);
     font-weight: 600;
+    padding: 10px 22px;
   }
 
   .detail-events strong {
