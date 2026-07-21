@@ -59,7 +59,6 @@ export function PeriodFilter({ period, startDate, endDate, onChange }: PeriodFil
 
   return (
     <div className={`filter-select${isOpen ? ' filter-select--open' : ''}`} ref={filterRef}>
-      <span>Period</span>
       <button
         className="filter-dropdown__trigger"
         type="button"
@@ -67,7 +66,8 @@ export function PeriodFilter({ period, startDate, endDate, onChange }: PeriodFil
         aria-label={`Period: ${selectedLabel}`}
         onClick={toggleFilter}
       >
-        {selectedLabel}
+        <span className="filter-dropdown__label">Period</span>
+        <span className="filter-dropdown__value">{selectedLabel}</span>
       </button>
       {isOpen ? (
         <div className="filter-dropdown__menu period-filter__menu" role="group" aria-label="Period options">

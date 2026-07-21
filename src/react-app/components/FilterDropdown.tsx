@@ -53,7 +53,6 @@ export function FilterDropdown({ label, value, options, onChange, searchable = f
 
   return (
     <div className={`filter-select${isOpen ? ' filter-select--open' : ''}`} ref={dropdownRef}>
-      <span>{label}</span>
       <button
         className="filter-dropdown__trigger"
         type="button"
@@ -61,7 +60,8 @@ export function FilterDropdown({ label, value, options, onChange, searchable = f
         aria-label={`${label}: ${selectedLabel}`}
         onClick={toggleDropdown}
       >
-        {selectedLabel}
+        <span className="filter-dropdown__label">{label}</span>
+        <span className="filter-dropdown__value">{selectedLabel}</span>
       </button>
       {isOpen ? (
         <div className="filter-dropdown__menu" role="group" aria-label={`${label} options`}>

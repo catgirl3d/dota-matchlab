@@ -312,7 +312,7 @@ describe('MatchDetailView', () => {
     expect(entries[1]).toHaveAccessibleName('Dire killer killed Radiant target at 2:05');
     expect(entries[1]).toHaveClass('is-dire');
 
-    fireEvent.click(within(killHistory).getByRole('button', { name: 'Hero: All heroes' }));
+    fireEvent.click(within(killHistory).getByText('Hero'));
     const heroOptions = screen.getByRole('group', { name: 'Hero options' });
     expect(within(heroOptions).getByRole('button', { name: 'Bane' })).toBeVisible();
     expect(within(heroOptions).queryByRole('button', { name: 'Lina' })).not.toBeInTheDocument();

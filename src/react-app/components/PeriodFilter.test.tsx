@@ -18,7 +18,7 @@ describe('PeriodFilter', () => {
     const onChange = vi.fn();
     render(<PeriodFilter period="all" startDate={null} endDate={null} onChange={onChange} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Period: All time' }));
+    fireEvent.click(screen.getByText('Period'));
     fireEvent.click(screen.getByRole('button', { name: /Custom range/ }));
     expect(screen.getByRole('dialog', { name: 'Custom date range' })).toBeVisible();
     const applyRange = screen.getByRole('button', { name: 'Apply range' });

@@ -337,9 +337,12 @@
   }
 
   .kill-history__filter .filter-select {
-    padding: 5px 8px;
     border: 1px solid var(--line);
     background: rgba(16, 18, 15, 0.7);
+  }
+
+  .kill-history__filter .filter-dropdown__trigger {
+    padding: 5px 8px;
   }
 
   .kill-history__filter .filter-select:last-child {
