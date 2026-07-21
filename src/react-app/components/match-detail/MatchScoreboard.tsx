@@ -320,36 +320,36 @@ function ScoreboardTableRow({
         </span>
       </th>
       <td className="scoreboard-table__numeric" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
-        <ScoreboardRecordValue value={String(player.kills)} isRecord={isScoreboardRecord(records, 'kills', player.kills)} />
+        <ScoreboardMetricValue value={String(player.kills)} tooltipKey="scoreboardMetricKills" isRecord={isScoreboardRecord(records, 'kills', player.kills)} />
         {' / '}
-        <ScoreboardRecordValue value={String(player.deaths)} isRecord={isScoreboardRecord(records, 'deaths', player.deaths)} />
+        <ScoreboardMetricValue value={String(player.deaths)} tooltipKey="scoreboardMetricDeaths" isRecord={isScoreboardRecord(records, 'deaths', player.deaths)} />
         {' / '}
-        <ScoreboardRecordValue value={String(player.assists)} isRecord={isScoreboardRecord(records, 'assists', player.assists)} />
+        <ScoreboardMetricValue value={String(player.assists)} tooltipKey="scoreboardMetricAssists" isRecord={isScoreboardRecord(records, 'assists', player.assists)} />
       </td>
       <td className="scoreboard-table__numeric">
-        <ScoreboardRecordValue value={formatCompact(player.netWorth)} isRecord={isScoreboardRecord(records, 'netWorth', player.netWorth)} />
+        <ScoreboardMetricValue value={formatCompact(player.netWorth)} tooltipKey="scoreboardMetricNetWorth" isRecord={isScoreboardRecord(records, 'netWorth', player.netWorth)} />
       </td>
       <td className={`scoreboard-table__numeric scoreboard-table__imp${player.imp === null ? ' is-unavailable' : player.imp > 0 ? ' is-positive' : player.imp < 0 ? ' is-negative' : ''}`}>
-        <ScoreboardRecordValue value={formatImp(player.imp)} isRecord={isScoreboardRecord(records, 'imp', player.imp)} />
+        <ScoreboardMetricValue value={formatImp(player.imp)} tooltipKey="scoreboardMetricImp" isRecord={isScoreboardRecord(records, 'imp', player.imp)} />
       </td>
       <td className="scoreboard-table__numeric">
-        <ScoreboardRecordValue value={String(player.lastHits)} isRecord={isScoreboardRecord(records, 'lastHits', player.lastHits)} />
+        <ScoreboardMetricValue value={String(player.lastHits)} tooltipKey="scoreboardMetricLastHits" isRecord={isScoreboardRecord(records, 'lastHits', player.lastHits)} />
         {' / '}
-        <ScoreboardRecordValue value={String(player.denies)} isRecord={isScoreboardRecord(records, 'denies', player.denies)} />
+        <ScoreboardMetricValue value={String(player.denies)} tooltipKey="scoreboardMetricDenies" isRecord={isScoreboardRecord(records, 'denies', player.denies)} />
       </td>
       <td className="scoreboard-table__numeric">
-        <ScoreboardRecordValue value={formatCompact(player.goldPerMinute)} isRecord={isScoreboardRecord(records, 'goldPerMinute', player.goldPerMinute)} />
+        <ScoreboardMetricValue value={formatCompact(player.goldPerMinute)} tooltipKey="scoreboardMetricGoldPerMinute" isRecord={isScoreboardRecord(records, 'goldPerMinute', player.goldPerMinute)} />
         {' / '}
-        <ScoreboardRecordValue value={formatCompact(player.xpPerMinute)} isRecord={isScoreboardRecord(records, 'xpPerMinute', player.xpPerMinute)} />
+        <ScoreboardMetricValue value={formatCompact(player.xpPerMinute)} tooltipKey="scoreboardMetricExperiencePerMinute" isRecord={isScoreboardRecord(records, 'xpPerMinute', player.xpPerMinute)} />
       </td>
       <td className="scoreboard-table__numeric">
-        <ScoreboardRecordValue value={formatCompact(player.heroDamage)} isRecord={isScoreboardRecord(records, 'heroDamage', player.heroDamage)} />
+        <ScoreboardMetricValue value={formatCompact(player.heroDamage)} tooltipKey="scoreboardMetricHeroDamage" isRecord={isScoreboardRecord(records, 'heroDamage', player.heroDamage)} />
       </td>
       <td className="scoreboard-table__numeric">
-        <ScoreboardRecordValue value={formatCompact(player.towerDamage)} isRecord={isScoreboardRecord(records, 'towerDamage', player.towerDamage)} />
+        <ScoreboardMetricValue value={formatCompact(player.towerDamage)} tooltipKey="scoreboardMetricTowerDamage" isRecord={isScoreboardRecord(records, 'towerDamage', player.towerDamage)} />
       </td>
       <td className="scoreboard-table__numeric">
-        <ScoreboardRecordValue value={formatCompact(player.heroHealing)} isRecord={isScoreboardRecord(records, 'heroHealing', player.heroHealing)} />
+        <ScoreboardMetricValue value={formatCompact(player.heroHealing)} tooltipKey="scoreboardMetricHeroHealing" isRecord={isScoreboardRecord(records, 'heroHealing', player.heroHealing)} />
       </td>
       <td>
         <ScoreboardInventory
@@ -408,14 +408,28 @@ function ScoreboardTeamTotalsRow({
   return (
     <tr className={`scoreboard-table__team-total scoreboard-table__team-total--${team}`} aria-label={totalLabel}>
       <th className="scoreboard-table__team-total-label" colSpan={2} scope="row">{totalLabel}</th>
-      <td className="scoreboard-table__numeric">{totals.kills} / {totals.deaths} / {totals.assists}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(totals.netWorth)}</td>
-      <td className={`scoreboard-table__numeric scoreboard-table__imp${totals.imp === null ? ' is-unavailable' : totals.imp > 0 ? ' is-positive' : totals.imp < 0 ? ' is-negative' : ''}`}>{formatImp(totals.imp)}</td>
-      <td className="scoreboard-table__numeric">{totals.lastHits} / {totals.denies}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(totals.goldPerMinute)} / {formatCompact(totals.xpPerMinute)}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(totals.heroDamage)}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(totals.towerDamage)}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(totals.heroHealing)}</td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardMetricValue value={String(totals.kills)} tooltipKey="scoreboardMetricKills" />
+        {' / '}
+        <ScoreboardMetricValue value={String(totals.deaths)} tooltipKey="scoreboardMetricDeaths" />
+        {' / '}
+        <ScoreboardMetricValue value={String(totals.assists)} tooltipKey="scoreboardMetricAssists" />
+      </td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.netWorth)} tooltipKey="scoreboardMetricNetWorth" /></td>
+      <td className={`scoreboard-table__numeric scoreboard-table__imp${totals.imp === null ? ' is-unavailable' : totals.imp > 0 ? ' is-positive' : totals.imp < 0 ? ' is-negative' : ''}`}><ScoreboardMetricValue value={formatImp(totals.imp)} tooltipKey="scoreboardMetricImp" /></td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardMetricValue value={String(totals.lastHits)} tooltipKey="scoreboardMetricLastHits" />
+        {' / '}
+        <ScoreboardMetricValue value={String(totals.denies)} tooltipKey="scoreboardMetricDenies" />
+      </td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardMetricValue value={formatCompact(totals.goldPerMinute)} tooltipKey="scoreboardMetricGoldPerMinute" />
+        {' / '}
+        <ScoreboardMetricValue value={formatCompact(totals.xpPerMinute)} tooltipKey="scoreboardMetricExperiencePerMinute" />
+      </td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.heroDamage)} tooltipKey="scoreboardMetricHeroDamage" /></td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.towerDamage)} tooltipKey="scoreboardMetricTowerDamage" /></td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.heroHealing)} tooltipKey="scoreboardMetricHeroHealing" /></td>
       <td aria-hidden="true" />
     </tr>
   );
@@ -448,9 +462,29 @@ function averagePlayerImp(players: MatchDetailPlayer[]): number | null {
     : players.reduce((total, player) => total + (player.imp ?? 0), 0) / players.length;
 }
 
+function ScoreboardMetricValue({
+  value,
+  tooltipKey,
+  isRecord = false,
+}: {
+  value: string;
+  tooltipKey: TranslationKey;
+  isRecord?: boolean;
+}) {
+  const { t } = useTranslation();
+  const metric = t(tooltipKey);
+  const tooltip = isRecord ? t('scoreboardMetricBestInMatch', { metric }) : metric;
+
+  return (
+    <Tooltip content={tooltip} focusable={false}>
+      <ScoreboardRecordValue value={value} isRecord={isRecord} />
+    </Tooltip>
+  );
+}
+
 function ScoreboardRecordValue({ value, isRecord }: { value: string; isRecord: boolean }) {
   return (
-    <span className={isRecord ? 'scoreboard-table__record' : undefined} title={isRecord ? 'Best in match' : undefined}>
+    <span className={isRecord ? 'scoreboard-table__record' : undefined}>
       {value}
     </span>
   );

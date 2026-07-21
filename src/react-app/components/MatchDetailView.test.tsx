@@ -479,6 +479,22 @@ describe('MatchDetailView', () => {
     expect(screen.getByRole('tooltip')).toHaveTextContent('Net worth');
   });
 
+  it('shows metric context when hovering table values', () => {
+    render(<MatchDetailView detail={detail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const bestRow = screen.getByRole('row', { name: 'Scoreboard row for Player #111' });
+    const bestKillsTrigger = within(bestRow).getByText('22').closest<HTMLElement>('.app-tooltip__trigger');
+    fireEvent.pointerEnter(bestKillsTrigger as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Kills · Best in match');
+    expect(bestKillsTrigger).not.toHaveAttribute('title');
+
+    fireEvent.pointerLeave(bestKillsTrigger as HTMLElement);
+    const otherRow = screen.getByRole('row', { name: 'Scoreboard row for Player #222' });
+    const otherKillsTrigger = within(otherRow).getByText('9').closest<HTMLElement>('.app-tooltip__trigger');
+    fireEvent.pointerEnter(otherKillsTrigger as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Kills');
+  });
+
   it('marks a team IMP total unavailable when any player IMP is missing', () => {
     const detailWithMissingImp = createSortableDetail();
     detailWithMissingImp.players[0] = { ...detailWithMissingImp.players[0], imp: null };
