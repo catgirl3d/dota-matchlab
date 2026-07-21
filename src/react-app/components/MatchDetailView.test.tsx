@@ -529,6 +529,15 @@ describe('MatchDetailView', () => {
     expect(netWorthTotalCard).toHaveTextContent('(54%)');
     expect(heroDamageTotalCard).toHaveClass('team-comparison-card--dire');
     expect(heroDamageTotalCard).toHaveTextContent('(58%)');
+    const radiantHighRow = table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement;
+    fireEvent.click(radiantHighRow);
+    expect(radiantHighRow).toHaveClass('is-contribution-selected');
+    expect(netWorthTotalCard).toHaveClass('has-contribution--radiant');
+    expect(netWorthTotalCard).toHaveTextContent('Radiant high');
+    expect(netWorthTotalCard).toHaveTextContent('24K');
+    fireEvent.click(radiantHighRow);
+    expect(radiantHighRow).not.toHaveClass('is-contribution-selected');
+    expect(netWorthTotalCard).not.toHaveClass('has-contribution--radiant');
     fireEvent.pointerEnter(killsTotalCard);
     expect(killsTotalCard).toHaveClass('is-focused');
     expect(assistsTotalCard).toHaveClass('is-muted');
@@ -543,7 +552,6 @@ describe('MatchDetailView', () => {
     expect(radiantTotal.querySelectorAll('td')).toHaveLength(9);
     expect(radiantTotal.lastElementChild).toBeEmptyDOMElement();
     expect(direTotal).toHaveTextContent('+3');
-    const radiantHighRow = table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement;
     const direHighRow = table.querySelector('[aria-label="Scoreboard row for Dire high"]') as HTMLElement;
     expect(within(radiantHighRow).getByText('MVP')).toBeVisible();
     expect(within(radiantHighRow).getByRole('img', { name: 'Phase Boots' })).toBeVisible();

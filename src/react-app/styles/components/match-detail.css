@@ -4,7 +4,6 @@
     --detail-fs-nano: 0.41rem;
     --detail-fs-micro: 0.47rem;
     --detail-fs-small: 0.53rem;
-    --detail-fs-label: 0.59rem;
     animation: detail-enter 320ms ease both;
   }
 
@@ -594,7 +593,7 @@
   .scoreboard-table thead th {
     height: 44px;
     color: var(--muted);
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-align: center;
@@ -607,6 +606,8 @@
 
   .scoreboard-table__row {
     background: rgba(7, 9, 7, 0.18);
+    cursor: pointer;
+    transition: background 180ms ease, box-shadow 180ms ease;
   }
 
   .scoreboard-table__row.is-radiant {
@@ -633,13 +634,28 @@
     background: linear-gradient(90deg, rgba(var(--rank-second-rgb), 0.075), transparent 62%);
   }
 
+  .scoreboard-table__row:focus-visible {
+    outline: 1px solid var(--paper);
+    outline-offset: -2px;
+  }
+
+  .scoreboard-table__row.is-radiant.is-contribution-selected {
+    background: linear-gradient(90deg, rgba(var(--radiant-rgb), 0.16), transparent 68%);
+    box-shadow: inset 3px 0 0 var(--radiant), inset 0 0 0 1px rgba(var(--radiant-rgb), 0.14);
+  }
+
+  .scoreboard-table__row.is-dire.is-contribution-selected {
+    background: linear-gradient(90deg, rgba(255, 54, 95, 0.15), transparent 68%);
+    box-shadow: inset 3px 0 0 var(--signal-red), inset 0 0 0 1px rgba(255, 54, 95, 0.14);
+  }
+
   .scoreboard-table__team-break td {
     height: 36px;
     padding: 0 12px;
     border-bottom: 1px solid rgba(255, 54, 95, 0.22);
     background: linear-gradient(90deg, rgba(255, 54, 95, 0.09), transparent 48%);
     color: var(--signal-red);
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.14em;
     text-align: left;
@@ -683,7 +699,7 @@
 
   .scoreboard-table__team-total-label {
     color: var(--paper);
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     letter-spacing: 0.1em;
     text-align: left;
     text-transform: uppercase;
@@ -843,6 +859,38 @@
     color: #ff5e82;
   }
 
+  .scoreboard-total-card__team.is-contribution {
+    filter: none;
+    opacity: 1;
+  }
+
+  .scoreboard-total-card__contribution {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .scoreboard-total-card__team--dire .scoreboard-total-card__contribution {
+    justify-content: flex-end;
+  }
+
+  .scoreboard-total-card__contribution > span {
+    overflow: hidden;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-micro);
+    letter-spacing: 0.03em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .scoreboard-total-card__contribution strong {
+    flex: 0 0 auto;
+    color: currentColor;
+    font-size: var(--detail-fs-small);
+  }
+
   .scoreboard-total-card__track {
     display: grid;
     min-height: 4px;
@@ -857,12 +905,72 @@
     background: var(--signal-red);
   }
 
+  .scoreboard-total-card__track-value {
+    position: relative;
+    overflow: hidden;
+    transition: filter 180ms ease, opacity 180ms ease;
+  }
+
+  .scoreboard-total-card__track-value.has-contribution {
+    filter: none;
+    opacity: 1;
+  }
+
+  .scoreboard-total-card__track-value--radiant.has-contribution {
+    background: rgba(var(--radiant-rgb), 0.24);
+  }
+
+  .scoreboard-total-card__track-value--dire.has-contribution {
+    background: rgba(255, 54, 95, 0.22);
+  }
+
+  .scoreboard-total-card__contribution-share {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    background: var(--radiant-strong);
+    transform-origin: left center;
+    animation: scoreboard-contribution-share-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .scoreboard-total-card__track-value--dire .scoreboard-total-card__contribution-share {
+    right: 0;
+    left: auto;
+    background: #ff5e82;
+    transform-origin: right center;
+  }
+
   .team-comparison-card--radiant .scoreboard-total-card__team--dire,
   .team-comparison-card--radiant .scoreboard-total-card__track-value--dire,
   .team-comparison-card--dire .scoreboard-total-card__team--radiant,
   .team-comparison-card--dire .scoreboard-total-card__track-value--radiant {
     filter: saturate(0.22);
     opacity: 0.35;
+  }
+
+  .team-comparison-card .scoreboard-total-card__team.is-contribution,
+  .team-comparison-card .scoreboard-total-card__track-value.has-contribution {
+    filter: none;
+    opacity: 1;
+  }
+
+  .scoreboard-total-card.has-contribution--radiant .scoreboard-total-card__team--dire,
+  .scoreboard-total-card.has-contribution--radiant .scoreboard-total-card__track-value--dire,
+  .scoreboard-total-card.has-contribution--dire .scoreboard-total-card__team--radiant,
+  .scoreboard-total-card.has-contribution--dire .scoreboard-total-card__track-value--radiant {
+    filter: saturate(0.22);
+    opacity: 0.28;
+  }
+
+  @keyframes scoreboard-contribution-share-in {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
   }
 
   .scoreboard-table__hero-cell {
@@ -900,7 +1008,7 @@
     border: 1px solid var(--line-strong);
     border-radius: 50%;
     color: var(--paper);
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     font-weight: 700;
   }
 
@@ -1246,7 +1354,7 @@
   .lane-role__copy strong {
     overflow: hidden;
     color: var(--paper);
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -2364,7 +2472,7 @@
     width: 100%;
     height: 38px;
     padding: 0;
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     font-weight: 800;
     letter-spacing: 0.12em;
     color: #ffd180;
@@ -2409,7 +2517,7 @@
     justify-content: center;
     padding: 2px 8px;
     font-family: var(--font-mono);
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--muted);
     background: rgba(224, 230, 208, 0.05);
@@ -2487,7 +2595,7 @@
     background: #ffb800;
     color: #10120f;
     font-family: var(--font-sans);
-    font-size: var(--detail-fs-label);
+    font-size: var(--fs-2xs);
     font-weight: 800;
     line-height: 1;
   }
