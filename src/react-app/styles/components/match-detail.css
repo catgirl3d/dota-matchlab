@@ -89,7 +89,14 @@
   }
 
   .team-outcome--dire {
+    border-right: 3px solid transparent;
     direction: rtl;
+    transform-origin: right center;
+  }
+
+  .team-outcome--radiant {
+    border-left: 3px solid transparent;
+    transform-origin: left center;
   }
 
   .team-outcome--dire > * {
@@ -106,7 +113,6 @@
     width: 64px;
     height: 64px;
     place-items: center;
-    border: 1px solid var(--line-strong);
     background: var(--ink-soft);
     overflow: hidden;
   }
@@ -153,12 +159,12 @@
 
   .team-outcome--radiant.is-focused {
     background: linear-gradient(90deg, rgba(var(--radiant-rgb), 0.17), transparent 72%);
-    box-shadow: inset 3px 0 0 var(--radiant);
+    border-left-color: var(--radiant);
   }
 
   .team-outcome--dire.is-focused {
     background: linear-gradient(270deg, rgba(255, 54, 95, 0.16), transparent 72%);
-    box-shadow: inset -3px 0 0 var(--signal-red);
+    border-right-color: var(--signal-red);
   }
 
   .team-outcome.is-muted {
