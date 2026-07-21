@@ -446,6 +446,13 @@ describe('MatchDetailView', () => {
     expect(direColumn).toContainElement(screen.getByRole('article', { name: 'Build for Opponent' }));
     const currentBuild = screen.getByRole('article', { name: 'Build for Current' });
     expect(currentBuild).toHaveAttribute('aria-current', 'true');
+    const sectionHeaders = currentBuild.querySelectorAll<HTMLElement>('.player-build__section-header');
+    expect(sectionHeaders).toHaveLength(3);
+    expect(sectionHeaders[0]).toHaveTextContent('FINAL BUILD');
+    expect(sectionHeaders[1]).toHaveTextContent('ABILITIES');
+    expect(sectionHeaders[1]).toHaveTextContent('13');
+    expect(sectionHeaders[2]).toHaveTextContent('PURCHASES');
+    expect(sectionHeaders[2]).toHaveTextContent('14');
     expect(within(currentBuild).getByText('T')).toBeVisible();
     expect(within(currentBuild).getByText('+12 Desolate Damage')).toBeVisible();
     expect(within(currentBuild).getByRole('img', { name: 'Talent: +12 Desolate Damage, 0:10' })).toBeVisible();

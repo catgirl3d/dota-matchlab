@@ -179,8 +179,7 @@ function PlayerBuild({
           {impText}
         </span>
       </div>
-      <div className="player-build__loadout" aria-label={`Final loadout for ${player.name ?? formatAccount(player.accountId)}`}>
-        <span className="player-build__label">FINAL</span>
+      <PlayerBuildSection label="FINAL BUILD" className="player-build__loadout" ariaLabel={`Final loadout for ${player.name ?? formatAccount(player.accountId)}`}>
         <div className="player-build__items">
           {player.itemIds.length === 0 ? <span className="item-token is-empty">NO ITEMS</span> : null}
           {player.itemIds.map((itemId, index) => <ItemToken itemId={itemId} key={`${itemId}-${index}`} />)}
@@ -188,7 +187,7 @@ function PlayerBuild({
           {player.neutralItemId ? <ItemToken itemId={player.neutralItemId} tone="neutral" /> : null}
           <PlayerBuildPermanentUpgrades permanentUpgradeItemIds={player.permanentUpgradeItemIds} />
         </div>
-      </div>
+      </PlayerBuildSection>
       <div className="player-build__progression">
         <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={player.abilityBuild} total={player.abilityBuild.length}>
           {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
@@ -237,6 +236,30 @@ function PlayerBuild({
   );
 }
 
+function PlayerBuildSection({
+  label,
+  count,
+  className,
+  ariaLabel,
+  children,
+}: {
+  label: string;
+  count?: number;
+  className: string;
+  ariaLabel?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`player-build__section ${className}`} aria-label={ariaLabel}>
+      <div className="player-build__section-header">
+        <span className="player-build__label">{label}</span>
+        {count === undefined ? null : <span className="build-timeline__count">{count}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function BuildTimeline<T extends { time: number }>({
   label,
   emptyLabel,
@@ -255,13 +278,9 @@ function BuildTimeline<T extends { time: number }>({
   children: (event: T, index: number) => ReactNode;
 }) {
   return (
-    <div className="build-timeline">
-      <div className="build-timeline__header">
-        <span className="player-build__label">{label}</span>
-        <span className="build-timeline__count">{total}</span>
-      </div>
+    <PlayerBuildSection label={label} count={total} className="build-timeline">
       {!available ? <span className="build-timeline__empty">{unavailableLabel}</span> : events.length === 0 ? <span className="build-timeline__empty">{emptyLabel}</span> : <div className="build-timeline__strip">{events.map(children)}</div>}
-    </div>
+    </PlayerBuildSection>
   );
 }
 
