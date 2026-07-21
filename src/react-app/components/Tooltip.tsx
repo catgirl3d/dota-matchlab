@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 type TooltipProps = {
   content: string;
   children: ReactNode;
+  focusable?: boolean;
 };
 
 type TooltipPosition = {
@@ -11,7 +12,7 @@ type TooltipPosition = {
   top: number;
 };
 
-export function Tooltip({ content, children }: TooltipProps) {
+export function Tooltip({ content, children, focusable = true }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
@@ -44,14 +45,14 @@ export function Tooltip({ content, children }: TooltipProps) {
       <span
         className="app-tooltip__trigger"
         ref={triggerRef}
-        tabIndex={0}
+        tabIndex={focusable ? 0 : undefined}
         aria-describedby={isOpen ? tooltipId : undefined}
         onPointerEnter={() => setIsOpen(true)}
         onPointerLeave={() => setIsOpen(false)}
-        onFocus={() => setIsOpen(true)}
-        onBlur={() => setIsOpen(false)}
+        onFocus={focusable ? () => setIsOpen(true) : undefined}
+        onBlur={focusable ? () => setIsOpen(false) : undefined}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') {
+          if (focusable && event.key === 'Escape') {
             setIsOpen(false);
             event.currentTarget.blur();
           }

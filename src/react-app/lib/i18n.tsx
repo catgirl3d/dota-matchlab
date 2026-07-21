@@ -217,6 +217,28 @@ export const translations = {
     chatAll: 'All',
     chatAriaLabel: 'Match chat log',
 
+    // Scoreboard metric tooltips
+    scoreboardMetricHero: 'Hero',
+    scoreboardMetricPlayer: 'Player',
+    scoreboardMetricKda: 'Kills / Deaths / Assists',
+    scoreboardMetricNetWorth: 'Net worth',
+    scoreboardMetricImp: 'Individual match performance',
+    scoreboardMetricLastHitsDenies: 'Last hits / Denies',
+    scoreboardMetricGoldExperiencePerMinute: 'Gold per minute / Experience per minute',
+    scoreboardMetricHeroDamage: 'Hero damage',
+    scoreboardMetricTowerDamage: 'Tower damage',
+    scoreboardMetricHeroHealing: 'Hero healing',
+    scoreboardMetricInventory: 'Inventory',
+    scoreboardMetricKills: 'Kills',
+    scoreboardMetricDeaths: 'Deaths',
+    scoreboardMetricAssists: 'Assists',
+    scoreboardMetricGoldPerMinute: 'Gold per minute',
+    scoreboardMetricExperiencePerMinute: 'Experience per minute',
+    scoreboardTeamRadiant: 'Radiant',
+    scoreboardTeamDire: 'Dire',
+    scoreboardTeamTotals: 'Team totals',
+    scoreboardTeamTotal: '{team} total',
+
   }
 } as const;
 

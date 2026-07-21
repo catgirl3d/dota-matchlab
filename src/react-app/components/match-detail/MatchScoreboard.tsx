@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { MatchDetailPlayer } from '../../lib/match-detail';
 import { getItemIcon } from '../../lib/item-icons';
 import { getPositionIcon } from '../../lib/position-icons';
+import { useTranslation, type TranslationKey } from '../../lib/i18n';
 import { HeroMark } from '../HeroMark';
 import { PlayerSortControls, type PlayerSort } from '../PlayerSortControls';
 import { Tooltip } from '../Tooltip';
@@ -66,7 +67,7 @@ export function MatchScoreboard({
   currentAccountId,
 }: MatchScoreboardProps) {
   const [sort, setSort] = useState<PlayerSort>('slot');
-  const [view, setView] = useState<ScoreboardView>('roster');
+  const [view, setView] = useState<ScoreboardView>('table');
   const players = [...radiantPlayers, ...direPlayers];
   const performanceRanks = rankPlayersByImp(players);
   const playerAchievements = getPlayerAchievements(players, performanceRanks);
@@ -193,15 +194,15 @@ function TeamRoster({
               <AchievementBadges achievements={achievements} />
             </div>
             <div className="scoreboard-player__kda" role="group" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
-              <span><small>K</small><strong>{player.kills}</strong></span>
-              <span><small>D</small><strong>{player.deaths}</strong></span>
-              <span><small>A</small><strong>{player.assists}</strong></span>
+              <span><ScoreboardMetricLabel label="K" tooltipKey="scoreboardMetricKills" compact /><strong>{player.kills}</strong></span>
+              <span><ScoreboardMetricLabel label="D" tooltipKey="scoreboardMetricDeaths" compact /><strong>{player.deaths}</strong></span>
+              <span><ScoreboardMetricLabel label="A" tooltipKey="scoreboardMetricAssists" compact /><strong>{player.assists}</strong></span>
             </div>
             <div className="scoreboard-player__economy">
-              <span><small>GPM</small><strong>{player.goldPerMinute}</strong></span>
-              <span><small>XPM</small><strong>{player.xpPerMinute}</strong></span>
+              <span><ScoreboardMetricLabel label="GPM" tooltipKey="scoreboardMetricGoldPerMinute" compact /><strong>{player.goldPerMinute}</strong></span>
+              <span><ScoreboardMetricLabel label="XPM" tooltipKey="scoreboardMetricExperiencePerMinute" compact /><strong>{player.xpPerMinute}</strong></span>
             </div>
-            <span className="scoreboard-player__net"><small>NW</small><strong>{formatCompact(player.netWorth)}</strong></span>
+            <span className="scoreboard-player__net"><ScoreboardMetricLabel label="NW" tooltipKey="scoreboardMetricNetWorth" compact /><strong>{formatCompact(player.netWorth)}</strong></span>
           </article>
         );
       })}
@@ -235,17 +236,17 @@ function ScoreboardTable({
       <table className="scoreboard-table" aria-label="Ten-player scoreboard table">
         <thead>
           <tr>
-            <th scope="col">Hero</th>
-            <th scope="col">Player</th>
-            <th scope="col">K / D / A</th>
-            <th scope="col">NW</th>
-            <th scope="col">IMP</th>
-            <th scope="col">LH / DN</th>
-            <th scope="col">GPM / XPM</th>
-            <th scope="col">HD</th>
-            <th scope="col">TD</th>
-            <th scope="col">HH</th>
-            <th scope="col">Inventory</th>
+            <ScoreboardTableHeader label="Hero" tooltipKey="scoreboardMetricHero" />
+            <ScoreboardTableHeader label="Player" tooltipKey="scoreboardMetricPlayer" />
+            <ScoreboardTableHeader label="K / D / A" tooltipKey="scoreboardMetricKda" />
+            <ScoreboardTableHeader label="NW" tooltipKey="scoreboardMetricNetWorth" />
+            <ScoreboardTableHeader label="IMP" tooltipKey="scoreboardMetricImp" />
+            <ScoreboardTableHeader label="LH / DN" tooltipKey="scoreboardMetricLastHitsDenies" />
+            <ScoreboardTableHeader label="GPM / XPM" tooltipKey="scoreboardMetricGoldExperiencePerMinute" />
+            <ScoreboardTableHeader label="HD" tooltipKey="scoreboardMetricHeroDamage" />
+            <ScoreboardTableHeader label="TD" tooltipKey="scoreboardMetricTowerDamage" />
+            <ScoreboardTableHeader label="HH" tooltipKey="scoreboardMetricHeroHealing" />
+            <ScoreboardTableHeader label="Inventory" tooltipKey="scoreboardMetricInventory" />
           </tr>
         </thead>
         <tbody>
@@ -277,6 +278,11 @@ function ScoreboardTable({
             />
           ))}
         </tbody>
+        <tfoot>
+          {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsHeading /> : null}
+          {radiantPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="radiant" players={radiantPlayers} /> : null}
+          {direPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="dire" players={direPlayers} /> : null}
+        </tfoot>
       </table>
     </div>
   );
@@ -348,6 +354,92 @@ function ScoreboardTableRow({
       <td><ScoreboardInventory itemIds={player.itemIds} neutralItemId={player.neutralItemId} /></td>
     </tr>
   );
+}
+
+function ScoreboardTableHeader({ label, tooltipKey }: { label: string; tooltipKey: TranslationKey }) {
+  return (
+    <th scope="col">
+      <ScoreboardMetricLabel label={label} tooltipKey={tooltipKey} />
+    </th>
+  );
+}
+
+function ScoreboardMetricLabel({
+  label,
+  tooltipKey,
+  compact = false,
+}: {
+  label: string;
+  tooltipKey: TranslationKey;
+  compact?: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Tooltip content={t(tooltipKey)} focusable={false}>
+      {compact ? <small>{label}</small> : <span>{label}</span>}
+    </Tooltip>
+  );
+}
+
+function ScoreboardTeamTotalsHeading() {
+  const { t } = useTranslation();
+  return <tr className="scoreboard-table__totals-heading"><th colSpan={11} scope="rowgroup">{t('scoreboardTeamTotals')}</th></tr>;
+}
+
+function ScoreboardTeamTotalsRow({
+  team,
+  players,
+}: {
+  team: 'radiant' | 'dire';
+  players: MatchDetailPlayer[];
+}) {
+  const { t } = useTranslation();
+  const totals = getScoreboardTeamTotals(players);
+  const teamLabel = team === 'radiant' ? t('scoreboardTeamRadiant') : t('scoreboardTeamDire');
+  const totalLabel = t('scoreboardTeamTotal', { team: teamLabel });
+
+  return (
+    <tr className={`scoreboard-table__team-total scoreboard-table__team-total--${team}`} aria-label={totalLabel}>
+      <th className="scoreboard-table__team-total-label" colSpan={2} scope="row">{totalLabel}</th>
+      <td className="scoreboard-table__numeric">{totals.kills} / {totals.deaths} / {totals.assists}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(totals.netWorth)}</td>
+      <td className={`scoreboard-table__numeric scoreboard-table__imp${totals.imp === null ? ' is-unavailable' : totals.imp > 0 ? ' is-positive' : totals.imp < 0 ? ' is-negative' : ''}`}>{formatImp(totals.imp)}</td>
+      <td className="scoreboard-table__numeric">{totals.lastHits} / {totals.denies}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(totals.goldPerMinute)} / {formatCompact(totals.xpPerMinute)}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(totals.heroDamage)}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(totals.towerDamage)}</td>
+      <td className="scoreboard-table__numeric">{formatCompact(totals.heroHealing)}</td>
+      <td aria-hidden="true" />
+    </tr>
+  );
+}
+
+function getScoreboardTeamTotals(players: MatchDetailPlayer[]) {
+  return {
+    kills: sumPlayerMetric(players, (player) => player.kills),
+    deaths: sumPlayerMetric(players, (player) => player.deaths),
+    assists: sumPlayerMetric(players, (player) => player.assists),
+    netWorth: sumPlayerMetric(players, (player) => player.netWorth),
+    imp: averagePlayerImp(players),
+    lastHits: sumPlayerMetric(players, (player) => player.lastHits),
+    denies: sumPlayerMetric(players, (player) => player.denies),
+    goldPerMinute: sumPlayerMetric(players, (player) => player.goldPerMinute),
+    xpPerMinute: sumPlayerMetric(players, (player) => player.xpPerMinute),
+    heroDamage: sumPlayerMetric(players, (player) => player.heroDamage),
+    towerDamage: sumPlayerMetric(players, (player) => player.towerDamage),
+    heroHealing: sumPlayerMetric(players, (player) => player.heroHealing),
+  };
+}
+
+function sumPlayerMetric(players: MatchDetailPlayer[], getValue: (player: MatchDetailPlayer) => number): number {
+  return players.reduce((total, player) => total + getValue(player), 0);
+}
+
+function averagePlayerImp(players: MatchDetailPlayer[]): number | null {
+  return players.some((player) => player.imp === null)
+    ? null
+    : players.reduce((total, player) => total + (player.imp ?? 0), 0) / players.length;
 }
 
 function ScoreboardRecordValue({ value, isRecord }: { value: string; isRecord: boolean }) {

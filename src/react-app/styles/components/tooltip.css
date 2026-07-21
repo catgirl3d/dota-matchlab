@@ -1,8 +1,8 @@
 @layer components {
   .app-tooltip__trigger {
     display: inline-flex;
+    cursor: help;
     outline: 0;
-    margin-left: 10px;
   }
 
   .app-tooltip__trigger:focus-visible {

@@ -27,4 +27,14 @@ describe('Tooltip', () => {
     fireEvent.keyDown(trigger, { key: 'Escape' });
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
+
+  it('can keep static labels out of keyboard navigation', () => {
+    render(<Tooltip content="Net worth" focusable={false}><span>NW</span></Tooltip>);
+
+    const trigger = screen.getByText('NW').parentElement as HTMLElement;
+    expect(trigger).not.toHaveAttribute('tabindex');
+
+    fireEvent.pointerEnter(trigger);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Net worth');
+  });
 });

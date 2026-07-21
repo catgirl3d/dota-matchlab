@@ -91,6 +91,7 @@ describe('MatchDetailView', () => {
     expect(currentBuild.querySelector('img[src*="antimage_horz_gMtz"]')).toBeInTheDocument();
     expect(currentBuild.querySelector('.player-build__portrait img[src*="_icon_"]')).not.toBeInTheDocument();
     expect(scoreboardPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('group', { name: 'Scoreboard view' })).getByRole('button', { name: 'Split roster view' }));
     const scoreboardEntry = screen.getByRole('article', { name: 'Scoreboard entry for Player #111' });
     expect(within(scoreboardEntry).getByRole('group', { name: '22 kills, 2 deaths, 8 assists' })).toBeVisible();
     expect(within(scoreboardEntry).getByText('GPM')).toBeVisible();
@@ -195,9 +196,10 @@ describe('MatchDetailView', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Sniper performance tape' })).toBeVisible();
+    const performancePanel = screen.getByRole('heading', { name: 'Sniper performance tape' }).closest('section');
+    expect(performancePanel).toBeVisible();
     expect(screen.getByRole('group', { name: 'Gold per-minute chart' })).toBeVisible();
-    expect(screen.getByText('+19')).toBeVisible();
+    expect(within(performancePanel as HTMLElement).getByText('+19')).toBeVisible();
     expect(screen.getByText('Top support')).toBeVisible();
     const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
     expect(within(currentBuild).getByRole('img', { name: 'Shrapnel, 1:48 · level 2' })).toBeVisible();
@@ -336,6 +338,7 @@ describe('MatchDetailView', () => {
   it('sorts scoreboard columns and calculates player achievement badges', () => {
     render(<MatchDetailView detail={createSortableDetail()} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
+    fireEvent.click(within(screen.getByRole('group', { name: 'Scoreboard view' })).getByRole('button', { name: 'Split roster view' }));
     const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
     const [radiantRoster, direRoster] = Array.from(scoreboardPanel?.querySelectorAll<HTMLElement>('.team-roster') ?? []);
     expect(scoreboardOrder(radiantRoster)).toEqual(['Scoreboard entry for Radiant low', 'Scoreboard entry for Radiant high']);
@@ -355,25 +358,34 @@ describe('MatchDetailView', () => {
     expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire high', 'Scoreboard entry for Dire low']);
   });
 
-  it('switches the scoreboard to a complete stat table without changing team-aware sorting', () => {
+  it('shows the complete stat table by default without changing team-aware sorting', () => {
     render(<MatchDetailView detail={createSortableDetail()} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
     const viewControls = within(screen.getByRole('group', { name: 'Scoreboard view' }));
-    expect(viewControls.getByRole('button', { name: 'Split roster view' })).toHaveAttribute('aria-pressed', 'true');
-
-    fireEvent.click(viewControls.getByRole('button', { name: 'Table view' }));
-
     const table = screen.getByRole('table', { name: 'Ten-player scoreboard table' });
     expect(viewControls.getByRole('button', { name: 'Table view' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(table).getByText('LH / DN')).toBeVisible();
     expect(within(table).getByText('Inventory')).toBeVisible();
     expect(within(table).getByText('Dire')).toBeVisible();
+    expect(within(table).getByText('Team totals')).toBeVisible();
+    const economyHeader = within(table).getByRole('columnheader', { name: 'GPM / XPM' });
+    fireEvent.pointerEnter(economyHeader.querySelector('.app-tooltip__trigger') as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Gold per minute / Experience per minute');
     expect(tableRows(table)).toEqual([
       'Scoreboard row for Radiant low',
       'Scoreboard row for Radiant high',
       'Scoreboard row for Dire low',
       'Scoreboard row for Dire high',
     ]);
+    const radiantTotal = table.querySelector('[aria-label="Radiant total"]') as HTMLElement;
+    const direTotal = table.querySelector('[aria-label="Dire total"]') as HTMLElement;
+    expect(radiantTotal).toHaveTextContent('0 / 4 / 16');
+    expect(radiantTotal).toHaveTextContent('40K');
+    expect(radiantTotal).toHaveTextContent('+9.5');
+    expect(radiantTotal).toHaveTextContent('1.4K / 1.6K');
+    expect(radiantTotal.querySelectorAll('td')).toHaveLength(9);
+    expect(radiantTotal.lastElementChild).toBeEmptyDOMElement();
+    expect(direTotal).toHaveTextContent('+3');
     const radiantHighRow = table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement;
     const direHighRow = table.querySelector('[aria-label="Scoreboard row for Dire high"]') as HTMLElement;
     expect(within(radiantHighRow).getByText('MVP')).toBeVisible();
@@ -392,11 +404,25 @@ describe('MatchDetailView', () => {
 
     fireEvent.click(viewControls.getByRole('button', { name: 'Split roster view' }));
     expect(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).toBeVisible();
+    const netWorthLabel = within(screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' })).getByText('NW');
+    fireEvent.pointerEnter(netWorthLabel.parentElement as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Net worth');
+  });
+
+  it('marks a team IMP total unavailable when any player IMP is missing', () => {
+    const detailWithMissingImp = createSortableDetail();
+    detailWithMissingImp.players[0] = { ...detailWithMissingImp.players[0], imp: null };
+
+    render(<MatchDetailView detail={detailWithMissingImp} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const table = screen.getByRole('table', { name: 'Ten-player scoreboard table' });
+    expect(table.querySelector('[aria-label="Radiant total"]')).toHaveTextContent('N/A');
   });
 
   it('renders each player position beside the hero portrait with the role on hover', () => {
     render(<MatchDetailView detail={createSortableDetail()} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
+    fireEvent.click(within(screen.getByRole('group', { name: 'Scoreboard view' })).getByRole('button', { name: 'Split roster view' }));
     const radiantHigh = screen.getByRole('article', { name: 'Scoreboard entry for Radiant high' });
     const radiantPosition = within(radiantHigh).getByRole('img', { name: 'Mid' });
     expect(radiantPosition).toHaveClass('scoreboard-player__position');
