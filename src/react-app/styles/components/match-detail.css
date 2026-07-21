@@ -297,16 +297,18 @@
     background: var(--detail-panel-bg);
   }
 
-  .detail-insights__primary {
+  .detail-panel-grid {
     display: grid;
-    height: 432px;
     margin-top: 18px;
     align-items: stretch;
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.32fr);
     gap: 18px;
   }
 
-  .detail-insights__primary > .detail-panel {
+  .detail-panel-grid--timeline {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.32fr);
+  }
+
+  .detail-panel-grid > .detail-panel {
     margin-top: 0;
   }
 
@@ -318,8 +320,17 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 
+  .detail-advantage {
+    overflow: hidden;
+  }
+
   .detail-kill-history {
     overflow: hidden;
+  }
+
+  .detail-panel-grid--timeline .detail-kill-history {
+    /* The chart sets the shared row height; the history scrolls inside it. */
+    contain: size;
   }
 
   .kill-history {

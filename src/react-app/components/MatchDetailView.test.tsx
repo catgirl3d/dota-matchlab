@@ -118,6 +118,11 @@ describe('MatchDetailView', () => {
     expect(within(scoreboardEntry).getByText('NET')).toBeVisible();
     const advantageChart = screen.getByRole('group', { name: 'Team advantage timeline' });
     expect(advantageChart).toHaveClass('advantage-timeline__canvas');
+    const timelineGrid = advantageChart.closest<HTMLElement>('.detail-panel-grid');
+    expect(timelineGrid).toBeTruthy();
+    expect(timelineGrid).toHaveClass('detail-panel-grid--timeline');
+    expect(timelineGrid?.querySelectorAll(':scope > .detail-panel')).toHaveLength(2);
+    expect(within(timelineGrid as HTMLElement).getByRole('region', { name: 'Kill history' })).toHaveClass('detail-kill-history');
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
     expect(draftPanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
     expect(screen.getByText('Base Parse')).toBeVisible();

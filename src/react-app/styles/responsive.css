@@ -136,13 +136,16 @@
       grid-template-columns: 1fr;
     }
 
-    .detail-insights__primary {
-      height: auto;
+    .detail-panel-grid--timeline {
       grid-template-columns: 1fr;
     }
 
     .detail-kill-history {
-      height: 360px;
+      max-block-size: min(50svh, 30rem);
+    }
+
+    .detail-panel-grid--timeline .detail-kill-history {
+      contain: none;
     }
 
     .lane-matchup__teams {

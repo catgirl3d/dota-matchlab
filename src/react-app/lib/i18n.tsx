@@ -181,7 +181,7 @@ export const translations = {
     removeProfileConfirm: 'Are you sure you want to remove the profile "{name}" from the list?',
     removeProfileAriaLabel: 'Remove profile {name} from list',
 
-    // MatchInsightsPanel & details
+    // Match detail insight panels
     insightChat: 'Global chat and chat-wheel events',
     insightTowers: 'Tower destruction events',
     insightRunes: 'Global rune collections',

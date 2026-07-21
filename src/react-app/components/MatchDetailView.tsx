@@ -3,10 +3,12 @@ import { FocusedPlayerAnalysis } from './match-detail/FocusedPlayerAnalysis';
 import { MatchChatPanel } from './match-detail/MatchChatPanel';
 import { MatchDraftPanel } from './match-detail/MatchDraftPanel';
 import { MatchDetailHeader } from './match-detail/MatchDetailHeader';
-import { MatchInsightsPanel } from './match-detail/MatchInsightsPanel';
 import { MatchScoreboard } from './match-detail/MatchScoreboard';
 import { TeamBuildsPanel } from './match-detail/TeamBuildsPanel';
 import { useTranslation } from '../lib/i18n';
+import { AdvantagePanel } from './match-detail/AdvantagePanel';
+import { KillHistoryPanel } from './match-detail/KillHistoryPanel';
+import { LaneAnalysisPanel } from './match-detail/LaneAnalysisPanel';
 
 
 type MatchDetailViewProps = {
@@ -78,16 +80,26 @@ export function MatchDetailView({
         currentAccountId={currentAccountId}
       />
 
-      <MatchInsightsPanel
-        networth={detail.radiantNetworthLeads}
-        experience={detail.radiantExperienceLeads}
-        durationSeconds={detail.durationSeconds}
-        events={detail.timelineEvents}
+      <div className="detail-panel-grid detail-panel-grid--timeline">
+        <AdvantagePanel
+          networth={detail.radiantNetworthLeads}
+          experience={detail.radiantExperienceLeads}
+          durationSeconds={detail.durationSeconds}
+          events={detail.timelineEvents}
+        />
+        <KillHistoryPanel
+          events={detail.timelineEvents}
+          players={detail.players}
+          heroNames={heroNames}
+          isAvailable={hasPlayerStats}
+        />
+      </div>
+
+      <LaneAnalysisPanel
         players={detail.players}
         heroNames={heroNames}
         laneOutcomes={detail.laneOutcomes}
         eventCounts={detail.eventCounts}
-        hasPlayerStats={hasPlayerStats}
       />
 
       {hasPlayerStats && focusedPlayer ? (
