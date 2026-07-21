@@ -252,6 +252,18 @@ describe('MatchDetailView', () => {
     expect(buildUpgradeSlots[2]?.querySelector('img')).toHaveAttribute('src', getItemIcon(247)?.src);
   });
 
+  it('shows a custom tooltip for final-loadout item tokens', () => {
+    render(<MatchDetailView detail={detail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const playerBuild = screen.getByRole('article', { name: 'Build for Player #111' });
+    const itemIcon = playerBuild.querySelector<HTMLElement>('.item-token__icon');
+    const itemTooltip = itemIcon?.closest<HTMLElement>('.app-tooltip__trigger');
+
+    expect(itemIcon).not.toHaveAttribute('title');
+    fireEvent.pointerEnter(itemTooltip as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Phase Boots');
+  });
+
   it('renders visibly different player timelines for a complete detail payload', () => {
     const completeDetail: MatchDetailSnapshot = {
       ...detail,

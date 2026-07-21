@@ -6,6 +6,7 @@ import { useTranslation } from '../../lib/i18n';
 import { talentDescriptions } from '../../lib/talent-descriptions';
 import { HeroPortrait } from '../HeroPortrait';
 import { PlayerSortControls, type PlayerSort } from '../PlayerSortControls';
+import { Tooltip } from '../Tooltip';
 import { formatAccount, formatCompact, formatEventTime, heroLabel, heroMark } from './match-detail-display';
 import { sortPlayers } from './match-detail-player';
 import { DetailHeading } from './match-detail-primitives';
@@ -265,11 +266,15 @@ function BuildTimeline<T extends { time: number }>({
 }
 
 function ItemToken({ itemId, tone }: { itemId: number; tone?: 'backpack' | 'neutral' }) {
+  const item = getItemIcon(itemId);
+  const label = item?.label ?? `Item #${itemId}`;
+
   return (
-    <span className={`item-token${tone ? ` is-${tone}` : ''}`}>
-      <ItemIcon itemId={itemId} className="item-token__icon" />
-      {getItemIcon(itemId) === null ? `#${itemId}` : null}
-    </span>
+    <Tooltip content={label} ariaLabel={label}>
+      <span className={`item-token${tone ? ` is-${tone}` : ''}`}>
+        {item ? <img className="item-token__icon" src={item.src} alt={item.label} /> : `#${itemId}`}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -318,7 +323,7 @@ function AbilityToken({ ability }: { ability: MatchDetailPlayer['abilityBuild'][
 
 function ItemIcon({ itemId, className }: { itemId: number; className: string }) {
   const item = getItemIcon(itemId);
-  return item ? <img className={className} src={item.src} alt={item.label} title={item.label} /> : null;
+  return item ? <img className={className} src={item.src} alt={item.label} /> : null;
 }
 
 function formatAbilityName(name: string | null, abilityId: number): string {
