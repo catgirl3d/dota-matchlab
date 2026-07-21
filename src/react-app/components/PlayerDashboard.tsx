@@ -326,7 +326,7 @@ export function PlayerDashboard({
               </div>
               {filters.heroId !== null ? (
                 <button
-                  className="hero-pool__reset"
+                  className="filter-reset"
                   type="button"
                   aria-label={t('resetHeroFilterAriaLabel')}
                   title={t('resetHeroFilterAriaLabel')}

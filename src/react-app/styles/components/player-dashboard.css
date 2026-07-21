@@ -589,6 +589,29 @@
     box-shadow: 0 2px 0 var(--acid);
   }
 
+  .filter-reset {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--fs-lg);
+    line-height: 1;
+    transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+  }
+
+  .filter-reset:hover,
+  .filter-reset:focus-visible {
+    border-color: var(--acid);
+    outline: 0;
+    background: rgba(198, 242, 74, 0.1);
+    color: var(--acid);
+  }
+
   .filter-dropdown__menu {
     position: absolute;
     z-index: 2;
@@ -1228,27 +1251,6 @@
   .hero-pool {
     display: grid;
     padding: 0;
-  }
-
-  .hero-pool__reset {
-    display: grid;
-    width: 28px;
-    height: 28px;
-    place-items: center;
-    border: 1px solid var(--line-strong);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: var(--font-mono);
-    font-size: var(--fs-lg);
-    line-height: 1;
-    transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
-  }
-
-  .hero-pool__reset:hover {
-    border-color: var(--acid);
-    background: rgba(198, 242, 74, 0.1);
-    color: var(--acid);
   }
 
   .hero-pool__row {
