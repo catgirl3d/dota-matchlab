@@ -13,13 +13,20 @@ type LaneAnalysisPanelProps = {
   heroNames: Record<number, string>;
   laneOutcomes: MatchDetailSnapshot['laneOutcomes'];
   eventCounts: MatchDetailSnapshot['eventCounts'];
+  selectedPlayerKey: string | null;
 };
 
-export function LaneAnalysisPanel({ players, heroNames, laneOutcomes, eventCounts }: LaneAnalysisPanelProps) {
+export function LaneAnalysisPanel({ players, heroNames, laneOutcomes, eventCounts, selectedPlayerKey }: LaneAnalysisPanelProps) {
   const { t } = useTranslation();
   const [focusedLaneId, setFocusedLaneId] = useState<LaneAnalysis['id'] | null>(null);
-  const [highlightedPlayerKey, setHighlightedPlayerKey] = useState<string | null>(null);
+  const [hoveredPlayerKey, setHoveredPlayerKey] = useState<string | null>(null);
   const lanes = buildLaneAnalysis(players, laneOutcomes);
+  const selectedLaneId = lanes.find((lane) => (
+    lane.radiantPlayers.some((player) => player.key === selectedPlayerKey)
+    || lane.direPlayers.some((player) => player.key === selectedPlayerKey)
+  ))?.id ?? null;
+  const effectiveFocusedLaneId = focusedLaneId ?? selectedLaneId;
+  const highlightedPlayerKey = hoveredPlayerKey ?? selectedPlayerKey;
 
   return (
     <section className="detail-panel detail-lanes" aria-labelledby="lanes-title">
@@ -28,11 +35,11 @@ export function LaneAnalysisPanel({ players, heroNames, laneOutcomes, eventCount
         {lanes.map((lane) => <LaneMatchup
           lane={lane}
           heroNames={heroNames}
-          isFocused={focusedLaneId === lane.id}
-          isMuted={focusedLaneId !== null && focusedLaneId !== lane.id}
+          isFocused={effectiveFocusedLaneId === lane.id}
+          isMuted={effectiveFocusedLaneId !== null && effectiveFocusedLaneId !== lane.id}
           onFocusChange={setFocusedLaneId}
           highlightedPlayerKey={highlightedPlayerKey}
-          onHighlight={setHighlightedPlayerKey}
+          onHighlight={setHoveredPlayerKey}
           key={lane.id}
         />)}
       </div>

@@ -60,6 +60,8 @@ type MatchScoreboardProps = {
   direPlayers: MatchDetailPlayer[];
   heroNames: Record<number, string>;
   currentAccountId: number | null;
+  selectedPlayerKey: string | null;
+  onPlayerSelect: (playerKey: string | null) => void;
 };
 
 export function MatchScoreboard({
@@ -67,13 +69,18 @@ export function MatchScoreboard({
   direPlayers,
   heroNames,
   currentAccountId,
+  selectedPlayerKey,
+  onPlayerSelect,
 }: MatchScoreboardProps) {
   const [sort, setSort] = useState<PlayerSort>('slot');
   const [view, setView] = useState<ScoreboardView>('table');
-  const [selectedPlayerKey, setSelectedPlayerKey] = useState<string | null>(null);
   const players = [...radiantPlayers, ...direPlayers];
   const performanceRanks = rankPlayersByImp(players);
   const playerAchievements = getPlayerAchievements(players, performanceRanks);
+  const selectedPlayer = players.find((player) => player.key === selectedPlayerKey) ?? null;
+  const selectedPlayerLabel = selectedPlayer === null
+    ? null
+    : selectedPlayer.name ?? heroLabel(selectedPlayer.heroId, heroNames);
 
   return (
     <section className="detail-panel detail-scoreboard" aria-labelledby="scoreboard-title">
@@ -116,9 +123,10 @@ export function MatchScoreboard({
           performanceRanks={performanceRanks}
           playerAchievements={playerAchievements}
           selectedPlayerKey={selectedPlayerKey}
-          onPlayerSelect={setSelectedPlayerKey}
+          onPlayerSelect={onPlayerSelect}
         />
       )}
+      {players.length > 0 ? <ScoreboardTeamTotalsPreview radiantPlayers={radiantPlayers} direPlayers={direPlayers} selectedPlayer={selectedPlayer} selectedPlayerLabel={selectedPlayerLabel} /> : null}
     </section>
   );
 }
@@ -241,11 +249,6 @@ function ScoreboardTable({
   const orderedRadiantPlayers = sortPlayers(radiantPlayers, sort);
   const orderedDirePlayers = sortPlayers(direPlayers, sort);
   const records = getScoreboardRecords([...radiantPlayers, ...direPlayers]);
-  const selectedPlayer = [...radiantPlayers, ...direPlayers].find((player) => player.key === selectedPlayerKey) ?? null;
-  const selectedPlayerLabel = selectedPlayer === null
-    ? null
-    : selectedPlayer.name ?? heroLabel(selectedPlayer.heroId, heroNames);
-
   return (
     <>
       <div className="scoreboard-table-scroll">
@@ -304,7 +307,6 @@ function ScoreboardTable({
           </tfoot>
         </table>
       </div>
-      {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsPreview radiantPlayers={radiantPlayers} direPlayers={direPlayers} selectedPlayer={selectedPlayer} selectedPlayerLabel={selectedPlayerLabel} /> : null}
     </>
   );
 }

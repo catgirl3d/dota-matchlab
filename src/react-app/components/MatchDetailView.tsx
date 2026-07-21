@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { MatchDetailSnapshot } from '../lib/match-detail';
 import { FocusedPlayerAnalysis } from './match-detail/FocusedPlayerAnalysis';
 import { MatchChatPanel } from './match-detail/MatchChatPanel';
@@ -26,6 +27,11 @@ type MatchDetailViewProps = {
   onParse: () => void;
 };
 
+type MatchPlayerSelection = {
+  matchId: number;
+  playerKey: string;
+};
+
 export function MatchDetailView({
   detail,
   heroNames,
@@ -41,6 +47,7 @@ export function MatchDetailView({
   onParse,
 }: MatchDetailViewProps) {
   const { t } = useTranslation();
+  const [playerSelection, setPlayerSelection] = useState<MatchPlayerSelection | null>(null);
   const effectiveBackLabel = backLabel ?? t('backToArchive');
 
   if (isLoading) {
@@ -59,6 +66,14 @@ export function MatchDetailView({
   const focusedPlayer = currentAccountId === null
     ? null
     : detail.players.find((player) => player.accountId === currentAccountId) ?? null;
+  const selectedPlayer = playerSelection?.matchId === detail.matchId
+    ? detail.players.find((player) => player.key === playerSelection.playerKey) ?? null
+    : null;
+  const selectedPlayerKey = selectedPlayer?.key ?? null;
+  const analysisPlayer = selectedPlayer ?? focusedPlayer;
+  const selectPlayer = (playerKey: string | null) => {
+    setPlayerSelection(playerKey === null ? null : { matchId: detail.matchId, playerKey });
+  };
   const hasPlayerStats = detail.availableSections.includes('player_stats');
   return (
     <section className="match-detail" aria-label="Match detail">
@@ -78,6 +93,8 @@ export function MatchDetailView({
         direPlayers={direPlayers}
         heroNames={heroNames}
         currentAccountId={currentAccountId}
+        selectedPlayerKey={selectedPlayerKey}
+        onPlayerSelect={selectPlayer}
       />
 
       <div className="detail-panel-grid detail-panel-grid--timeline">
@@ -92,6 +109,8 @@ export function MatchDetailView({
           players={detail.players}
           heroNames={heroNames}
           isAvailable={hasPlayerStats}
+          selectedPlayerKey={selectedPlayerKey}
+          onPlayerSelect={selectPlayer}
         />
       </div>
 
@@ -100,10 +119,11 @@ export function MatchDetailView({
         heroNames={heroNames}
         laneOutcomes={detail.laneOutcomes}
         eventCounts={detail.eventCounts}
+        selectedPlayerKey={selectedPlayerKey}
       />
 
-      {hasPlayerStats && focusedPlayer ? (
-          <FocusedPlayerAnalysis player={focusedPlayer} heroNames={heroNames} durationSeconds={detail.durationSeconds} />
+      {hasPlayerStats && analysisPlayer ? (
+          <FocusedPlayerAnalysis player={analysisPlayer} heroNames={heroNames} durationSeconds={detail.durationSeconds} />
       ) : null}
 
       {detail.chatMessages.length > 0 ? (

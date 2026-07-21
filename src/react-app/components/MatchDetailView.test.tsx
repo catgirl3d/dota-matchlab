@@ -333,6 +333,52 @@ describe('MatchDetailView', () => {
     expect(within(killHistory).getByText('No kills for this hero.')).toBeVisible();
   });
 
+  it('synchronizes a scoreboard player selection across match detail analytics', () => {
+    const globalFilterDetail = createGlobalPlayerFilterDetail();
+    render(<MatchDetailView detail={globalFilterDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Lina' }} currentAccountId={1} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const selectedRow = screen.getByRole('row', { name: 'Scoreboard row for Selected' });
+    fireEvent.click(selectedRow);
+
+    expect(selectedRow).toHaveClass('is-contribution-selected');
+    const teamTotals = screen.getByRole('region', { name: 'Team totals' });
+    expect(teamTotals).toHaveTextContent('Selected');
+
+    const killHistory = screen.getByRole('region', { name: 'Kill history' });
+    expect(within(killHistory).getByRole('button', { name: 'Hero: Axe' })).toBeVisible();
+    expect(within(killHistory).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(killHistory).getByRole('listitem')).toHaveAccessibleName('Selected killed Dire support at 2:00');
+
+    expect(screen.getByRole('heading', { name: 'Axe performance tape' })).toBeVisible();
+    const selectedLaneRole = screen.getByRole('button', { name: 'Show Axe lane stats: Soft support' }).closest<HTMLElement>('.lane-role');
+    expect(selectedLaneRole).toHaveClass('is-highlighted');
+    expect(document.querySelectorAll('.lane-matchup.is-player-focused')).toHaveLength(1);
+    expect(selectedLaneRole?.closest('.lane-matchup')).toHaveClass('is-focused');
+    expect(document.querySelectorAll('.lane-matchup.is-muted')).toHaveLength(2);
+
+    fireEvent.click(selectedRow);
+    expect(selectedRow).not.toHaveClass('is-contribution-selected');
+    expect(within(killHistory).getByRole('button', { name: 'Hero: All heroes' })).toBeVisible();
+    expect(within(killHistory).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByRole('heading', { name: 'Anti-Mage performance tape' })).toBeVisible();
+    expect(document.querySelectorAll('.lane-matchup.is-player-focused')).toHaveLength(0);
+    expect(document.querySelectorAll('.lane-matchup.is-focused')).toHaveLength(0);
+    expect(document.querySelectorAll('.lane-matchup.is-muted')).toHaveLength(0);
+  });
+
+  it('does not carry a selected player into another match', () => {
+    const globalFilterDetail = createGlobalPlayerFilterDetail();
+    const viewProps = { heroNames: { 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Lina' }, currentAccountId: 1, isLoading: false, error: null, parseError: null, isParsing: false, onBack: vi.fn(), onRefresh: vi.fn(), onParse: vi.fn() };
+    const { rerender } = render(<MatchDetailView detail={globalFilterDetail} {...viewProps} />);
+
+    fireEvent.click(screen.getByRole('row', { name: 'Scoreboard row for Selected' }));
+    expect(screen.getByRole('row', { name: 'Scoreboard row for Selected' })).toHaveClass('is-contribution-selected');
+
+    rerender(<MatchDetailView detail={{ ...globalFilterDetail, matchId: globalFilterDetail.matchId + 1 }} {...viewProps} />);
+    expect(screen.getByRole('row', { name: 'Scoreboard row for Selected' })).not.toHaveClass('is-contribution-selected');
+    expect(screen.getByRole('button', { name: 'Hero: All heroes' })).toBeVisible();
+  });
+
   it('shows a custom tooltip for final-loadout item tokens', () => {
     render(<MatchDetailView detail={detail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
@@ -861,6 +907,23 @@ function createSortableDetail(): MatchDetailSnapshot {
       createPlayer({ key: 'radiant-high', accountId: 2, name: 'Radiant high', playerSlot: 1, isRadiant: true, imp: 15, netWorth: 24_000, heroDamage: 500, towerDamage: 900, position: 2, role: 'MID' }),
       createPlayer({ key: 'dire-low', accountId: 3, name: 'Dire low', playerSlot: 128, isRadiant: false, imp: -2, netWorth: 14_000, heroDamage: 700, towerDamage: 400, position: 4 }),
       createPlayer({ key: 'dire-high', accountId: 4, name: 'Dire high', playerSlot: 129, isRadiant: false, imp: 8, netWorth: 22_000, heroDamage: 1_200, towerDamage: 800, position: 5, role: 'LIGHT_SUPPORT' }),
+    ],
+  };
+}
+
+function createGlobalPlayerFilterDetail(): MatchDetailSnapshot {
+  return {
+    ...detail,
+    availableSections: ['player_stats'],
+    players: [
+      createPlayer({ key: 'current', accountId: 1, name: 'Current', playerSlot: 0, heroId: 1, position: 3, lane: 3, minuteSeries: laneMinuteSeries(6_200, 62) }),
+      createPlayer({ key: 'selected', accountId: 2, name: 'Selected', playerSlot: 1, heroId: 2, position: 4, lane: 3, minuteSeries: laneMinuteSeries(2_800, 4) }),
+      createPlayer({ key: 'dire-carry', accountId: 3, name: 'Dire carry', playerSlot: 128, isRadiant: false, heroId: 3, position: 1, lane: 1, minuteSeries: laneMinuteSeries(6_100, 68) }),
+      createPlayer({ key: 'dire-support', accountId: 4, name: 'Dire support', playerSlot: 129, isRadiant: false, heroId: 4, position: 5, lane: 1, minuteSeries: laneMinuteSeries(2_400, 2) }),
+    ],
+    timelineEvents: [
+      { key: 'kill-current', time: 60, type: 'kill', actor: { accountId: 1, heroId: 1, name: 'Current', isRadiant: true }, target: { accountId: 3, heroId: 3, name: 'Dire carry', isRadiant: false }, isRadiant: true, targetIsRadiant: false },
+      { key: 'kill-selected', time: 120, type: 'kill', actor: { accountId: 2, heroId: 2, name: 'Selected', isRadiant: true }, target: { accountId: 4, heroId: 4, name: 'Dire support', isRadiant: false }, isRadiant: true, targetIsRadiant: false },
     ],
   };
 }
