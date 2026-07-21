@@ -10,6 +10,7 @@
 @import "./styles/components/player-minute-charts.css";
 @import "./styles/components/tooltip.css";
 @import "./styles/components/match-detail.css";
+@import "./styles/components/team-builds.css";
 @import "./styles/responsive.css";
 
 /* Unified typography for all panel/card titles */
