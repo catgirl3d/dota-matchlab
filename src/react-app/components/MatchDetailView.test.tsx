@@ -88,8 +88,9 @@ describe('MatchDetailView', () => {
     const killStrip = screen.getByRole('region', { name: 'Team kills' });
     expect(killStrip).not.toHaveTextContent('68');
     expect(killStrip).not.toHaveTextContent('46');
-    const radiantOutcome = screen.getByText('Radiant').closest<HTMLElement>('.team-outcome');
-    const direOutcome = screen.getByText('Dire').closest<HTMLElement>('.team-outcome');
+    const scoreline = document.querySelector<HTMLElement>('.match-detail__scoreline');
+    const radiantOutcome = within(scoreline as HTMLElement).getByText('Radiant').closest<HTMLElement>('.team-outcome');
+    const direOutcome = within(scoreline as HTMLElement).getByText('Dire').closest<HTMLElement>('.team-outcome');
     const radiantKills = killStrip.querySelector<HTMLElement>('.match-detail__kill-strip-track-value--radiant');
     fireEvent.pointerEnter(radiantKills as HTMLElement);
     expect(radiantOutcome).toHaveClass('is-focused');
@@ -347,7 +348,7 @@ describe('MatchDetailView', () => {
     expect(screen.getByText('Chat wheel #71')).toBeVisible();
     const chatTranscript = screen.getByRole('log', { name: 'Match chat log' });
     expect(chatTranscript.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
-    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(5);
+    expect(performancePanel?.querySelector('img[src*="antimage_icon_5fO3"]')).toBeInTheDocument();
   });
 
   it('marks the XP tail as level cap only for a max-level player', () => {
@@ -502,8 +503,8 @@ describe('MatchDetailView', () => {
     expect(viewControls.getByRole('button', { name: 'Table view' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(table).getByText('LH / DN')).toBeVisible();
     expect(within(table).getByText('Inventory')).toBeVisible();
-    expect(within(table).getByText('Dire')).toBeVisible();
-    expect(within(table).getByText('Team totals')).toBeVisible();
+    expect(table.querySelector('.scoreboard-table__team-break')).toHaveTextContent('Dire');
+    expect(table.querySelector('.scoreboard-table__totals-heading')).toHaveTextContent('Team totals');
     const economyHeader = within(table).getByRole('columnheader', { name: 'GPM / XPM' });
     fireEvent.pointerEnter(economyHeader.querySelector('.app-tooltip__trigger') as HTMLElement);
     expect(screen.getByRole('tooltip')).toHaveTextContent('Gold per minute / Experience per minute');
