@@ -81,7 +81,7 @@ function LaneMatchup({
           <span className="micro-label">{lane.label}</span>
         </div>
         <div className="lane-matchup__status">
-          <strong className="lane-matchup__verdict">{laneVerdict(lane, t)}</strong>
+          <strong className={`comparison-outcome-badge comparison-outcome-badge--${laneResult(lane)}`}>{laneVerdict(lane, t)}</strong>
           <span className={`lane-matchup__source lane-matchup__source--${lane.source}`}>{laneSource(lane, t)}</span>
         </div>
       </header>

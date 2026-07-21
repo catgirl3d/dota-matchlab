@@ -1,6 +1,7 @@
 import type { MatchDetailPlayer } from '../../lib/match-detail';
+import { HeroMark } from '../HeroMark';
 import { PlayerMinuteCharts } from '../PlayerMinuteCharts';
-import { formatCompact, formatEnum, heroLabel } from './match-detail-display';
+import { formatCompact, formatEnum, heroLabel, heroMark } from './match-detail-display';
 import { DetailHeading } from './match-detail-primitives';
 
 type FocusedPlayerAnalysisProps = {
@@ -11,14 +12,25 @@ type FocusedPlayerAnalysisProps = {
 
 export function FocusedPlayerAnalysis({ player, heroNames, durationSeconds }: FocusedPlayerAnalysisProps) {
   const levelCapReached = player.level >= MAX_PLAYER_LEVEL && hasTrailingZeroTail(player.minuteSeries.experience);
+  const hero = heroLabel(player.heroId, heroNames);
+  const playerLabel = player.name ?? (player.accountId === null ? 'Unknown player' : `Player #${player.accountId}`);
+  const teamLabel = player.isRadiant ? 'RADIANT' : 'DIRE';
 
   return (
-    <section className="detail-panel full-analysis" aria-labelledby="full-analysis-title">
-      <DetailHeading
-        eyebrow="FULL DETAIL / PLAYER FOCUS"
-        title={`${heroLabel(player.heroId, heroNames)} performance tape`}
-        id="full-analysis-title"
-      />
+    <section className={`detail-panel full-analysis full-analysis--${player.isRadiant ? 'radiant' : 'dire'}`} aria-labelledby="full-analysis-title">
+      <header className="full-analysis__header">
+        <div className="full-analysis__identity">
+          <HeroMark heroId={player.heroId} label={hero} fallback={heroMark(player.heroId, heroNames)} className="full-analysis__hero" />
+          <div className="full-analysis__identity-copy">
+            <DetailHeading eyebrow="FULL DETAIL / PLAYER FOCUS" title={`${hero} performance tape`} id="full-analysis-title" />
+            <span>{playerLabel}</span>
+          </div>
+        </div>
+        <div className="full-analysis__status" aria-label={`${teamLabel} player status`}>
+          <span>{teamLabel} / TELEMETRY</span>
+          <strong>LVL {player.level}</strong>
+        </div>
+      </header>
       <div className="full-analysis__summary">
         <AnalysisMetric label="Impact" value={player.imp === null ? '—' : `${player.imp > 0 ? '+' : ''}${player.imp}`} />
         <AnalysisMetric label="Award" value={formatEnum(player.award ?? 'NONE')} />
@@ -27,7 +39,10 @@ export function FocusedPlayerAnalysis({ player, heroNames, durationSeconds }: Fo
       </div>
       <div className="full-analysis__body">
         <div className="full-analysis__timelines">
-          <span className="micro-label">PER-MINUTE CURVES</span>
+          <div className="full-analysis__section-heading">
+            <span className="micro-label">PER-MINUTE CURVES</span>
+            <span>CUMULATIVE TRACE</span>
+          </div>
           <PlayerMinuteCharts
             durationSeconds={durationSeconds}
             levelCapReached={levelCapReached}
@@ -35,7 +50,10 @@ export function FocusedPlayerAnalysis({ player, heroNames, durationSeconds }: Fo
           />
         </div>
         <div className="full-analysis__events">
-          <span className="micro-label">PLAYER EVENTS / SELECTED PLAYER</span>
+          <div className="full-analysis__section-heading">
+            <span className="micro-label">PLAYER EVENTS</span>
+            <span>SELECTED PLAYER</span>
+          </div>
           <div className="event-ledger">
             {Object.entries(player.detailEvents).map(([label, count]) => (
               <span key={label}><strong>{count}</strong>{formatEnum(label)}</span>
@@ -61,7 +79,7 @@ function hasTrailingZeroTail(values: number[]): boolean {
 
 function AnalysisMetric({ label, value }: { label: string; value: string }) {
   return (
-    <article>
+    <article className="full-analysis__metric">
       <span className="micro-label">{label}</span>
       <strong>{value}</strong>
     </article>

@@ -441,20 +441,20 @@
       border-left: 0;
     }
 
-    .full-analysis__summary,
     .full-analysis__body {
       grid-template-columns: 1fr;
     }
 
-    .full-analysis__summary article {
-      min-height: 72px;
-      border-right: 0;
-      border-bottom: 1px solid var(--line);
+    .full-analysis__summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .full-analysis__header {
+      grid-template-columns: minmax(0, 1fr) auto;
     }
 
     .full-analysis__events {
-      border-top: 1px solid var(--line);
-      border-left: 0;
+      border-top: 2px solid rgba(var(--full-analysis-accent-rgb), 0.35);
     }
 
     .match-chat__header,

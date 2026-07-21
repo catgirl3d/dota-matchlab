@@ -327,6 +327,9 @@ describe('MatchDetailView', () => {
 
     const performancePanel = screen.getByRole('heading', { name: 'Sniper performance tape' }).closest('section');
     expect(performancePanel).toBeVisible();
+    expect(performancePanel).toHaveClass('full-analysis--radiant');
+    expect(within(performancePanel as HTMLElement).getByText('Player #111')).toBeVisible();
+    expect(within(performancePanel as HTMLElement).getByText('RADIANT / TELEMETRY')).toBeVisible();
     expect(screen.getByRole('group', { name: 'Gold per-minute chart' })).toBeVisible();
     expect(within(performancePanel as HTMLElement).getByText('+19')).toBeVisible();
     expect(screen.getByText('Top support')).toBeVisible();
