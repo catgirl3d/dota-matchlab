@@ -493,15 +493,14 @@ describe('MatchDetailView', () => {
       'Scoreboard row for Dire low',
       'Scoreboard row for Dire high',
     ]);
-    const radiantTotal = table.querySelector('[aria-label="Radiant total"]') as HTMLElement;
-    const direTotal = table.querySelector('[aria-label="Dire total"]') as HTMLElement;
-    expect(radiantTotal).toHaveTextContent('0 / 4 / 16');
-    expect(radiantTotal).toHaveTextContent('42K');
-    expect(radiantTotal).toHaveTextContent('+9.5');
-    expect(radiantTotal).toHaveTextContent('1.4K / 1.6K');
-    expect(radiantTotal.querySelectorAll('td')).toHaveLength(9);
-    expect(radiantTotal.lastElementChild).toBeEmptyDOMElement();
-    expect(direTotal).toHaveTextContent('+3');
+    const totalsPreview = within(table).getByRole('region', { name: 'Team totals' });
+    expect(totalsPreview).toHaveTextContent('Team performance');
+    expect(within(totalsPreview).getByRole('article', { name: 'KDA Kills comparison' })).toBeVisible();
+    expect(within(totalsPreview).getByRole('article', { name: 'KDA Deaths comparison' })).toBeVisible();
+    expect(within(totalsPreview).getByRole('article', { name: 'KDA Assists comparison' })).toBeVisible();
+    expect(within(totalsPreview).getByRole('article', { name: 'Economy Net worth comparison' })).toBeVisible();
+    expect(within(totalsPreview).getByRole('article', { name: 'Farm Last hits comparison' })).toBeVisible();
+    expect(within(totalsPreview).getByRole('article', { name: 'Damage Hero damage comparison' })).toBeVisible();
     const radiantHighRow = table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement;
     const direHighRow = table.querySelector('[aria-label="Scoreboard row for Dire high"]') as HTMLElement;
     expect(within(radiantHighRow).getByText('MVP')).toBeVisible();
@@ -541,14 +540,14 @@ describe('MatchDetailView', () => {
     expect(screen.getByRole('tooltip')).toHaveTextContent('Kills');
   });
 
-  it('marks a team IMP total unavailable when any player IMP is missing', () => {
+  it('keeps the Kills team-total prototype available when IMP is missing', () => {
     const detailWithMissingImp = createSortableDetail();
     detailWithMissingImp.players[0] = { ...detailWithMissingImp.players[0], imp: null };
 
     render(<MatchDetailView detail={detailWithMissingImp} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
     const table = screen.getByRole('table', { name: 'Ten-player scoreboard table' });
-    expect(table.querySelector('[aria-label="Radiant total"]')).toHaveTextContent('N/A');
+    expect(within(table).getByRole('region', { name: 'Team totals' })).toHaveTextContent('KDA / Kills');
   });
 
   it('renders each player position beside the hero portrait with the role on hover', () => {

@@ -574,55 +574,123 @@
     text-transform: uppercase;
   }
 
-  .scoreboard-table__totals-heading th {
-    padding: 18px 12px 7px;
+  .scoreboard-table__totals-preview > td {
+    padding: 0;
     border-top: 10px solid rgba(7, 9, 7, 0.72);
-    border-bottom: 1px solid var(--line-strong);
+    border-bottom: 0;
+    background: rgba(7, 9, 7, 0.72);
+  }
+
+  .scoreboard-team-totals {
+    display: grid;
+    padding: 18px;
+    gap: 10px;
     background:
       linear-gradient(90deg, rgba(73, 199, 229, 0.08), transparent 42%),
       rgba(7, 9, 7, 0.72);
-    color: var(--muted);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-align: left;
-    text-transform: uppercase;
   }
 
-  .scoreboard-table__team-total > th,
-  .scoreboard-table__team-total > td {
-    padding-top: 10px;
-    padding-bottom: 10px;
-    border-top: 1px solid var(--line-strong);
-    border-bottom: 0;
-    background: rgba(7, 9, 7, 0.62);
-    font-weight: 700;
+  .scoreboard-team-totals__header,
+  .scoreboard-total-card > header,
+  .scoreboard-total-card__values {
+    display: grid;
+    align-items: center;
   }
 
-  .scoreboard-table__team-total--radiant > th,
-  .scoreboard-table__team-total--radiant > td {
-    border-top-color: rgba(var(--radiant-rgb), 0.4);
+  .scoreboard-team-totals__header {
+    gap: 4px;
   }
 
-  .scoreboard-table__team-total--dire > th,
-  .scoreboard-table__team-total--dire > td {
-    border-top-color: rgba(255, 54, 95, 0.38);
-  }
-
-  .scoreboard-table__team-total-label {
+  .scoreboard-team-totals__header strong {
     color: var(--paper);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-align: left;
+    font-size: var(--fs-label-sm);
+  }
+
+  .scoreboard-team-totals__groups,
+  .scoreboard-team-totals__group {
+    display: grid;
+  }
+
+  .scoreboard-team-totals__groups {
+    gap: 14px;
+  }
+
+  .scoreboard-team-totals__group {
+    gap: 6px;
+  }
+
+  .scoreboard-team-totals__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .scoreboard-total-card {
+    display: grid;
+    padding: 12px;
+    border-left: 3px solid var(--line-strong);
+    background: rgba(7, 9, 7, 0.46);
+    gap: 9px;
+  }
+
+  .scoreboard-total-card > header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .scoreboard-total-card > header > span,
+  .scoreboard-total-card > header > small,
+  .scoreboard-total-card__team small,
+  .scoreboard-total-card__versus {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .scoreboard-table__team-total--radiant .scoreboard-table__team-total-label {
-    color: var(--radiant);
+  .scoreboard-total-card__values {
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
-  .scoreboard-table__team-total--dire .scoreboard-table__team-total-label {
-    color: var(--signal-red);
+  .scoreboard-total-card__team {
+    display: grid;
+    gap: 3px;
+  }
+
+  .scoreboard-total-card__team--dire {
+    text-align: right;
+  }
+
+  .scoreboard-total-card__team strong {
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: var(--fs-lg);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scoreboard-total-card__team--radiant small,
+  .scoreboard-total-card__team--radiant strong {
+    color: var(--radiant-strong);
+  }
+
+  .scoreboard-total-card__team--dire small,
+  .scoreboard-total-card__team--dire strong {
+    color: #ff5e82;
+  }
+
+  .scoreboard-total-card__track {
+    display: grid;
+    min-height: 4px;
+    gap: 2px;
+  }
+
+  .scoreboard-total-card__track-value--radiant {
+    background: var(--radiant);
+  }
+
+  .scoreboard-total-card__track-value--dire {
+    background: var(--signal-red);
   }
 
   .scoreboard-table__hero-cell {

@@ -279,9 +279,7 @@ function ScoreboardTable({
           ))}
         </tbody>
         <tfoot>
-          {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsHeading /> : null}
-          {radiantPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="radiant" players={radiantPlayers} /> : null}
-          {direPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="dire" players={direPlayers} /> : null}
+          {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsPreview radiantPlayers={radiantPlayers} direPlayers={direPlayers} /> : null}
         </tfoot>
       </table>
     </div>
@@ -388,50 +386,104 @@ function ScoreboardMetricLabel({
   );
 }
 
-function ScoreboardTeamTotalsHeading() {
-  const { t } = useTranslation();
-  return <tr className="scoreboard-table__totals-heading"><th colSpan={11} scope="rowgroup">{t('scoreboardTeamTotals')}</th></tr>;
-}
-
-function ScoreboardTeamTotalsRow({
-  team,
-  players,
+function ScoreboardTeamTotalsPreview({
+  radiantPlayers,
+  direPlayers,
 }: {
-  team: 'radiant' | 'dire';
-  players: MatchDetailPlayer[];
+  radiantPlayers: MatchDetailPlayer[];
+  direPlayers: MatchDetailPlayer[];
 }) {
   const { t } = useTranslation();
-  const totals = getScoreboardTeamTotals(players);
-  const teamLabel = team === 'radiant' ? t('scoreboardTeamRadiant') : t('scoreboardTeamDire');
-  const totalLabel = t('scoreboardTeamTotal', { team: teamLabel });
+  const radiant = getScoreboardTeamTotals(radiantPlayers);
+  const dire = getScoreboardTeamTotals(direPlayers);
 
   return (
-    <tr className={`scoreboard-table__team-total scoreboard-table__team-total--${team}`} aria-label={totalLabel}>
-      <th className="scoreboard-table__team-total-label" colSpan={2} scope="row">{totalLabel}</th>
-      <td className="scoreboard-table__numeric">
-        <ScoreboardMetricValue value={String(totals.kills)} tooltipKey="scoreboardMetricKills" />
-        {' / '}
-        <ScoreboardMetricValue value={String(totals.deaths)} tooltipKey="scoreboardMetricDeaths" />
-        {' / '}
-        <ScoreboardMetricValue value={String(totals.assists)} tooltipKey="scoreboardMetricAssists" />
+    <tr className="scoreboard-table__totals-preview">
+      <td colSpan={11}>
+        <section className="scoreboard-team-totals" aria-label={t('scoreboardTeamTotals')}>
+          <header className="scoreboard-team-totals__header">
+            <span className="micro-label">{t('scoreboardTeamTotals')}</span>
+            <strong>{t('scoreboardTeamPerformance')}</strong>
+          </header>
+          <div className="scoreboard-team-totals__groups">
+            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsKda')} metrics={[
+              { label: t('scoreboardMetricKills'), radiant: radiant.kills, dire: dire.kills },
+              { label: t('scoreboardMetricDeaths'), radiant: radiant.deaths, dire: dire.deaths },
+              { label: t('scoreboardMetricAssists'), radiant: radiant.assists, dire: dire.assists },
+            ]} />
+            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsEconomy')} metrics={[
+              { label: t('scoreboardMetricNetWorth'), radiant: radiant.netWorth, dire: dire.netWorth, format: 'compact' },
+              { label: t('scoreboardMetricGoldPerMinute'), radiant: radiant.goldPerMinute, dire: dire.goldPerMinute, format: 'compact' },
+              { label: t('scoreboardMetricExperiencePerMinute'), radiant: radiant.xpPerMinute, dire: dire.xpPerMinute, format: 'compact' },
+            ]} />
+            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsFarm')} metrics={[
+              { label: t('scoreboardMetricLastHits'), radiant: radiant.lastHits, dire: dire.lastHits, format: 'compact' },
+              { label: t('scoreboardMetricDenies'), radiant: radiant.denies, dire: dire.denies, format: 'compact' },
+            ]} />
+            <ScoreboardTeamMetricGroup label={t('scoreboardTeamTotalsDamage')} metrics={[
+              { label: t('scoreboardMetricHeroDamage'), radiant: radiant.heroDamage, dire: dire.heroDamage, format: 'compact' },
+              { label: t('scoreboardMetricTowerDamage'), radiant: radiant.towerDamage, dire: dire.towerDamage, format: 'compact' },
+              { label: t('scoreboardMetricHeroHealing'), radiant: radiant.heroHealing, dire: dire.heroHealing, format: 'compact' },
+            ]} />
+          </div>
+        </section>
       </td>
-      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.netWorth)} tooltipKey="scoreboardMetricNetWorth" /></td>
-      <td className={`scoreboard-table__numeric scoreboard-table__imp${totals.imp === null ? ' is-unavailable' : totals.imp > 0 ? ' is-positive' : totals.imp < 0 ? ' is-negative' : ''}`}><ScoreboardMetricValue value={formatImp(totals.imp)} tooltipKey="scoreboardMetricImp" /></td>
-      <td className="scoreboard-table__numeric">
-        <ScoreboardMetricValue value={String(totals.lastHits)} tooltipKey="scoreboardMetricLastHits" />
-        {' / '}
-        <ScoreboardMetricValue value={String(totals.denies)} tooltipKey="scoreboardMetricDenies" />
-      </td>
-      <td className="scoreboard-table__numeric">
-        <ScoreboardMetricValue value={formatCompact(totals.goldPerMinute)} tooltipKey="scoreboardMetricGoldPerMinute" />
-        {' / '}
-        <ScoreboardMetricValue value={formatCompact(totals.xpPerMinute)} tooltipKey="scoreboardMetricExperiencePerMinute" />
-      </td>
-      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.heroDamage)} tooltipKey="scoreboardMetricHeroDamage" /></td>
-      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.towerDamage)} tooltipKey="scoreboardMetricTowerDamage" /></td>
-      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.heroHealing)} tooltipKey="scoreboardMetricHeroHealing" /></td>
-      <td aria-hidden="true" />
     </tr>
+  );
+}
+
+type ScoreboardTeamMetric = {
+  label: string;
+  radiant: number;
+  dire: number;
+  format?: 'compact';
+};
+
+function ScoreboardTeamMetricGroup({ label, metrics }: { label: string; metrics: ScoreboardTeamMetric[] }) {
+  return (
+    <section className="scoreboard-team-totals__group" aria-label={label}>
+      <span className="micro-label">{label}</span>
+      <div className="scoreboard-team-totals__grid">
+        {metrics.map((metric) => <ScoreboardTeamMetricCard group={label} {...metric} key={metric.label} />)}
+      </div>
+    </section>
+  );
+}
+
+function ScoreboardTeamMetricCard({
+  group,
+  label,
+  radiant,
+  dire,
+  format,
+}: ScoreboardTeamMetric & { group: string }) {
+  const trackColumns = `${Math.max(radiant, 1)}fr ${Math.max(dire, 1)}fr`;
+  const { t } = useTranslation();
+  const radiantValue = format === 'compact' ? formatCompact(radiant) : String(radiant);
+  const direValue = format === 'compact' ? formatCompact(dire) : String(dire);
+
+  return (
+    <article className="scoreboard-total-card" aria-label={`${group} ${label} comparison`}>
+      <header>
+        <span>{group} / {label}</span>
+        <small>{t('scoreboardTeamTotalsPreview')}</small>
+      </header>
+      <div className="scoreboard-total-card__values">
+        <span className="scoreboard-total-card__team scoreboard-total-card__team--radiant">
+          <small>{t('scoreboardTeamRadiant')}</small>
+          <strong>{radiantValue}</strong>
+        </span>
+        <span className="scoreboard-total-card__versus">VS</span>
+        <span className="scoreboard-total-card__team scoreboard-total-card__team--dire">
+          <small>{t('scoreboardTeamDire')}</small>
+          <strong>{direValue}</strong>
+        </span>
+      </div>
+      <div className="scoreboard-total-card__track" style={{ gridTemplateColumns: trackColumns }} aria-hidden="true">
+        <span className="scoreboard-total-card__track-value scoreboard-total-card__track-value--radiant" />
+        <span className="scoreboard-total-card__track-value scoreboard-total-card__track-value--dire" />
+      </div>
+    </article>
   );
 }
 
