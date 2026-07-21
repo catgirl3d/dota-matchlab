@@ -441,7 +441,7 @@
     padding: 2px 4px;
     border: 1px solid currentColor;
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     font-weight: 700;
     letter-spacing: 0.06em;
   }
@@ -499,7 +499,7 @@
   .scoreboard-player__kda small,
   .scoreboard-player__net small {
     color: var(--muted);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.08em;
     line-height: 1;
   }
@@ -590,7 +590,7 @@
   .scoreboard-table thead th {
     height: 44px;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 0.59rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-align: center;
@@ -635,7 +635,7 @@
     border-bottom: 1px solid rgba(255, 54, 95, 0.22);
     background: linear-gradient(90deg, rgba(255, 54, 95, 0.09), transparent 48%);
     color: var(--signal-red);
-    font-size: 10px;
+    font-size: 0.59rem;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-align: left;
@@ -650,7 +650,7 @@
       linear-gradient(90deg, rgba(73, 199, 229, 0.08), transparent 42%),
       rgba(7, 9, 7, 0.72);
     color: var(--muted);
-    font-size: 9px;
+    font-size: 0.53rem;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-align: left;
@@ -679,7 +679,7 @@
 
   .scoreboard-table__team-total-label {
     color: var(--paper);
-    font-size: 10px;
+    font-size: 0.59rem;
     letter-spacing: 0.1em;
     text-align: left;
     text-transform: uppercase;
@@ -794,7 +794,7 @@
   .scoreboard-total-card__versus {
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
@@ -824,7 +824,7 @@
     margin-left: 4px;
     color: currentColor;
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     font-weight: 700;
     letter-spacing: 0;
   }
@@ -851,6 +851,14 @@
 
   .scoreboard-total-card__track-value--dire {
     background: var(--signal-red);
+  }
+
+  .team-comparison-card--radiant .scoreboard-total-card__team--dire,
+  .team-comparison-card--radiant .scoreboard-total-card__track-value--dire,
+  .team-comparison-card--dire .scoreboard-total-card__team--radiant,
+  .team-comparison-card--dire .scoreboard-total-card__track-value--radiant {
+    filter: saturate(0.22);
+    opacity: 0.35;
   }
 
   .scoreboard-table__hero-cell {
@@ -888,7 +896,7 @@
     border: 1px solid var(--line-strong);
     border-radius: 50%;
     color: var(--paper);
-    font-size: 10px;
+    font-size: 0.59rem;
     font-weight: 700;
   }
 
@@ -907,7 +915,7 @@
   .scoreboard-table__player-copy > small {
     overflow: hidden;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 0.53rem;
     text-overflow: ellipsis;
   }
 
@@ -986,7 +994,7 @@
 
   .scoreboard-table__permanent-placeholder {
     font-family: var(--font-mono);
-    font-size: 7px;
+    font-size: 0.41rem;
     font-weight: 700;
     letter-spacing: 0.04em;
   }
@@ -1000,7 +1008,7 @@
   .scoreboard-table__item strong {
     max-width: 100%;
     overflow: hidden;
-    font-size: 7px;
+    font-size: 0.41rem;
     text-overflow: ellipsis;
   }
 
@@ -1070,7 +1078,7 @@
     border: 1px solid var(--line);
     color: var(--paper);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
@@ -1095,7 +1103,7 @@
     border: 1px solid var(--line);
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.05em;
     text-align: right;
     text-transform: uppercase;
@@ -1116,7 +1124,7 @@
     padding-top: 20px;
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: 0.53rem;
     text-align: center;
   }
 
@@ -1133,7 +1141,7 @@
   .lane-matchup__team-label {
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.07em;
     text-transform: uppercase;
   }
@@ -1213,7 +1221,7 @@
     background: var(--ink-soft);
     color: var(--paper);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     font-weight: 700;
     overflow: hidden;
   }
@@ -1234,7 +1242,7 @@
   .lane-role__copy strong {
     overflow: hidden;
     color: var(--paper);
-    font-size: 10px;
+    font-size: 0.59rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1245,7 +1253,7 @@
     gap: 3px;
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.53rem;
   }
 
   .lane-matchup__team--dire .lane-role__copy small {
@@ -1261,7 +1269,7 @@
   .lane-matchup__missing {
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: 0.53rem;
   }
 
   .lane-matchup__metrics {
@@ -1291,7 +1299,7 @@
   .lane-metric__versus {
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.07em;
     text-transform: uppercase;
   }
@@ -1323,7 +1331,7 @@
   .lane-metric__value small {
     overflow: hidden;
     color: var(--muted);
-    font-size: 7px;
+    font-size: 0.41rem;
     letter-spacing: 0.04em;
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -1352,7 +1360,7 @@
   }
 
   .lane-metric__versus {
-    font-size: 7px;
+    font-size: 0.41rem;
     letter-spacing: 0.04em;
   }
 
@@ -1446,7 +1454,7 @@
     border: 1px solid var(--line);
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     gap: 4px;
@@ -1600,7 +1608,7 @@
     border-radius: 3px;
     background: rgba(224, 230, 208, 0.08);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     font-weight: 700;
     color: var(--muted);
     border: 1px solid rgba(224, 230, 208, 0.05);
@@ -1678,7 +1686,7 @@
 
   .detail-draft__entry small {
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     color: var(--muted);
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -1859,7 +1867,7 @@
   }
 
   .build-team__badge-label {
-    font-size: 8px;
+    font-size: 0.47rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--muted);
@@ -1964,7 +1972,7 @@
   .full-analysis__section-heading > span:last-child {
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
@@ -2352,7 +2360,7 @@
     width: 100%;
     height: 38px;
     padding: 0;
-    font-size: 10px;
+    font-size: 0.59rem;
     font-weight: 800;
     letter-spacing: 0.12em;
     color: #ffd180;
@@ -2388,7 +2396,7 @@
   }
 
   .build-timeline__header .player-build__label {
-    font-size: 11px;
+    font-size: 0.65rem;
   }
 
   .build-timeline__count {
@@ -2397,7 +2405,7 @@
     justify-content: center;
     padding: 2px 8px;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 0.59rem;
     font-weight: 700;
     color: var(--muted);
     background: rgba(224, 230, 208, 0.05);
@@ -2475,7 +2483,7 @@
     background: #ffb800;
     color: #10120f;
     font-family: var(--font-sans);
-    font-size: 10px;
+    font-size: 0.59rem;
     font-weight: 800;
     line-height: 1;
   }
@@ -2490,7 +2498,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     font-weight: 600;
     color: var(--paper);
     line-height: 1.25;
@@ -2499,7 +2507,7 @@
   .build-timeline__token.is-talent small {
     grid-column: 1 / -1;
     text-align: right;
-    font-size: 8px;
+    font-size: 0.47rem;
     color: rgba(255, 210, 115, 0.8);
   }
 
@@ -2561,7 +2569,7 @@
     border: 1px solid rgba(255, 184, 0, 0.6);
     color: #ffb800;
     font-family: var(--font-sans);
-    font-size: 8px;
+    font-size: 0.47rem;
     font-weight: 800;
     line-height: 1;
     pointer-events: none;
@@ -2578,7 +2586,7 @@
   .build-timeline__token--ability small {
     padding: 2px 0;
     background: rgba(7, 9, 7, 0.5);
-    font-size: 8px;
+    font-size: 0.47rem;
     border-top: 1px solid var(--line);
   }
 
@@ -2685,7 +2693,7 @@
 
   .player-build__metric-label {
     font-family: var(--font-mono);
-    font-size: 8px;
+    font-size: 0.47rem;
     color: var(--muted);
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -2694,7 +2702,7 @@
 
   .player-build__metric-value {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 0.76rem;
     font-weight: 700;
     line-height: 1.2;
     color: var(--paper);
@@ -2725,7 +2733,7 @@
     top: 4px;
     right: 5px;
     color: var(--rank-first);
-    font-size: 8px;
+    font-size: 0.47rem;
     line-height: 1;
     opacity: 0.8;
   }
@@ -2754,7 +2762,7 @@
     top: 4px;
     right: 5px;
     color: var(--rank-second);
-    font-size: 8px;
+    font-size: 0.47rem;
     line-height: 1;
     opacity: 0.65;
   }
