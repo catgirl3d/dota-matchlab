@@ -1,9 +1,11 @@
 import direCrest from '../../../../assets/icons/dire_square.webp?url';
 import radiantCrest from '../../../../assets/icons/radiant_square.webp?url';
+import { useState } from 'react';
 import type { MatchDetailSnapshot } from '../../lib/match-detail';
 import { formatGameMode } from '../../lib/game-mode';
 import { formatEnum } from './match-detail-display';
 import { useTranslation, type TranslationKey } from '../../lib/i18n';
+import { Tooltip } from '../Tooltip';
 
 type MatchDetailHeaderProps = {
   detail: MatchDetailSnapshot;
@@ -27,6 +29,7 @@ export function MatchDetailHeader({
   onParse,
 }: MatchDetailHeaderProps) {
   const { t, locale } = useTranslation();
+  const [highlightedTeam, setHighlightedTeam] = useState<'radiant' | 'dire' | null>(null);
   const hasDetailSections = detail.availableSections.length > 0;
   const detailNotice = detail.detailStatus === 'available'
     ? null
@@ -58,13 +61,16 @@ export function MatchDetailHeader({
         </div>
       </div>
 
-      <header className="match-detail__scoreline">
+      <header className={`match-detail__scoreline${highlightedTeam ? ` is-${highlightedTeam}-focused` : ''}`}>
         <TeamOutcome
           side="radiant"
           label="Radiant"
           outcome={radiantLabel}
           score={detail.radiantScore}
           won={detail.radiantWin === true}
+          isFocused={highlightedTeam === 'radiant'}
+          isMuted={highlightedTeam === 'dire'}
+          onFocusChange={setHighlightedTeam}
         />
         <div className="match-detail__clock">
           <span className="micro-label">MATCH / {detail.matchId}</span>
@@ -77,8 +83,12 @@ export function MatchDetailHeader({
           outcome={direLabel}
           score={detail.direScore}
           won={detail.radiantWin === false}
+          isFocused={highlightedTeam === 'dire'}
+          isMuted={highlightedTeam === 'radiant'}
+          onFocusChange={setHighlightedTeam}
         />
       </header>
+      <MatchKillStrip radiantScore={detail.radiantScore} direScore={detail.direScore} highlightedTeam={highlightedTeam} />
 
       {detailNotice ? (
         <div className="match-detail__notice">
@@ -100,23 +110,60 @@ export function MatchDetailHeader({
   );
 }
 
+function MatchKillStrip({
+  radiantScore,
+  direScore,
+  highlightedTeam,
+}: {
+  radiantScore: number;
+  direScore: number;
+  highlightedTeam: 'radiant' | 'dire' | null;
+}) {
+  const { t } = useTranslation();
+  const trackColumns = `${Math.max(radiantScore, 1)}fr ${Math.max(direScore, 1)}fr`;
+
+  return (
+    <section className={`match-detail__kill-strip${highlightedTeam ? ` is-${highlightedTeam}-focused` : ''}`} aria-label={t('headerTeamKills')}>
+      <Tooltip content={t('headerTeamKillsTooltip', { radiant: radiantScore, dire: direScore })} ariaLabel={t('headerTeamKills')}>
+        <div className="match-detail__kill-strip-track" style={{ gridTemplateColumns: trackColumns }}>
+          <span className="match-detail__kill-strip-track-value match-detail__kill-strip-track-value--radiant" />
+          <span className="match-detail__kill-strip-track-value match-detail__kill-strip-track-value--dire" />
+        </div>
+      </Tooltip>
+    </section>
+  );
+}
+
 function TeamOutcome({
   side,
   label,
   outcome,
   score,
   won,
+  isFocused,
+  isMuted,
+  onFocusChange,
 }: {
   side: 'radiant' | 'dire';
   label: string;
   outcome: string;
   score: number;
   won: boolean;
+  isFocused: boolean;
+  isMuted: boolean;
+  onFocusChange: (team: 'radiant' | 'dire' | null) => void;
 }) {
   const crestSrc = side === 'radiant' ? radiantCrest : direCrest;
 
   return (
-    <div className={`team-outcome team-outcome--${side}${won ? ' is-winner' : ''}`}>
+    <div
+      className={`team-outcome team-outcome--${side}${won ? ' is-winner' : ''}${isFocused ? ' is-focused' : ''}${isMuted ? ' is-muted' : ''}`}
+      tabIndex={0}
+      onPointerEnter={() => onFocusChange(side)}
+      onPointerLeave={() => onFocusChange(null)}
+      onFocus={() => onFocusChange(side)}
+      onBlur={() => onFocusChange(null)}
+    >
       <span className="team-outcome__crest" aria-hidden="true">
         <img src={crestSrc} alt="" />
       </span>

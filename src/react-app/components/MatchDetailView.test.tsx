@@ -85,6 +85,19 @@ describe('MatchDetailView', () => {
     expect(screen.getByRole('heading', { name: 'Ten-player breakdown' })).toBeVisible();
     expect(screen.getByText('68')).toBeVisible();
     expect(screen.getByText('46')).toBeVisible();
+    const killStrip = screen.getByRole('region', { name: 'Team kills' });
+    expect(killStrip).not.toHaveTextContent('68');
+    expect(killStrip).not.toHaveTextContent('46');
+    fireEvent.pointerEnter(killStrip.querySelector('.app-tooltip__trigger') as HTMLElement);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Radiant 68 · Dire 46');
+    const radiantOutcome = screen.getByText('Radiant').closest<HTMLElement>('.team-outcome');
+    const direOutcome = screen.getByText('Dire').closest<HTMLElement>('.team-outcome');
+    fireEvent.pointerEnter(radiantOutcome as HTMLElement);
+    expect(radiantOutcome).toHaveClass('is-focused');
+    expect(direOutcome).toHaveClass('is-muted');
+    expect(killStrip).toHaveClass('is-radiant-focused');
+    fireEvent.pointerLeave(radiantOutcome as HTMLElement);
+    expect(radiantOutcome).not.toHaveClass('is-focused');
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
     expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(3);
     const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
@@ -501,6 +514,15 @@ describe('MatchDetailView', () => {
     expect(within(totalsPreview).getByRole('article', { name: 'Economy Net worth comparison' })).toBeVisible();
     expect(within(totalsPreview).getByRole('article', { name: 'Farm Last hits comparison' })).toBeVisible();
     expect(within(totalsPreview).getByRole('article', { name: 'Damage Hero damage comparison' })).toBeVisible();
+    const radiantTotal = table.querySelector('[aria-label="Radiant total"]') as HTMLElement;
+    const direTotal = table.querySelector('[aria-label="Dire total"]') as HTMLElement;
+    expect(radiantTotal).toHaveTextContent('0 / 4 / 16');
+    expect(radiantTotal).toHaveTextContent('42K');
+    expect(radiantTotal).toHaveTextContent('+9.5');
+    expect(radiantTotal).toHaveTextContent('1.4K / 1.6K');
+    expect(radiantTotal.querySelectorAll('td')).toHaveLength(9);
+    expect(radiantTotal.lastElementChild).toBeEmptyDOMElement();
+    expect(direTotal).toHaveTextContent('+3');
     const radiantHighRow = table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement;
     const direHighRow = table.querySelector('[aria-label="Scoreboard row for Dire high"]') as HTMLElement;
     expect(within(radiantHighRow).getByText('MVP')).toBeVisible();
@@ -540,13 +562,14 @@ describe('MatchDetailView', () => {
     expect(screen.getByRole('tooltip')).toHaveTextContent('Kills');
   });
 
-  it('keeps the Kills team-total prototype available when IMP is missing', () => {
+  it('marks the numeric team IMP total unavailable when any player IMP is missing', () => {
     const detailWithMissingImp = createSortableDetail();
     detailWithMissingImp.players[0] = { ...detailWithMissingImp.players[0], imp: null };
 
     render(<MatchDetailView detail={detailWithMissingImp} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
     const table = screen.getByRole('table', { name: 'Ten-player scoreboard table' });
+    expect(table.querySelector('[aria-label="Radiant total"]')).toHaveTextContent('N/A');
     expect(within(table).getByRole('region', { name: 'Team totals' })).toHaveTextContent('KDA / Kills');
   });
 

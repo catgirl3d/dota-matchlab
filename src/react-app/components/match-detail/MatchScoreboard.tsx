@@ -279,6 +279,9 @@ function ScoreboardTable({
           ))}
         </tbody>
         <tfoot>
+          {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsHeading /> : null}
+          {radiantPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="radiant" players={radiantPlayers} /> : null}
+          {direPlayers.length > 0 ? <ScoreboardTeamTotalsRow team="dire" players={direPlayers} /> : null}
           {radiantPlayers.length > 0 || direPlayers.length > 0 ? <ScoreboardTeamTotalsPreview radiantPlayers={radiantPlayers} direPlayers={direPlayers} /> : null}
         </tfoot>
       </table>
@@ -383,6 +386,53 @@ function ScoreboardMetricLabel({
     <Tooltip content={t(tooltipKey)} focusable={false}>
       {compact ? <small>{label}</small> : <span>{label}</span>}
     </Tooltip>
+  );
+}
+
+function ScoreboardTeamTotalsHeading() {
+  const { t } = useTranslation();
+  return <tr className="scoreboard-table__totals-heading"><th colSpan={11} scope="rowgroup">{t('scoreboardTeamTotals')}</th></tr>;
+}
+
+function ScoreboardTeamTotalsRow({
+  team,
+  players,
+}: {
+  team: 'radiant' | 'dire';
+  players: MatchDetailPlayer[];
+}) {
+  const { t } = useTranslation();
+  const totals = getScoreboardTeamTotals(players);
+  const teamLabel = team === 'radiant' ? t('scoreboardTeamRadiant') : t('scoreboardTeamDire');
+  const totalLabel = t('scoreboardTeamTotal', { team: teamLabel });
+
+  return (
+    <tr className={`scoreboard-table__team-total scoreboard-table__team-total--${team}`} aria-label={totalLabel}>
+      <th className="scoreboard-table__team-total-label" colSpan={2} scope="row">{totalLabel}</th>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardMetricValue value={String(totals.kills)} tooltipKey="scoreboardMetricKills" />
+        {' / '}
+        <ScoreboardMetricValue value={String(totals.deaths)} tooltipKey="scoreboardMetricDeaths" />
+        {' / '}
+        <ScoreboardMetricValue value={String(totals.assists)} tooltipKey="scoreboardMetricAssists" />
+      </td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.netWorth)} tooltipKey="scoreboardMetricNetWorth" /></td>
+      <td className={`scoreboard-table__numeric scoreboard-table__imp${totals.imp === null ? ' is-unavailable' : totals.imp > 0 ? ' is-positive' : totals.imp < 0 ? ' is-negative' : ''}`}><ScoreboardMetricValue value={formatImp(totals.imp)} tooltipKey="scoreboardMetricImp" /></td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardMetricValue value={String(totals.lastHits)} tooltipKey="scoreboardMetricLastHits" />
+        {' / '}
+        <ScoreboardMetricValue value={String(totals.denies)} tooltipKey="scoreboardMetricDenies" />
+      </td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardMetricValue value={formatCompact(totals.goldPerMinute)} tooltipKey="scoreboardMetricGoldPerMinute" />
+        {' / '}
+        <ScoreboardMetricValue value={formatCompact(totals.xpPerMinute)} tooltipKey="scoreboardMetricExperiencePerMinute" />
+      </td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.heroDamage)} tooltipKey="scoreboardMetricHeroDamage" /></td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.towerDamage)} tooltipKey="scoreboardMetricTowerDamage" /></td>
+      <td className="scoreboard-table__numeric"><ScoreboardMetricValue value={formatCompact(totals.heroHealing)} tooltipKey="scoreboardMetricHeroHealing" /></td>
+      <td aria-hidden="true" />
+    </tr>
   );
 }
 

@@ -213,6 +213,8 @@ export const translations = {
     headerBaseTitle: 'Base Parse',
     headerBaseDesc: 'Basic statistics are available. Load advanced parse for playback, abilities and details.',
     headerSource: 'Source:',
+    headerTeamKills: 'Team kills',
+    headerTeamKillsTooltip: 'Radiant {radiant} · Dire {dire}',
     headerRefresh: 'Refresh',
     headerLoadFullParse: 'Load Full Parse',
     headerLoadDetails: 'Loading details...',
