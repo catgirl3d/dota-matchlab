@@ -374,8 +374,13 @@ describe('MatchDetailView', () => {
       'Scoreboard row for Dire low',
       'Scoreboard row for Dire high',
     ]);
-    expect(within(table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement).getByText('MVP')).toBeVisible();
-    expect(within(table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement).getByRole('img', { name: 'Phase Boots' })).toBeVisible();
+    const radiantHighRow = table.querySelector('[aria-label="Scoreboard row for Radiant high"]') as HTMLElement;
+    const direHighRow = table.querySelector('[aria-label="Scoreboard row for Dire high"]') as HTMLElement;
+    expect(within(radiantHighRow).getByText('MVP')).toBeVisible();
+    expect(within(radiantHighRow).getByRole('img', { name: 'Phase Boots' })).toBeVisible();
+    expect(radiantHighRow.querySelectorAll('td')[3]?.querySelector('.scoreboard-table__record')).toHaveTextContent('+15');
+    expect(radiantHighRow.querySelectorAll('td')[7]?.querySelector('.scoreboard-table__record')).toHaveTextContent('900');
+    expect(direHighRow.querySelectorAll('td')[6]?.querySelector('.scoreboard-table__record')).toHaveTextContent('1.2K');
 
     fireEvent.click(within(screen.getByRole('group', { name: 'Sort ten-player breakdown' })).getByRole('button', { name: 'Hero damage' }));
     expect(tableRows(table)).toEqual([
@@ -402,6 +407,12 @@ describe('MatchDetailView', () => {
 
     expect(screen.getAllByText('MOST DMG')).toHaveLength(2);
     expect(screen.queryByText('MOST TD')).not.toBeInTheDocument();
+
+    fireEvent.click(within(screen.getByRole('group', { name: 'Scoreboard view' })).getByRole('button', { name: 'Table view' }));
+    const table = screen.getByRole('table', { name: 'Ten-player scoreboard table' });
+    for (const row of table.querySelectorAll<HTMLTableRowElement>('tbody tr[aria-label]')) {
+      expect(row.querySelectorAll('td')[6]?.querySelector('.scoreboard-table__record')).toHaveTextContent('1K');
+    }
   });
 
   it('keeps final loadout but labels progression unavailable for basic and partial data', () => {

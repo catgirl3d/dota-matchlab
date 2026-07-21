@@ -10,6 +10,38 @@ import { DetailHeading } from './match-detail-primitives';
 type PerformanceRank = 1 | 2;
 type PlayerAchievement = 'mvp' | 'top-imp' | 'most-damage' | 'most-tower-damage';
 type ScoreboardView = 'roster' | 'table';
+type ScoreboardRecordMetric =
+  | 'kills'
+  | 'deaths'
+  | 'assists'
+  | 'netWorth'
+  | 'imp'
+  | 'lastHits'
+  | 'denies'
+  | 'goldPerMinute'
+  | 'xpPerMinute'
+  | 'heroDamage'
+  | 'towerDamage'
+  | 'heroHealing';
+type ScoreboardRecords = Partial<Record<ScoreboardRecordMetric, number>>;
+
+const SCOREBOARD_RECORD_METRICS: ReadonlyArray<{
+  metric: ScoreboardRecordMetric;
+  direction: 'highest' | 'lowest';
+}> = [
+  { metric: 'kills', direction: 'highest' },
+  { metric: 'deaths', direction: 'lowest' },
+  { metric: 'assists', direction: 'highest' },
+  { metric: 'netWorth', direction: 'highest' },
+  { metric: 'imp', direction: 'highest' },
+  { metric: 'lastHits', direction: 'highest' },
+  { metric: 'denies', direction: 'highest' },
+  { metric: 'goldPerMinute', direction: 'highest' },
+  { metric: 'xpPerMinute', direction: 'highest' },
+  { metric: 'heroDamage', direction: 'highest' },
+  { metric: 'towerDamage', direction: 'highest' },
+  { metric: 'heroHealing', direction: 'highest' },
+];
 
 const PLAYER_ACHIEVEMENTS: Record<PlayerAchievement, { label: string; title: string }> = {
   mvp: { label: 'MVP', title: 'Highest Individual Match Performance' },
@@ -194,6 +226,7 @@ function ScoreboardTable({
 }) {
   const orderedRadiantPlayers = sortPlayers(radiantPlayers, sort);
   const orderedDirePlayers = sortPlayers(direPlayers, sort);
+  const records = getScoreboardRecords([...radiantPlayers, ...direPlayers]);
 
   return (
     <div className="scoreboard-table-scroll">
@@ -221,6 +254,7 @@ function ScoreboardTable({
               currentAccountId={currentAccountId}
               performanceRank={performanceRanks.get(player.key)}
               achievements={playerAchievements.get(player.key) ?? []}
+              records={records}
               key={player.key}
             />
           ))}
@@ -236,6 +270,7 @@ function ScoreboardTable({
               currentAccountId={currentAccountId}
               performanceRank={performanceRanks.get(player.key)}
               achievements={playerAchievements.get(player.key) ?? []}
+              records={records}
               key={player.key}
             />
           ))}
@@ -251,12 +286,14 @@ function ScoreboardTableRow({
   currentAccountId,
   performanceRank,
   achievements,
+  records,
 }: {
   player: MatchDetailPlayer;
   heroNames: Record<number, string>;
   currentAccountId: number | null;
   performanceRank: PerformanceRank | undefined;
   achievements: PlayerAchievement[];
+  records: ScoreboardRecords;
 }) {
   const playerLabel = player.name ?? formatAccount(player.accountId);
 
@@ -276,19 +313,47 @@ function ScoreboardTableRow({
         </span>
       </th>
       <td className="scoreboard-table__numeric" aria-label={`${player.kills} kills, ${player.deaths} deaths, ${player.assists} assists`}>
-        {player.kills} / {player.deaths} / {player.assists}
+        <ScoreboardRecordValue value={String(player.kills)} isRecord={isScoreboardRecord(records, 'kills', player.kills)} />
+        {' / '}
+        <ScoreboardRecordValue value={String(player.deaths)} isRecord={isScoreboardRecord(records, 'deaths', player.deaths)} />
+        {' / '}
+        <ScoreboardRecordValue value={String(player.assists)} isRecord={isScoreboardRecord(records, 'assists', player.assists)} />
       </td>
-      <td className="scoreboard-table__numeric">{formatCompact(player.netWorth)}</td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardRecordValue value={formatCompact(player.netWorth)} isRecord={isScoreboardRecord(records, 'netWorth', player.netWorth)} />
+      </td>
       <td className={`scoreboard-table__numeric scoreboard-table__imp${player.imp === null ? ' is-unavailable' : player.imp > 0 ? ' is-positive' : player.imp < 0 ? ' is-negative' : ''}`}>
-        {formatImp(player.imp)}
+        <ScoreboardRecordValue value={formatImp(player.imp)} isRecord={isScoreboardRecord(records, 'imp', player.imp)} />
       </td>
-      <td className="scoreboard-table__numeric">{player.lastHits} / {player.denies}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(player.goldPerMinute)} / {formatCompact(player.xpPerMinute)}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(player.heroDamage)}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(player.towerDamage)}</td>
-      <td className="scoreboard-table__numeric">{formatCompact(player.heroHealing)}</td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardRecordValue value={String(player.lastHits)} isRecord={isScoreboardRecord(records, 'lastHits', player.lastHits)} />
+        {' / '}
+        <ScoreboardRecordValue value={String(player.denies)} isRecord={isScoreboardRecord(records, 'denies', player.denies)} />
+      </td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardRecordValue value={formatCompact(player.goldPerMinute)} isRecord={isScoreboardRecord(records, 'goldPerMinute', player.goldPerMinute)} />
+        {' / '}
+        <ScoreboardRecordValue value={formatCompact(player.xpPerMinute)} isRecord={isScoreboardRecord(records, 'xpPerMinute', player.xpPerMinute)} />
+      </td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardRecordValue value={formatCompact(player.heroDamage)} isRecord={isScoreboardRecord(records, 'heroDamage', player.heroDamage)} />
+      </td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardRecordValue value={formatCompact(player.towerDamage)} isRecord={isScoreboardRecord(records, 'towerDamage', player.towerDamage)} />
+      </td>
+      <td className="scoreboard-table__numeric">
+        <ScoreboardRecordValue value={formatCompact(player.heroHealing)} isRecord={isScoreboardRecord(records, 'heroHealing', player.heroHealing)} />
+      </td>
       <td><ScoreboardInventory itemIds={player.itemIds} neutralItemId={player.neutralItemId} /></td>
     </tr>
+  );
+}
+
+function ScoreboardRecordValue({ value, isRecord }: { value: string; isRecord: boolean }) {
+  return (
+    <span className={isRecord ? 'scoreboard-table__record' : undefined} title={isRecord ? 'Best in match' : undefined}>
+      {value}
+    </span>
   );
 }
 
@@ -347,6 +412,29 @@ function scoreboardTableRowClass(player: MatchDetailPlayer, performanceRank: Per
 function formatImp(value: number | null): string {
   if (value === null) return 'N/A';
   return value > 0 ? `+${value}` : String(value);
+}
+
+function getScoreboardRecords(players: MatchDetailPlayer[]): ScoreboardRecords {
+  const records: ScoreboardRecords = {};
+
+  for (const { metric, direction } of SCOREBOARD_RECORD_METRICS) {
+    const values = [...new Set(players.flatMap((player) => {
+      const value = player[metric];
+      return value === null ? [] : [value];
+    }))];
+    if (values.length === 0) continue;
+
+    const record = direction === 'highest' ? Math.max(...values) : Math.min(...values);
+    if (direction === 'highest' && record <= 0) continue;
+
+    records[metric] = record;
+  }
+
+  return records;
+}
+
+function isScoreboardRecord(records: ScoreboardRecords, metric: ScoreboardRecordMetric, value: number | null): boolean {
+  return value !== null && records[metric] === value;
 }
 
 function SplitRosterIcon() {

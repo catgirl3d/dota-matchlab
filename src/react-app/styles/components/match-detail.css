@@ -633,6 +633,12 @@
     color: var(--muted);
   }
 
+  .scoreboard-table .scoreboard-table__record {
+    color: var(--rank-first);
+    font-weight: 700;
+    text-shadow: 0 0 6px rgba(var(--rank-first-rgb), 0.32);
+  }
+
   .scoreboard-table__inventory {
     display: grid;
     min-width: 158px;
