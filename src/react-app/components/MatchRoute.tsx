@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate, useOutletContext, Outlet, useParams } from 'react-router';
 import type { ComponentProps } from 'react';
 import type { Tables } from '../../shared/database.types';
-import { fetchHeroNames, importMatch, syncTrackedMatchDetail } from '../lib/dota-api';
+import { DOTA_HERO_NAMES } from '../../shared/hero-names';
+import { importMatch, syncTrackedMatchDetail } from '../lib/dota-api';
 import { parseMatchId } from '../lib/match-id';
 import { fetchMatchDetail } from '../lib/match-detail';
 import { createPublicSupabaseClient, createUserSupabaseClient } from '../lib/supabase';
@@ -89,12 +90,6 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
   });
   const perspectiveAccount = perspectiveAccountQuery.data ?? null;
 
-  const heroNamesQuery = useQuery({
-    queryKey: ['dota-hero-names'],
-    staleTime: 86_400_000,
-    gcTime: 86_400_000,
-    queryFn: () => fetchHeroNames(),
-  });
   const matchDetailQuery = useQuery({
     queryKey: ['match-detail', matchId],
     staleTime: 300_000,
@@ -149,7 +144,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
   const isTrackedSyncForMatch = matchDetailSync.variables?.detailMatchId === matchId;
   const detailProps: ComponentProps<typeof MatchDetailView> = {
     detail: matchDetailQuery.data ?? undefined,
-    heroNames: heroNamesQuery.data ?? {},
+    heroNames: DOTA_HERO_NAMES,
     currentAccountId: perspectiveAccount && matchDetailQuery.data?.players.some(
       (player) => player.accountId === perspectiveAccount.dota_account_id,
     ) ? perspectiveAccount.dota_account_id : null,

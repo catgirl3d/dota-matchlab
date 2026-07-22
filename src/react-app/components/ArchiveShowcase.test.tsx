@@ -10,7 +10,6 @@ vi.mock('../lib/archive', () => ({
   fetchArchiveShowcaseOverview: mocks.overview,
   fetchArchiveShowcasePage: mocks.page,
 }));
-vi.mock('../lib/dota-api', () => ({ fetchHeroNames: vi.fn().mockResolvedValue({}) }));
 vi.mock('../lib/supabase', () => ({ createPublicSupabaseClient: () => ({}) }));
 vi.mock('./PlayerDashboard', () => ({
   PlayerDashboard: ({ account, syncControls }: { account: { dota_account_id: number }; syncControls?: unknown }) => <div>Showcase {account.dota_account_id} {syncControls ? 'mutable' : 'read-only'}</div>,

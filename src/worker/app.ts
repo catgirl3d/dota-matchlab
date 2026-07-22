@@ -3,7 +3,6 @@ import { Hono } from 'hono';
 import type { SystemHealth } from '../shared/health';
 import { checkSupabaseHealth } from './services/supabase-health';
 import {
-  loadHeroConstants,
   loadRecentMatches,
   OpenDotaError,
   resolveDotaPlayer,
@@ -26,7 +25,6 @@ import { InvalidSteamIdError, parseDotaAccountId } from './services/steam-id';
 type AppDependencies = {
   checkSupabase: typeof checkSupabaseHealth;
   loadRecentMatches: typeof loadRecentMatches;
-  loadHeroConstants: typeof loadHeroConstants;
   syncTrackedAccount: typeof syncTrackedAccount;
   syncTrackedMatchDetail: typeof syncTrackedMatchDetail;
   importPublicMatchDetail: typeof importPublicMatchDetail;
@@ -37,7 +35,6 @@ type AppDependencies = {
 const defaultDependencies: AppDependencies = {
   checkSupabase: checkSupabaseHealth,
   loadRecentMatches,
-  loadHeroConstants,
   syncTrackedAccount,
   syncTrackedMatchDetail,
   importPublicMatchDetail,
@@ -66,12 +63,6 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     };
 
     return context.json(response, status === 'ok' ? 200 : 503);
-  });
-
-  app.get('/api/dota/constants/heroes', async (context) => {
-    const heroes = await dependencies.loadHeroConstants(context.env.OPENDOTA_BASE_URL);
-    context.header('Cache-Control', 'public, max-age=86400');
-    return context.json({ heroes });
   });
 
   app.use('/api/session', clerkMiddleware());

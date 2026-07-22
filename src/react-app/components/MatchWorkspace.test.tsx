@@ -20,7 +20,6 @@ vi.mock('../lib/archive', () => ({
   fetchArchivePage: vi.fn().mockResolvedValue({}),
 }));
 vi.mock('../lib/dota-api', () => ({
-  fetchHeroNames: vi.fn().mockResolvedValue({}),
   resolveSteamProfile: vi.fn(),
   syncAllTrackedAccount: vi.fn(),
   syncTrackedAccount: vi.fn(),

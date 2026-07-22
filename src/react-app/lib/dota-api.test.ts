@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DotaApiError,
-  fetchHeroNames,
   importMatch,
   resolveSteamProfile,
   syncAllTrackedAccount,
@@ -83,24 +82,6 @@ describe('Dota API client', () => {
         headers: expect.objectContaining({
           Authorization: 'Bearer clerk-token',
         }),
-      }),
-    );
-  });
-
-  it('loads hero names through the cached constants route', async () => {
-    const fetcher = vi.fn().mockResolvedValue(
-      Response.json({ heroes: { '1': 'Anti-Mage', '2': 'Axe' } }),
-    );
-    vi.stubGlobal('fetch', fetcher);
-
-    await expect(fetchHeroNames()).resolves.toEqual({
-      1: 'Anti-Mage',
-      2: 'Axe',
-    });
-    expect(fetcher).toHaveBeenCalledWith(
-      '/api/dota/constants/heroes',
-      expect.objectContaining({
-        headers: expect.not.objectContaining({ Authorization: expect.anything() }),
       }),
     );
   });

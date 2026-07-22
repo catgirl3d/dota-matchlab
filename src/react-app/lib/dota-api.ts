@@ -1,6 +1,5 @@
 import type {
   DotaPlayerProfile,
-  HeroNamesResponse,
   RecentMatchesResponse,
 } from '../../shared/dota';
 import type { MatchDetailSyncResult, MatchImportResult, MatchSyncResult } from '../../shared/match-archive';
@@ -116,23 +115,6 @@ export async function syncAllTrackedAccount(
   }
 
   throw new Error(`Full synchronization exceeded limit of ${maxBatches} batches`);
-}
-
-export async function fetchHeroNames(): Promise<Record<number, string>> {
-  const response = await requestJson<HeroNamesResponse>(
-    '/api/dota/constants/heroes',
-  );
-
-  return Object.entries(response.heroes).reduce<Record<number, string>>(
-    (names, [heroId, name]) => {
-      const numericHeroId = Number(heroId);
-      if (Number.isSafeInteger(numericHeroId) && name.trim()) {
-        names[numericHeroId] = name;
-      }
-      return names;
-    },
-    {},
-  );
 }
 
 async function requestJson<T>(

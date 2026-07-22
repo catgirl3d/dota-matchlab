@@ -3,6 +3,7 @@ import type {
   RecentDotaMatch,
   RecentMatchesResponse,
 } from '../../shared/dota';
+import { DOTA_HERO_NAMES } from '../../shared/hero-names';
 import {
   isJsonValue as isJson,
   isShallowObject as isObject,
@@ -18,16 +19,6 @@ const REQUEST_TIMEOUT_MS = 8_000;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const RECENT_MATCH_LIMIT = 20;
 export const HISTORY_PAGE_SIZE = 100;
-const HERO_CACHE_TTL_MS = 86_400_000;
-
-type HeroNamesCache = {
-  baseUrl: string;
-  expiresAt: number;
-  names: Record<string, string>;
-};
-
-let heroNamesCache: HeroNamesCache | null = null;
-
 const HISTORY_PROJECT_FIELDS = [
   'match_id',
   'start_time',
@@ -118,12 +109,13 @@ export async function loadRecentMatches(
   accountId: number,
   fetcher: typeof fetch = fetch,
 ): Promise<RecentMatchesResponse> {
-  const [matchesPayload, heroesPayload] = await Promise.all([
-    fetchOpenDotaJson(baseUrl, `/players/${accountId}/recentMatches`, fetcher),
-    fetchOpenDotaJson(baseUrl, '/constants/heroes', fetcher),
-  ]);
+  const matchesPayload = await fetchOpenDotaJson(
+    baseUrl,
+    `/players/${accountId}/recentMatches`,
+    fetcher,
+  );
 
-  if (!Array.isArray(matchesPayload) || !isObject(heroesPayload)) {
+  if (!Array.isArray(matchesPayload)) {
     throw new OpenDotaError('OpenDota returned unexpected data format', 502, 'OPENDOTA_UNEXPECTED_FORMAT');
   }
 
@@ -147,11 +139,7 @@ export async function loadRecentMatches(
         return [];
       }
 
-      const hero = heroesPayload[String(heroId)];
-      const heroName =
-        isObject(hero) && readString(hero.localized_name)
-          ? readString(hero.localized_name)!
-          : `Hero #${heroId}`;
+      const heroName = DOTA_HERO_NAMES[heroId] ?? `Hero #${heroId}`;
       const isRadiant = playerSlot < 128;
 
       return [
@@ -173,44 +161,6 @@ export async function loadRecentMatches(
     });
 
   return { accountId, matches };
-}
-
-export async function loadHeroConstants(
-  baseUrl: string,
-  fetcher: typeof fetch = fetch,
-): Promise<Record<string, string>> {
-  const cacheKey = baseUrl.replace(/\/$/, '');
-  if (fetcher === fetch && heroNamesCache?.baseUrl === cacheKey && heroNamesCache.expiresAt > Date.now()) {
-    return heroNamesCache.names;
-  }
-
-  const payload = await fetchOpenDotaJson(baseUrl, '/constants/heroes', fetcher);
-  if (!isObject(payload)) {
-    throw new OpenDotaError('OpenDota returned unexpected heroes format', 502, 'OPENDOTA_HEROES_UNEXPECTED');
-  }
-
-  const names = Object.entries(payload).reduce<Record<string, string>>(
-    (result, [heroId, value]) => {
-      if (isObject(value)) {
-        const localizedName = readString(value.localized_name);
-        if (localizedName) {
-          result[heroId] = localizedName;
-        }
-      }
-      return result;
-    },
-    {},
-  );
-
-  if (fetcher === fetch) {
-    heroNamesCache = {
-      baseUrl: cacheKey,
-      expiresAt: Date.now() + HERO_CACHE_TTL_MS,
-      names,
-    };
-  }
-
-  return names;
 }
 
 export async function loadPlayerMatchesPage(

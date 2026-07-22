@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
+import { DOTA_HERO_NAMES } from '../../shared/hero-names';
 import {
   fetchArchiveShowcaseOverview,
   fetchArchiveShowcasePage,
@@ -9,7 +10,6 @@ import {
 } from '../lib/archive';
 import { DEFAULT_ARCHIVE_FILTERS, type ArchiveFilters } from '../lib/archive-analytics';
 import { ARCHIVE_STALE_TIME_MS, archiveShowcaseQueryKeys } from '../lib/archive-query-keys';
-import { fetchHeroNames } from '../lib/dota-api';
 import { createPublicSupabaseClient } from '../lib/supabase';
 import { PlayerDashboard } from './PlayerDashboard';
 import { useTranslation } from '../lib/i18n';
@@ -46,13 +46,6 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
     placeholderData: (previousData, previousQuery) => keepShowcaseData(previousData, previousQuery, dotaAccountId),
     queryFn: ({ signal }) => fetchArchiveShowcasePage(createPublicSupabaseClient(), dotaAccountId, filters, cursor, signal),
   });
-  const heroNamesQuery = useQuery({
-    queryKey: ['dota-hero-names'],
-    staleTime: 86_400_000,
-    gcTime: 86_400_000,
-    queryFn: () => fetchHeroNames(),
-  });
-
   if (overviewQuery.isPending || pageQuery.isPending) {
     return <div className="workspace-message workspace-message--neutral"><span aria-hidden="true">+</span><p>{t('loadingPublicArchive')}</p></div>;
   }
@@ -68,7 +61,7 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
       overview={overview}
       page={pageQuery.data}
       filters={filters}
-      heroNames={heroNamesQuery.data ?? {}}
+        heroNames={DOTA_HERO_NAMES}
       isLoading={overviewQuery.isPending || pageQuery.isPending}
       isRefreshing={overviewQuery.isFetching || pageQuery.isFetching}
       error={null}

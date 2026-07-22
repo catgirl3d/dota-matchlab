@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router';
 import type { Tables } from '../../shared/database.types';
+import { DOTA_HERO_NAMES } from '../../shared/hero-names';
 import type { MatchSyncResult } from '../../shared/match-archive';
 import {
   fetchArchiveOverview,
@@ -14,7 +15,6 @@ import {
 import { DEFAULT_ARCHIVE_FILTERS, type ArchiveFilters } from '../lib/archive-analytics';
 import { ARCHIVE_STALE_TIME_MS, archiveQueryKeys } from '../lib/archive-query-keys';
 import {
-  fetchHeroNames,
   resolveSteamProfile,
   syncAllTrackedAccount,
   syncTrackedAccount,
@@ -231,13 +231,6 @@ export function MatchWorkspace() {
     },
   });
 
-  const heroNamesQuery = useQuery({
-    queryKey: ['dota-hero-names'],
-    staleTime: 86_400_000,
-    gcTime: 86_400_000,
-    queryFn: () => fetchHeroNames(),
-  });
-
   const archiveSync = useMutation({
     mutationFn: async (trackedAccountId: string) => {
       if (!session) {
@@ -382,7 +375,7 @@ export function MatchWorkspace() {
               overview={archiveOverviewQuery.data}
               page={archivePageQuery.data}
               filters={archiveFilters}
-              heroNames={heroNamesQuery.data ?? {}}
+              heroNames={DOTA_HERO_NAMES}
               isLoading={archiveOverviewQuery.isPending || archivePageQuery.isPending}
               error={archiveOverviewQuery.error ?? archivePageQuery.error}
               onRefresh={() => {

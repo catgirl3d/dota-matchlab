@@ -95,10 +95,9 @@ describe('API health routes', () => {
   });
 });
 
-describe('public Dota routes', () => {
-  it('serves cached hero constants without authentication', async () => {
-    const loadHeroConstants = vi.fn().mockResolvedValue({ 1: 'Anti-Mage' });
-    const app = createApp({ loadHeroConstants });
+describe('protected Dota routes', () => {
+  it('does not expose a hero constants endpoint', async () => {
+    const app = createApp();
 
     const response = await app.request(
       'https://example.com/api/dota/constants/heroes',
@@ -106,14 +105,9 @@ describe('public Dota routes', () => {
       testEnv,
     );
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get('Cache-Control')).toBe('public, max-age=86400');
-    await expect(response.json()).resolves.toEqual({ heroes: { 1: 'Anti-Mage' } });
-    expect(loadHeroConstants).toHaveBeenCalledWith(testEnv.OPENDOTA_BASE_URL);
+    expect(response.status).toBe(404);
   });
-});
 
-describe('protected Dota routes', () => {
   it('rejects anonymous profile resolution before calling OpenDota', async () => {
     const resolveDotaPlayer = vi.fn();
     const app = createApp({ resolveDotaPlayer });

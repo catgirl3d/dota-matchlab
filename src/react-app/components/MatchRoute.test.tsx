@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
   readPerspectiveAccount: vi.fn(),
   readLinkedAccount: vi.fn(),
   fetchMatchDetail: vi.fn(),
-  fetchHeroNames: vi.fn(),
   importMatch: vi.fn(),
   syncTrackedMatchDetail: vi.fn(),
   userId: 'user-1' as string | null,
@@ -27,7 +26,6 @@ vi.mock('@clerk/react', () => ({
 }));
 vi.mock('../lib/match-detail', () => ({ fetchMatchDetail: mocks.fetchMatchDetail }));
 vi.mock('../lib/dota-api', () => ({
-  fetchHeroNames: mocks.fetchHeroNames,
   importMatch: mocks.importMatch,
   syncTrackedMatchDetail: mocks.syncTrackedMatchDetail,
 }));
@@ -89,7 +87,6 @@ beforeEach(() => {
   }));
   mocks.readLinkedAccount.mockReset().mockImplementation(async (matchId: number) => ({ data: mocks.linkedAccounts.has(matchId) ? { tracked_account_id: mocks.linkedAccounts.get(matchId) } : null, error: mocks.linkedAccountError ? { message: mocks.linkedAccountError } : null }));
   mocks.fetchMatchDetail.mockReset().mockResolvedValue(null);
-  mocks.fetchHeroNames.mockReset().mockResolvedValue({});
   mocks.importMatch.mockReset().mockResolvedValue({ matchId: 8_749_050_591, status: 'available', imported: true });
   mocks.syncTrackedMatchDetail.mockReset().mockResolvedValue({});
 });
@@ -101,7 +98,6 @@ describe('match router', () => {
     renderRoute();
     const importButton = await screen.findByRole('button', { name: 'Load match from STRATZ' });
     expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_591);
-    expect(mocks.fetchHeroNames).toHaveBeenCalledWith();
     expect(mocks.importMatch).not.toHaveBeenCalled();
     expect(mocks.readPerspectiveAccount).not.toHaveBeenCalled();
     fireEvent.click(importButton);

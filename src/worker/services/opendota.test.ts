@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  loadHeroConstants,
   loadPlayerMatchesPage,
   loadRecentMatches,
   resolveDotaPlayer,
@@ -33,30 +32,25 @@ describe('OpenDota adapter', () => {
     });
   });
 
-  it('derives win state from player slot and resolves hero names', async () => {
-    const fetcher = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(
-        Response.json([
-          {
-            match_id: 8_889_779_250,
-            player_slot: 3,
-            radiant_win: true,
-            hero_id: 129,
-            start_time: 1_783_689_522,
-            duration: 2_273,
-            kills: 1,
-            deaths: 6,
-            assists: 13,
-            gold_per_min: 352,
-            xp_per_min: 555,
-            last_hits: 82,
-          },
-        ]),
-      )
-      .mockResolvedValueOnce(
-        Response.json({ '129': { localized_name: 'Mars' } }),
-      );
+  it('derives win state from player slot and resolves hero names locally', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json([
+        {
+          match_id: 8_889_779_250,
+          player_slot: 3,
+          radiant_win: true,
+          hero_id: 129,
+          start_time: 1_783_689_522,
+          duration: 2_273,
+          kills: 1,
+          deaths: 6,
+          assists: 13,
+          gold_per_min: 352,
+          xp_per_min: 555,
+          last_hits: 82,
+        },
+      ]),
+    );
 
     const result = await loadRecentMatches(
       'https://api.opendota.com/api',
@@ -73,6 +67,7 @@ describe('OpenDota adapter', () => {
       deaths: 6,
       assists: 13,
     });
+    expect(fetcher).toHaveBeenCalledOnce();
   });
 
   it('loads and normalizes an extended history page with explicit projections', async () => {
@@ -153,17 +148,4 @@ describe('OpenDota adapter', () => {
     expect(requestUrl).toContain('project=hero_damage');
   });
 
-  it('normalizes hero constants for archive presentation', async () => {
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
-      Response.json({
-        '1': { localized_name: 'Anti-Mage' },
-        '2': { localized_name: 'Axe' },
-        '3': { localized_name: null },
-      }),
-    );
-
-    await expect(
-      loadHeroConstants('https://api.opendota.com/api', fetcher),
-    ).resolves.toEqual({ '1': 'Anti-Mage', '2': 'Axe' });
-  });
 });
