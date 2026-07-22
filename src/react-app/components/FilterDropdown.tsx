@@ -8,14 +8,15 @@ type FilterDropdownProps = {
   options: ReadonlyArray<readonly [string, string]>;
   onChange: (value: string) => void;
   searchable?: boolean;
+  selectedLabel?: string;
 };
 
-export function FilterDropdown({ label, value, options, onChange, searchable = false }: FilterDropdownProps) {
+export function FilterDropdown({ label, value, options, onChange, searchable = false, selectedLabel: providedSelectedLabel }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const selectedLabel = options.find(([optionValue]) => optionValue === value)?.[1] ?? 'Select';
+  const selectedLabel = providedSelectedLabel ?? options.find(([optionValue]) => optionValue === value)?.[1] ?? 'Select';
   const visibleOptions = searchable && searchQuery
     ? options.filter(([, optionLabel]) => optionLabel.toLowerCase().includes(searchQuery.toLowerCase()))
     : options;

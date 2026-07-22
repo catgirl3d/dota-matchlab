@@ -176,6 +176,8 @@ describe('match detail read model', () => {
                       experiencePerMinute: [120, 300],
                       networthPerMinute: [600, 1_200],
                        killEvents: [{ time: 120, target: 4 }],
+                       assistEvents: [{ time: 120, target: 4 }],
+                       deathEvents: [{ time: 150, timeDead: 20 }],
                       wards: [{ time: 90 }],
                       itemPurchases: [{ time: 120, itemId: 42 }],
                       allTalks: [{ time: 130, message: 'gg' }],
@@ -218,6 +220,7 @@ describe('match detail read model', () => {
         netWorth: [600, 1_200],
       },
       detailEvents: { kills: 1, wards: 1 },
+      combatEvents: { assists: [{ time: 120 }], deaths: [{ time: 150, timeDead: 20 }] },
     });
     expect(snapshot.eventCounts).toMatchObject({
       runes: 1,

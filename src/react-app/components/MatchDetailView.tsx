@@ -10,6 +10,7 @@ import { useTranslation } from '../lib/i18n';
 import { AdvantagePanel } from './match-detail/AdvantagePanel';
 import { KillHistoryPanel } from './match-detail/KillHistoryPanel';
 import { LaneAnalysisPanel } from './match-detail/LaneAnalysisPanel';
+import { PlayerContributionPanel } from './match-detail/PlayerContributionPanel';
 
 
 type MatchDetailViewProps = {
@@ -121,6 +122,18 @@ export function MatchDetailView({
         eventCounts={detail.eventCounts}
         selectedPlayerKey={selectedPlayerKey}
       />
+
+      {selectedPlayer ? (
+        <PlayerContributionPanel
+          player={selectedPlayer}
+          players={detail.players}
+          heroNames={heroNames}
+          hasDetailedEvents={hasPlayerStats}
+          events={detail.timelineEvents}
+          durationSeconds={detail.durationSeconds}
+          onPlayerSelect={selectPlayer}
+        />
+      ) : null}
 
       {hasPlayerStats && analysisPlayer ? (
           <FocusedPlayerAnalysis player={analysisPlayer} heroNames={heroNames} durationSeconds={detail.durationSeconds} />

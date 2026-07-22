@@ -69,6 +69,10 @@ export type MatchDetailPlayer = {
     itemUses: number;
     wardDestructions: number;
   };
+  combatEvents: {
+    assists: Array<{ time: number }>;
+    deaths: Array<{ time: number; timeDead: number | null }>;
+  };
   dotaPlusLevel: number | null;
   totalActions: number | null;
 };
@@ -561,6 +565,16 @@ function buildPlayer(
       runes: readObjectArray(detailStats?.runes).length,
       itemUses: sumObjectField(readObjectArray(detailStats?.itemUsed), 'count'),
       wardDestructions: readObjectArray(detailStats?.wardDestruction).length,
+    },
+    combatEvents: {
+      assists: readObjectArray(detailStats?.assistEvents).flatMap((event) => {
+        const time = readInteger(event.time);
+        return time === null ? [] : [{ time }];
+      }),
+      deaths: readObjectArray(detailStats?.deathEvents).flatMap((event) => {
+        const time = readInteger(event.time);
+        return time === null ? [] : [{ time, timeDead: readInteger(event.timeDead) }];
+      }),
     },
     dotaPlusLevel: readInteger(dotaPlus?.level),
     totalActions: readInteger(dotaPlus?.totalActions),

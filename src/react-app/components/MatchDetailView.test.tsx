@@ -350,17 +350,41 @@ describe('MatchDetailView', () => {
     expect(within(killHistory).getByRole('listitem')).toHaveAccessibleName('Selected killed Dire support at 2:00');
 
     expect(screen.getByRole('heading', { name: 'Axe performance tape' })).toBeVisible();
+    const contributionPanel = screen.getByRole('heading', { name: 'Axe contribution index' }).closest('section');
+    expect(contributionPanel).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByLabelText(/Contribution index \d+ out of 100/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByLabelText(/Liability index \d+ out of 100/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByLabelText(/Responsibility balance/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByText(/Client estimate · IMP excluded · .* confidence · Contribution 50 = parity · Liability 0 = none/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByText(/Liability · (LOW|MEDIUM|HIGH)/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByText(/\d+\/\d+ fights · \d+ missed .* · \d+% raw \/ \d+% adjusted · Benchmark:/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByLabelText(/Resource conversion gap: \d+ out of 100/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getByText(/\d+% team resources · \d+% measurable team output · \d+ pp gap/)).toBeVisible();
+    expect(within(contributionPanel as HTMLElement).getAllByRole('article')).toHaveLength(9);
+    expect(within(contributionPanel as HTMLElement).getAllByText(/Weight: \d+%/)).toHaveLength(5);
+    expect(within(contributionPanel as HTMLElement).queryByText(/% of index/)).not.toBeInTheDocument();
     const selectedLaneRole = screen.getByRole('button', { name: 'Show Axe lane stats: Soft support' }).closest<HTMLElement>('.lane-role');
     expect(selectedLaneRole).toHaveClass('is-highlighted');
     expect(document.querySelectorAll('.lane-matchup.is-player-focused')).toHaveLength(1);
     expect(selectedLaneRole?.closest('.lane-matchup')).toHaveClass('is-focused');
     expect(document.querySelectorAll('.lane-matchup.is-muted')).toHaveLength(2);
 
-    fireEvent.click(selectedRow);
+    fireEvent.click(within(contributionPanel as HTMLElement).getByRole('button', { name: 'Hero: Axe' }));
+    const contributionHeroOptions = within(contributionPanel as HTMLElement).getByRole('group', { name: 'Hero options' });
+    fireEvent.click(within(contributionHeroOptions).getByRole('button', { name: 'Bane' }));
+
+    const direCarryRow = screen.getByRole('row', { name: 'Scoreboard row for Dire carry' });
     expect(selectedRow).not.toHaveClass('is-contribution-selected');
+    expect(direCarryRow).toHaveClass('is-contribution-selected');
+    expect(within(killHistory).getByRole('button', { name: 'Hero: Bane' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Bane contribution index' })).toBeVisible();
+
+    fireEvent.click(direCarryRow);
+    expect(direCarryRow).not.toHaveClass('is-contribution-selected');
     expect(within(killHistory).getByRole('button', { name: 'Hero: All heroes' })).toBeVisible();
-    expect(within(killHistory).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(killHistory).getAllByRole('listitem')).toHaveLength(4);
     expect(screen.getByRole('heading', { name: 'Anti-Mage performance tape' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Bane contribution index' })).not.toBeInTheDocument();
     expect(document.querySelectorAll('.lane-matchup.is-player-focused')).toHaveLength(0);
     expect(document.querySelectorAll('.lane-matchup.is-focused')).toHaveLength(0);
     expect(document.querySelectorAll('.lane-matchup.is-muted')).toHaveLength(0);
@@ -917,13 +941,15 @@ function createGlobalPlayerFilterDetail(): MatchDetailSnapshot {
     availableSections: ['player_stats'],
     players: [
       createPlayer({ key: 'current', accountId: 1, name: 'Current', playerSlot: 0, heroId: 1, position: 3, lane: 3, minuteSeries: laneMinuteSeries(6_200, 62) }),
-      createPlayer({ key: 'selected', accountId: 2, name: 'Selected', playerSlot: 1, heroId: 2, position: 4, lane: 3, minuteSeries: laneMinuteSeries(2_800, 4) }),
+      createPlayer({ key: 'selected', accountId: 2, name: 'Selected', playerSlot: 1, heroId: 2, position: 4, lane: 3, minuteSeries: laneMinuteSeries(2_800, 4), combatEvents: { assists: [{ time: 60 }], deaths: [] } }),
       createPlayer({ key: 'dire-carry', accountId: 3, name: 'Dire carry', playerSlot: 128, isRadiant: false, heroId: 3, position: 1, lane: 1, minuteSeries: laneMinuteSeries(6_100, 68) }),
       createPlayer({ key: 'dire-support', accountId: 4, name: 'Dire support', playerSlot: 129, isRadiant: false, heroId: 4, position: 5, lane: 1, minuteSeries: laneMinuteSeries(2_400, 2) }),
     ],
     timelineEvents: [
       { key: 'kill-current', time: 60, type: 'kill', actor: { accountId: 1, heroId: 1, name: 'Current', isRadiant: true }, target: { accountId: 3, heroId: 3, name: 'Dire carry', isRadiant: false }, isRadiant: true, targetIsRadiant: false },
+      { key: 'kill-dire-reply', time: 68, type: 'kill', actor: { accountId: 4, heroId: 4, name: 'Dire support', isRadiant: false }, target: { accountId: 1, heroId: 1, name: 'Current', isRadiant: true }, isRadiant: false, targetIsRadiant: true },
       { key: 'kill-selected', time: 120, type: 'kill', actor: { accountId: 2, heroId: 2, name: 'Selected', isRadiant: true }, target: { accountId: 4, heroId: 4, name: 'Dire support', isRadiant: false }, isRadiant: true, targetIsRadiant: false },
+      { key: 'kill-dire-second', time: 128, type: 'kill', actor: { accountId: 3, heroId: 3, name: 'Dire carry', isRadiant: false }, target: { accountId: 1, heroId: 1, name: 'Current', isRadiant: true }, isRadiant: false, targetIsRadiant: true },
     ],
   };
 }
@@ -980,6 +1006,7 @@ function createPlayer(
       itemUses: 0,
       wardDestructions: 0,
     },
+    combatEvents: { assists: [], deaths: [] },
     dotaPlusLevel: null,
     totalActions: null,
     ...overrides,
