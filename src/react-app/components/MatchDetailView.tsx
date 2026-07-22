@@ -73,6 +73,7 @@ export function MatchDetailView({
     : null;
   const selectedPlayerKey = selectedPlayer?.key ?? null;
   const analysisPlayer = selectedPlayer ?? focusedPlayer;
+  const contributionPlayer = selectedPlayer ?? focusedPlayer ?? detail.players[0] ?? null;
   const selectPlayer = (playerKey: string | null) => {
     setPlayerSelection(playerKey === null ? null : { matchId: detail.matchId, playerKey });
   };
@@ -130,9 +131,9 @@ export function MatchDetailView({
         selectedPlayerKey={selectedPlayerKey}
       />
 
-      {selectedPlayer ? (
+      {contributionPlayer ? (
         <PlayerContributionPanel
-          player={selectedPlayer}
+          player={contributionPlayer}
           players={detail.players}
           heroNames={heroNames}
           hasDetailedEvents={hasPlayerStats}

@@ -104,7 +104,7 @@ describe('MatchDetailView', () => {
     fireEvent.pointerLeave(radiantOutcome as HTMLElement);
     expect(radiantOutcome).not.toHaveClass('is-focused');
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
-    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
+    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(5);
     const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
     const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
     expect(currentBuild.querySelector('img[src*="antimage_horz_gMtz"]')).toBeInTheDocument();
@@ -136,7 +136,8 @@ describe('MatchDetailView', () => {
     expect(eventGrid?.children).toHaveLength(7);
     expect(within(eventGrid as HTMLElement).getAllByText('N/A')).toHaveLength(4);
     const matchDetail = screen.getByRole('region', { name: 'Match detail' });
-    expect(matchDetail.querySelectorAll('[title]')).toHaveLength(0);
+    const titlesOutsideContribution = Array.from(matchDetail.querySelectorAll('[title]')).filter((element) => !element.closest('.player-contribution'));
+    expect(titlesOutsideContribution).toHaveLength(0);
     const tableViewTrigger = within(screen.getByRole('group', { name: 'Scoreboard view' })).getByRole('button', { name: 'Table view' }).closest<HTMLElement>('.app-tooltip__trigger');
     fireEvent.pointerEnter(tableViewTrigger as HTMLElement);
     expect(screen.getByRole('tooltip')).toHaveTextContent('Table view');
@@ -438,6 +439,15 @@ describe('MatchDetailView', () => {
     expect(document.querySelectorAll('.lane-matchup.is-muted')).toHaveLength(0);
   });
 
+  it('shows a contribution index on initial load without applying a player filter', () => {
+    const globalFilterDetail = createGlobalPlayerFilterDetail();
+    render(<MatchDetailView detail={globalFilterDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Lina' }} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { name: 'Anti-Mage contribution index' })).toBeVisible();
+    expect(document.querySelectorAll('.is-contribution-selected')).toHaveLength(0);
+    expect(within(screen.getByRole('region', { name: 'Kill history' })).getByRole('button', { name: 'Hero: All heroes' })).toBeVisible();
+  });
+
   it('does not carry a selected player into another match', () => {
     const globalFilterDetail = createGlobalPlayerFilterDetail();
     const viewProps = { heroNames: { 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Lina' }, currentAccountId: 1, isLoading: false, error: null, parseError: null, isParsing: false, onBack: vi.fn(), onRefresh: vi.fn(), onParse: vi.fn() };
@@ -562,7 +572,8 @@ describe('MatchDetailView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show chat' }));
     expect(screen.getByText('gg')).toBeVisible();
     expect(screen.queryByText('Chat wheel #71')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    const chatPanel = screen.getByRole('heading', { name: 'Match chat' }).closest('section');
+    fireEvent.click(within(chatPanel as HTMLElement).getByRole('button', { name: 'All' }));
     expect(screen.getByText('Chat wheel #71')).toBeVisible();
     const chatTranscript = screen.getByRole('log', { name: 'Match chat log' });
     expect(chatTranscript.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(2);
@@ -949,7 +960,7 @@ describe('MatchDetailView', () => {
 
     render(<MatchDetailView detail={unknownHeroDetail} heroNames={{ 999_999: 'Unknown hero' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
-    expect(screen.getAllByText('UN')).toHaveLength(5);
+    expect(screen.getAllByText('UN')).toHaveLength(6);
     expect(document.querySelector('img[src*="999999"]')).not.toBeInTheDocument();
     expect(document.querySelector('.player-build__portrait img')).not.toBeInTheDocument();
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
