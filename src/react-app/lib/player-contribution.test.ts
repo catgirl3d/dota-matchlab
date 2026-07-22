@@ -207,16 +207,16 @@ function player(overrides: Partial<MatchDetailPlayer>): MatchDetailPlayer {
     role: null, position: null, lane: null, award: null, itemIds: [], backpackItemIds: [], neutralItemId: null,
     permanentUpgradeItemIds: { scepterItemId: null, shardItemId: null, moonShardItemId: null },
     abilityBuild: [], hasAbilityBuildData: false, purchaseEvents: [], hasPurchaseEventsData: false,
-    minuteSeries: { gold: [], experience: [], netWorth: Array(11).fill(5_000), lastHits: Array(11).fill(5), heroDamage: [], imp: [] },
+    minuteSeries: { gold: [], experience: [], netWorth: Array(11).fill(5_000), lastHits: Array(11).fill(5), denies: [], heroDamage: [], imp: [] },
     detailEvents: { kills: 0, deaths: 0, assists: 0, wards: 0, runes: 0, itemUses: 0, wardDestructions: 0 },
-    combatEvents: { assists: [], deaths: [] },
+    combatEvents: { kills: [], assists: [], deaths: [] },
     dotaPlusLevel: null, totalActions: null,
     ...overrides,
   };
 }
 
 function emptySeries(): MatchDetailPlayer['minuteSeries'] {
-  return { gold: [], experience: [], netWorth: [], lastHits: [], heroDamage: [], imp: [] };
+  return { gold: [], experience: [], netWorth: [], lastHits: [], denies: [], heroDamage: [], imp: [] };
 }
 
 function resourceConversionPlayers(resourceShare: number, outputShare: number): MatchDetailPlayer[] {
@@ -275,5 +275,5 @@ function laneSeries(netWorthAtTen: number, lastHitsThroughTen: number): MatchDet
   const lastHits = Array(11).fill(0) as number[];
   netWorth[10] = netWorthAtTen;
   lastHits[10] = lastHitsThroughTen;
-  return { gold: [], experience: [], netWorth, lastHits, heroDamage: [], imp: [] };
+  return { gold: [], experience: [], netWorth, lastHits, denies: [], heroDamage: [], imp: [] };
 }

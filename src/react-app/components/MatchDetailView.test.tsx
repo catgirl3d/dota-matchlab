@@ -104,7 +104,7 @@ describe('MatchDetailView', () => {
     fireEvent.pointerLeave(radiantOutcome as HTMLElement);
     expect(radiantOutcome).not.toHaveClass('is-focused');
     expect(screen.getAllByText('Anti-Mage').length).toBeGreaterThan(0);
-    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(3);
+    expect(document.querySelectorAll('img[src*="antimage_icon_5fO3"]')).toHaveLength(4);
     const scoreboardPanel = screen.getByRole('heading', { name: 'Ten-player breakdown' }).closest('section');
     const currentBuild = screen.getByRole('article', { name: 'Build for Player #111' });
     expect(currentBuild.querySelector('img[src*="antimage_horz_gMtz"]')).toBeInTheDocument();
@@ -193,6 +193,54 @@ describe('MatchDetailView', () => {
     expect(topLane).toHaveTextContent('8.5K');
     expect(topLane.querySelectorAll('.lane-metric__value.is-player')).toHaveLength(0);
     expect(topLane.querySelectorAll('.lane-role.is-muted')).toHaveLength(0);
+  });
+
+  it('compares equal player positions in the role breakdown', () => {
+    const roleDetail: MatchDetailSnapshot = {
+      ...detail,
+      players: [
+        createPlayer({ key: 'radiant-mid', accountId: 1, heroId: 1, position: 2, lane: 2, kills: 8, deaths: 2, assists: 6, netWorth: 16_000, xpPerMinute: 720, lastHits: 210, denies: 12, minuteSeries: roleMinuteSeries(6_000, 100, 10, 1), combatEvents: { kills: [{ time: 120 }], deaths: [], assists: [{ time: 240 }] } }),
+        createPlayer({ key: 'dire-mid', accountId: 2, heroId: 2, playerSlot: 128, isRadiant: false, position: 2, lane: 2, kills: 4, deaths: 4, assists: 5, netWorth: 14_000, xpPerMinute: 650, lastHits: 185, denies: 8, minuteSeries: roleMinuteSeries(5_000, 80, 8, 2), combatEvents: { kills: [], deaths: [{ time: 180, timeDead: null }], assists: [{ time: 300 }] } }),
+        createPlayer({ key: 'radiant-offlane', accountId: 3, heroId: 1, position: 3, lane: 3 }),
+      ],
+    };
+
+    render(<MatchDetailView detail={roleDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe' }} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const panel = screen.getByRole('heading', { name: 'Role breakdown' }).closest('section');
+    const mid = within(panel as HTMLElement).getByRole('article', { name: 'Mid: Radiant versus Dire' });
+    const offlane = within(panel as HTMLElement).getByRole('article', { name: 'Offlane: Radiant versus Dire' });
+
+    expect(mid).toHaveTextContent('Anti-Mage');
+    expect(mid).toHaveTextContent('Axe');
+    expect(mid).toHaveTextContent('7.0');
+    expect(mid).toHaveTextContent('2.3');
+    expect(mid).toHaveTextContent('Kills');
+    expect(mid).toHaveTextContent('Deaths');
+    expect(mid).toHaveTextContent('Assists');
+    expect(mid).toHaveTextContent('16K');
+    expect(mid).toHaveTextContent('14K');
+    expect(mid).toHaveTextContent('210');
+    expect(mid).toHaveTextContent('185');
+    expect(offlane).toHaveTextContent('Anti-Mage');
+    expect(offlane).toHaveTextContent('Unavailable');
+
+    const timeRange = within(panel as HTMLElement).getByRole('group', { name: 'Role breakdown time range' });
+    expect(within(timeRange).getByRole('button', { name: 'Full' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(timeRange).getByRole('button', { name: '10:00' }));
+    expect(within(timeRange).getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'true');
+    expect(mid).toHaveTextContent('6K');
+    expect(mid).toHaveTextContent('5K');
+    expect(mid).toHaveTextContent('1.1K');
+    expect(mid).toHaveTextContent('880');
+    expect(mid).toHaveTextContent('110');
+    expect(mid).toHaveTextContent('88');
+
+    fireEvent.pointerEnter(mid);
+    expect(mid).toHaveClass('is-focused');
+    expect(offlane).toHaveClass('is-muted');
+    fireEvent.pointerLeave(mid);
+    expect(mid).not.toHaveClass('is-focused');
   });
 
   it('always renders three subdued permanent-upgrade placeholders in the table inventory', () => {
@@ -440,6 +488,7 @@ describe('MatchDetailView', () => {
             experience: [0, 500, 800],
             netWorth: [600, 2_000, 5_000],
             lastHits: [0, 10, 30],
+            denies: [0, 1, 3],
             heroDamage: [0, 500, 2_000],
             imp: [0, 5, 19],
           },
@@ -535,6 +584,7 @@ describe('MatchDetailView', () => {
           experience: [0, 500, 15_206, 0, 0],
           netWorth: [600, 2_000, 5_000],
           lastHits: [0, 10, 30],
+          denies: [0, 1, 3],
           heroDamage: [0, 500, 2_000],
           imp: [0, 5, 19],
         },
@@ -899,7 +949,7 @@ describe('MatchDetailView', () => {
 
     render(<MatchDetailView detail={unknownHeroDetail} heroNames={{ 999_999: 'Unknown hero' }} currentAccountId={111} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
-    expect(screen.getAllByText('UN')).toHaveLength(4);
+    expect(screen.getAllByText('UN')).toHaveLength(5);
     expect(document.querySelector('img[src*="999999"]')).not.toBeInTheDocument();
     expect(document.querySelector('.player-build__portrait img')).not.toBeInTheDocument();
     const draftPanel = screen.getByRole('heading', { name: 'Picks and bans' }).closest('section');
@@ -941,7 +991,7 @@ function createGlobalPlayerFilterDetail(): MatchDetailSnapshot {
     availableSections: ['player_stats'],
     players: [
       createPlayer({ key: 'current', accountId: 1, name: 'Current', playerSlot: 0, heroId: 1, position: 3, lane: 3, minuteSeries: laneMinuteSeries(6_200, 62) }),
-      createPlayer({ key: 'selected', accountId: 2, name: 'Selected', playerSlot: 1, heroId: 2, position: 4, lane: 3, minuteSeries: laneMinuteSeries(2_800, 4), combatEvents: { assists: [{ time: 60 }], deaths: [] } }),
+      createPlayer({ key: 'selected', accountId: 2, name: 'Selected', playerSlot: 1, heroId: 2, position: 4, lane: 3, minuteSeries: laneMinuteSeries(2_800, 4), combatEvents: { kills: [], assists: [{ time: 60 }], deaths: [] } }),
       createPlayer({ key: 'dire-carry', accountId: 3, name: 'Dire carry', playerSlot: 128, isRadiant: false, heroId: 3, position: 1, lane: 1, minuteSeries: laneMinuteSeries(6_100, 68) }),
       createPlayer({ key: 'dire-support', accountId: 4, name: 'Dire support', playerSlot: 129, isRadiant: false, heroId: 4, position: 5, lane: 1, minuteSeries: laneMinuteSeries(2_400, 2) }),
     ],
@@ -994,6 +1044,7 @@ function createPlayer(
       experience: [],
       netWorth: [],
       lastHits: [],
+      denies: [],
       heroDamage: [],
       imp: [],
     },
@@ -1006,7 +1057,7 @@ function createPlayer(
       itemUses: 0,
       wardDestructions: 0,
     },
-    combatEvents: { assists: [], deaths: [] },
+    combatEvents: { kills: [], assists: [], deaths: [] },
     dotaPlusLevel: null,
     totalActions: null,
     ...overrides,
@@ -1019,6 +1070,19 @@ function laneMinuteSeries(netWorth: number, lastHits: number) {
     experience: [],
     netWorth: Array.from({ length: 11 }, () => netWorth),
     lastHits: Array.from({ length: 11 }, (_, minute) => minute < 10 ? Math.floor(lastHits / 10) : lastHits % 10),
+    denies: Array.from({ length: 11 }, () => 0),
+    heroDamage: [],
+    imp: [],
+  };
+}
+
+function roleMinuteSeries(netWorth: number, experiencePerMinute: number, lastHitsPerMinute: number, deniesPerMinute: number) {
+  return {
+    gold: [],
+    experience: Array.from({ length: 21 }, () => experiencePerMinute),
+    netWorth: Array.from({ length: 21 }, (_, minute) => minute === 10 ? netWorth : netWorth + (minute - 10) * 500),
+    lastHits: Array.from({ length: 21 }, () => lastHitsPerMinute),
+    denies: Array.from({ length: 21 }, () => deniesPerMinute),
     heroDamage: [],
     imp: [],
   };

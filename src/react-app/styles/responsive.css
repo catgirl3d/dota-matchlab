@@ -395,6 +395,34 @@
       grid-template-columns: 1fr;
     }
 
+    .role-breakdown {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-role-breakdown__header {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .role-matchup {
+      min-height: 0;
+      padding: 10px 12px;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      align-items: center;
+    }
+
+    .role-matchup:last-child {
+      border-bottom: 0;
+    }
+
+    .role-matchup__metrics {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
     .lane-matchup {
       padding: 12px;
       border-right: 0;

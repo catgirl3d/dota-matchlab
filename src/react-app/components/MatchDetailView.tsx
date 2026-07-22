@@ -11,6 +11,7 @@ import { AdvantagePanel } from './match-detail/AdvantagePanel';
 import { KillHistoryPanel } from './match-detail/KillHistoryPanel';
 import { LaneAnalysisPanel } from './match-detail/LaneAnalysisPanel';
 import { PlayerContributionPanel } from './match-detail/PlayerContributionPanel';
+import { RoleBreakdownPanel } from './match-detail/RoleBreakdownPanel';
 
 
 type MatchDetailViewProps = {
@@ -120,6 +121,12 @@ export function MatchDetailView({
         heroNames={heroNames}
         laneOutcomes={detail.laneOutcomes}
         eventCounts={detail.eventCounts}
+        selectedPlayerKey={selectedPlayerKey}
+      />
+
+      <RoleBreakdownPanel
+        players={detail.players}
+        heroNames={heroNames}
         selectedPlayerKey={selectedPlayerKey}
       />
 

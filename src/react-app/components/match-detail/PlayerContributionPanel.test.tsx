@@ -115,9 +115,9 @@ function player(overrides: Partial<MatchDetailPlayer>): MatchDetailPlayer {
     role: null, position: null, lane: null, award: null, itemIds: [], backpackItemIds: [], neutralItemId: null,
     permanentUpgradeItemIds: { scepterItemId: null, shardItemId: null, moonShardItemId: null },
     abilityBuild: [], hasAbilityBuildData: false, purchaseEvents: [], hasPurchaseEventsData: false,
-    minuteSeries: { gold: [], experience: [], netWorth: Array(11).fill(5_000), lastHits: Array(11).fill(5), heroDamage: [], imp: [] },
+    minuteSeries: { gold: [], experience: [], netWorth: Array(11).fill(5_000), lastHits: Array(11).fill(5), denies: [], heroDamage: [], imp: [] },
     detailEvents: { kills: 0, deaths: 0, assists: 0, wards: 0, runes: 0, itemUses: 0, wardDestructions: 0 },
-    combatEvents: { assists: [], deaths: [] },
+    combatEvents: { kills: [], assists: [], deaths: [] },
     dotaPlusLevel: null, totalActions: null,
     ...overrides,
   };

@@ -57,6 +57,7 @@ export type MatchDetailPlayer = {
     experience: number[];
     netWorth: number[];
     lastHits: number[];
+    denies: number[];
     heroDamage: number[];
     imp: number[];
   };
@@ -70,6 +71,7 @@ export type MatchDetailPlayer = {
     wardDestructions: number;
   };
   combatEvents: {
+    kills: Array<{ time: number }>;
     assists: Array<{ time: number }>;
     deaths: Array<{ time: number; timeDead: number | null }>;
   };
@@ -554,6 +556,7 @@ function buildPlayer(
       experience: readNumberArray(detailStats?.experiencePerMinute),
       netWorth: readNumberArray(detailStats?.networthPerMinute),
       lastHits: readNumberArray(detailStats?.lastHitsPerMinute),
+      denies: readNumberArray(detailStats?.deniesPerMinute),
       heroDamage: readNumberArray(detailStats?.heroDamagePerMinute),
       imp: readNumberArray(detailStats?.impPerMinute),
     },
@@ -567,6 +570,10 @@ function buildPlayer(
       wardDestructions: readObjectArray(detailStats?.wardDestruction).length,
     },
     combatEvents: {
+      kills: readObjectArray(detailStats?.killEvents).flatMap((event) => {
+        const time = readInteger(event.time);
+        return time === null ? [] : [{ time }];
+      }),
       assists: readObjectArray(detailStats?.assistEvents).flatMap((event) => {
         const time = readInteger(event.time);
         return time === null ? [] : [{ time }];

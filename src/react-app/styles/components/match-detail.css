@@ -1,8 +1,8 @@
 @layer components {
   .match-detail {
     margin-top: 34px;
-    --detail-fs-nano: 0.41rem;
-    --detail-fs-micro: 0.475rem;
+    --detail-fs-nano: 0.49rem;
+    --detail-fs-micro: 0.52rem;
     --detail-fs-small: 0.55rem;
     animation: detail-enter 320ms ease both;
   }
@@ -1331,6 +1331,283 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
+  }
+
+  .detail-role-breakdown__header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .role-period-switch {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--line);
+  }
+
+  .role-period-switch button {
+    min-width: 44px;
+    padding: 5px 7px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-nano);
+    letter-spacing: 0.06em;
+  }
+
+  .role-period-switch button:last-child {
+    border-right: 0;
+  }
+
+  .role-period-switch button[aria-pressed='true'] {
+    background: rgba(var(--radiant-rgb), 0.12);
+    color: var(--radiant-strong);
+  }
+
+  .role-period-switch button:hover {
+    background: rgba(224, 230, 208, 0.06);
+    color: var(--paper);
+  }
+
+  .role-period-switch button:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 1px solid var(--acid);
+    outline-offset: -1px;
+  }
+
+  .role-breakdown {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border: 1px solid var(--line);
+  }
+
+  .role-matchup {
+    display: grid;
+    min-width: 0;
+    padding: 12px 10px;
+    border-right: 1px solid var(--line);
+    grid-template-rows: auto auto auto;
+    gap: 7px;
+    transition: opacity 180ms ease, filter 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .role-matchup:last-child {
+    border-right: 0;
+  }
+
+  .role-matchup.is-focused {
+    position: relative;
+    z-index: 1;
+    box-shadow: inset 0 0 0 1px rgba(224, 230, 208, 0.16), 0 12px 26px rgba(0, 0, 0, 0.28);
+    transform: scale(1.125);
+    background: #090909;
+  }
+
+  .role-matchup.is-player-focused {
+    box-shadow: inset 0 0 0 1px rgba(224, 230, 208, 0.12), 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .role-matchup.is-focused.is-player-focused {
+    box-shadow: inset 0 0 0 1px rgba(224, 230, 208, 0.16), 0 12px 26px rgba(0, 0, 0, 0.28);
+  }
+
+  .role-matchup.is-muted {
+    filter: saturate(0.45);
+    opacity: 0.38;
+  }
+
+  .role-matchup__header {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-small);
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .role-matchup__header img {
+    width: 13px;
+    height: 13px;
+    object-fit: contain;
+  }
+
+  .role-matchup__team {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 4px;
+  }
+
+  .role-matchup__teams {
+    display: grid;
+    min-width: 0;
+    align-items: center;
+    gap: 7px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .role-matchup__player {
+    display: grid;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    transition: opacity 160ms ease, filter 160ms ease, transform 180ms ease;
+  }
+
+  .role-matchup__team--dire .role-matchup__player {
+    grid-template-columns: minmax(0, 1fr) 22px;
+  }
+
+  .role-matchup__team--dire .role-matchup__hero {
+    order: 2;
+  }
+
+  .role-matchup__player strong {
+    overflow: hidden;
+    color: var(--paper);
+    font-size: var(--detail-fs-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .role-matchup__team--dire .role-matchup__player strong {
+    text-align: right;
+  }
+
+  .role-matchup__player.is-selected {
+    transform: translateY(-1px);
+  }
+
+  .role-matchup__team--radiant .role-matchup__player.is-selected .role-matchup__hero {
+    border-color: var(--radiant-strong);
+    box-shadow: 0 0 0 2px rgba(var(--radiant-rgb), 0.14), 0 0 14px rgba(var(--radiant-rgb), 0.25);
+  }
+
+  .role-matchup__team--dire .role-matchup__player.is-selected .role-matchup__hero {
+    border-color: #ff5e82;
+    box-shadow: 0 0 0 2px rgba(255, 54, 95, 0.14), 0 0 14px rgba(255, 54, 95, 0.25);
+  }
+
+  .role-matchup__hero {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: var(--ink-soft);
+    color: var(--paper);
+    overflow: hidden;
+  }
+
+  .role-matchup__hero .hero-mark__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .role-matchup__versus {
+    align-self: center;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-nano);
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  .role-matchup__missing {
+    align-self: center;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-nano);
+  }
+
+  .role-matchup__missing--dire {
+    text-align: right;
+  }
+
+  .role-matchup__metrics {
+    display: grid;
+    padding-top: 8px;
+    border-top: 1px solid rgba(224, 230, 208, 0.08);
+    gap: 18px;
+  }
+
+  .role-metric {
+    display: grid;
+    align-items: baseline;
+    gap: 4px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .role-metric dt,
+  .role-metric dd {
+    margin: 0;
+  }
+
+  .role-metric dt {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-nano);
+    letter-spacing: 0.05em;
+  }
+
+  .role-metric__value {
+    color: rgba(224, 230, 208, 0.68);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .role-metric__value--dire {
+    text-align: right;
+  }
+
+  .role-metric__value--radiant.is-leading {
+    color: var(--radiant-strong);
+    text-shadow: 0 0 8px rgba(var(--radiant-rgb), 0.28);
+  }
+
+  .role-metric__value--dire.is-leading {
+    color: #ff5e82;
+    text-shadow: 0 0 8px rgba(255, 54, 95, 0.24);
+  }
+
+  .role-metric__track {
+    display: flex;
+    grid-column: 1 / -1;
+    min-height: 3px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+  }
+
+  .role-metric__track-value {
+    display: block;
+    min-width: 4%;
+    height: 3px;
+    transition: width 220ms ease;
+  }
+
+  .role-metric__track-value--radiant {
+    background: var(--radiant);
+    transform-origin: right center;
+  }
+
+  .role-metric__track-value--dire {
+    background: var(--signal-red);
+    transform-origin: left center;
   }
 
   .lane-matchup {

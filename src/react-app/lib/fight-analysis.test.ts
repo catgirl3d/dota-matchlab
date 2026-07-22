@@ -70,7 +70,7 @@ function player(
   accountId: number,
   heroId: number,
   isRadiant: boolean,
-  combatEvents: MatchDetailPlayer['combatEvents'] = { assists: [], deaths: [] },
+  combatEvents: Partial<MatchDetailPlayer['combatEvents']> = {},
 ): MatchDetailPlayer {
   return {
     key, accountId, heroId, isRadiant, playerSlot: isRadiant ? accountId : 128 + accountId, name: key,
@@ -79,9 +79,9 @@ function player(
     position: null, lane: null, award: null, itemIds: [], backpackItemIds: [], neutralItemId: null,
     permanentUpgradeItemIds: { scepterItemId: null, shardItemId: null, moonShardItemId: null },
     abilityBuild: [], hasAbilityBuildData: false, purchaseEvents: [], hasPurchaseEventsData: false,
-    minuteSeries: { gold: [], experience: [], netWorth: [], lastHits: [], heroDamage: [], imp: [] },
+    minuteSeries: { gold: [], experience: [], netWorth: [], lastHits: [], denies: [], heroDamage: [], imp: [] },
     detailEvents: { kills: 0, deaths: 0, assists: 0, wards: 0, runes: 0, itemUses: 0, wardDestructions: 0 },
-    combatEvents, dotaPlusLevel: null, totalActions: null,
+    combatEvents: { kills: [], assists: [], deaths: [], ...combatEvents }, dotaPlusLevel: null, totalActions: null,
   };
 }
 
