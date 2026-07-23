@@ -36,7 +36,16 @@ describe('API health routes', () => {
   });
 });
 
-describe('protected Dota routes', () => {
+describe('protected API routes', () => {
+  it('rejects anonymous session access through the shared auth middleware', async () => {
+    const app = createApp();
+
+    const response = await app.request('https://example.com/api/session', undefined, testEnv);
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized', code: 'UNAUTHORIZED' });
+  });
+
   it('does not expose a hero constants endpoint', async () => {
     const app = createApp();
 

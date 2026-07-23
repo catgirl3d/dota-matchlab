@@ -1,5 +1,5 @@
 import { clerkMiddleware, getAuth } from '@clerk/hono';
-import { Hono } from 'hono';
+import { Hono, type MiddlewareHandler } from 'hono';
 import {
   OpenDotaError,
   resolveDotaPlayer,
@@ -27,6 +27,13 @@ type AppDependencies = {
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
 };
 
+type AppEnvironment = {
+  Bindings: Env;
+  Variables: {
+    userId: string;
+  };
+};
+
 const defaultDependencies: AppDependencies = {
   syncTrackedAccount,
   syncTrackedMatchDetail,
@@ -35,32 +42,32 @@ const defaultDependencies: AppDependencies = {
   resolveSteamProfileInput,
 };
 
+const requireAuth: MiddlewareHandler<AppEnvironment> = async (context, next) => {
+  const { userId } = getAuth(context);
+
+  if (!userId) {
+    return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
+  }
+
+  context.set('userId', userId);
+  await next();
+};
+
 export function createApp(overrides: Partial<AppDependencies> = {}) {
   const dependencies = { ...defaultDependencies, ...overrides };
-  const app = new Hono<{ Bindings: Env }>();
+  const app = new Hono<AppEnvironment>();
 
   app.get('/api/health/live', (context) =>
     context.json({ status: 'ok' as const }),
   );
 
   app.use('/api/session', clerkMiddleware());
-  app.get('/api/session', (context) => {
-    const auth = getAuth(context);
-
-    if (!auth.userId) {
-      return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
-    }
-
-    return context.json({ userId: auth.userId });
-  });
+  app.get('/api/session', requireAuth, (context) =>
+    context.json({ userId: context.get('userId') }),
+  );
 
   app.use('/api/dota/*', clerkMiddleware());
-  app.post('/api/dota/players/resolve', async (context) => {
-    const auth = getAuth(context);
-    if (!auth.userId) {
-      return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
-    }
-
+  app.post('/api/dota/players/resolve', requireAuth, async (context) => {
     const contentLength = Number(context.req.header('content-length') ?? 0);
     if (contentLength > 2_048) {
       return context.json({ error: 'Request body is too large', code: 'BODY_TOO_LARGE' }, 413);
@@ -95,12 +102,8 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
 
   app.post(
     '/api/dota/tracked-accounts/:trackedAccountId/matches/sync',
+    requireAuth,
     async (context) => {
-      const auth = getAuth(context);
-      if (!auth.userId) {
-        return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
-      }
-
       const trackedAccountId = context.req.param('trackedAccountId');
       if (!isUuid(trackedAccountId)) {
         return context.json({ error: 'Invalid tracked account ID', code: 'INVALID_TRACKED_ACCOUNT_ID' }, 400);
@@ -108,7 +111,7 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
 
       const result = await dependencies.syncTrackedAccount(
         context.env,
-        auth.userId,
+        context.get('userId'),
         trackedAccountId,
       );
 
@@ -116,9 +119,7 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     },
   );
 
-  app.post('/api/dota/matches/:matchId/import', async (context) => {
-    const auth = getAuth(context);
-    if (!auth.userId) return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
+  app.post('/api/dota/matches/:matchId/import', requireAuth, async (context) => {
     const matchId = parseMatchId(context.req.param('matchId'));
     if (matchId === null) return context.json({ error: 'Invalid match ID', code: 'INVALID_MATCH_ID' }, 400);
     return context.json(await dependencies.importPublicMatchDetail(context.env, matchId));
@@ -126,9 +127,8 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
 
   app.post(
     '/api/dota/tracked-accounts/:trackedAccountId/matches/:matchId/details/sync',
+    requireAuth,
     async (context) => {
-      const auth = getAuth(context);
-      if (!auth.userId) return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
       const trackedAccountId = context.req.param('trackedAccountId');
       if (!isUuid(trackedAccountId)) {
         return context.json({ error: 'Invalid tracked account ID', code: 'INVALID_TRACKED_ACCOUNT_ID' }, 400);
@@ -139,7 +139,7 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
       }
       return context.json(await dependencies.syncTrackedMatchDetail(
         context.env,
-        auth.userId,
+        context.get('userId'),
         trackedAccountId,
         matchId,
       ));
