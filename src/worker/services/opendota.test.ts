@@ -109,4 +109,22 @@ describe('OpenDota adapter', () => {
     expect(requestUrl).toContain('project=hero_damage');
   });
 
+  it('rejects a response whose streamed body exceeds the provider limit', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array(1_000_001));
+          controller.close();
+        },
+      })),
+    );
+
+    await expect(
+      resolveDotaPlayer('https://api.opendota.com/api', '76561198115048758', fetcher),
+    ).rejects.toMatchObject({
+      statusCode: 502,
+      code: 'OPENDOTA_RESPONSE_TOO_LARGE',
+    });
+  });
+
 });

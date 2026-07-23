@@ -53,6 +53,7 @@ const defaultDependencies: Dependencies = {
   },
   loadDetail: loadStratzMatchDetail,
 };
+const DETAIL_MATCH_CONCURRENCY = 3;
 
 export async function syncTrackedMatchDetail(
   env: Env,
@@ -143,49 +144,73 @@ async function processDetailClaim(
   let availableMatches = 0;
   let failedMatches = 0;
 
-  for (const matchId of matchIds) {
-    try {
-      const detail = await dependencies.loadDetail(env.STRATZ_API_TOKEN, matchId);
-      if (detail.unavailable) {
-        results.push({ match_id: matchId, status: 'unavailable' });
-      } else if (detail.error) {
-        failedMatches += 1;
-        results.push({
-          match_id: matchId,
-          status: 'failed',
-          payloads: detail.payloads.map((payload) => ({
-            payload_section: payload.section,
-            payload: payload.response,
-            schema_version: 'stratz.match.detail.v2',
-          })),
-          error_code: `STRATZ_${detail.error.statusCode}`,
-          error_message: detail.error.message,
-        });
-      } else {
-        if (!validateDetailIdentity(matchId, detail.payloads)) {
-          throw new StratzError('STRATZ detail returned another match', 502, 'STRATZ_DETAIL_INVALID');
+  for (let offset = 0; offset < matchIds.length; offset += DETAIL_MATCH_CONCURRENCY) {
+    const batchResults = await Promise.all(
+      matchIds.slice(offset, offset + DETAIL_MATCH_CONCURRENCY).map(async (matchId) => {
+        try {
+          const detail = await dependencies.loadDetail(env.STRATZ_API_TOKEN, matchId);
+          if (detail.unavailable) {
+            return {
+              result: { match_id: matchId, status: 'unavailable' } satisfies Json,
+              available: false,
+              failed: false,
+            };
+          }
+          if (detail.error) {
+            return {
+              result: {
+                match_id: matchId,
+                status: 'failed',
+                payloads: detail.payloads.map((payload) => ({
+                  payload_section: payload.section,
+                  payload: payload.response,
+                  schema_version: 'stratz.match.detail.v2',
+                })),
+                error_code: `STRATZ_${detail.error.statusCode}`,
+                error_message: detail.error.message,
+              } satisfies Json,
+              available: false,
+              failed: true,
+            };
+          }
+
+          if (!validateDetailIdentity(matchId, detail.payloads)) {
+            throw new StratzError('STRATZ detail returned another match', 502, 'STRATZ_DETAIL_INVALID');
+          }
+          const normalizedPlayers = readNormalizedPlayers(matchId, detail.payloads);
+          return {
+            result: {
+              match_id: matchId,
+              status: 'available',
+              payloads: detail.payloads.map((payload) => ({
+                payload_section: payload.section,
+                payload: payload.response,
+                schema_version: 'stratz.match.detail.v2',
+              })),
+              normalized_players: normalizedPlayers,
+            } satisfies Json,
+            available: true,
+            failed: false,
+          };
+        } catch (error) {
+          return {
+            result: {
+              match_id: matchId,
+              status: 'failed',
+              error_code: error instanceof StratzError ? `STRATZ_${error.statusCode}` : 'STRATZ_DETAIL_ERROR',
+              error_message: error instanceof Error ? error.message : 'Unknown STRATZ detail error',
+            } satisfies Json,
+            available: false,
+            failed: true,
+          };
         }
-        const normalizedPlayers = readNormalizedPlayers(matchId, detail.payloads);
-        availableMatches += 1;
-        results.push({
-          match_id: matchId,
-          status: 'available',
-          payloads: detail.payloads.map((payload) => ({
-            payload_section: payload.section,
-            payload: payload.response,
-            schema_version: 'stratz.match.detail.v2',
-          })),
-          normalized_players: normalizedPlayers,
-        });
-      }
-    } catch (error) {
-      failedMatches += 1;
-      results.push({
-        match_id: matchId,
-        status: 'failed',
-        error_code: error instanceof StratzError ? `STRATZ_${error.statusCode}` : 'STRATZ_DETAIL_ERROR',
-        error_message: error instanceof Error ? error.message : 'Unknown STRATZ detail error',
-      });
+      }),
+    );
+
+    for (const batchResult of batchResults) {
+      results.push(batchResult.result);
+      if (batchResult.available) availableMatches += 1;
+      if (batchResult.failed) failedMatches += 1;
     }
   }
 

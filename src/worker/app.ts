@@ -1,4 +1,5 @@
 import { clerkMiddleware, getAuth } from '@clerk/hono';
+import * as v from 'valibot';
 import { Hono, type MiddlewareHandler } from 'hono';
 import {
   OpenDotaError,
@@ -25,6 +26,7 @@ type AppDependencies = {
   importPublicMatchDetail: typeof importPublicMatchDetail;
   resolveDotaPlayer: typeof resolveDotaPlayer;
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
+  getAuth: typeof getAuth;
 };
 
 type AppEnvironment = {
@@ -34,28 +36,32 @@ type AppEnvironment = {
   };
 };
 
+const ResolvePlayerBodySchema = v.object({
+  steamProfile: v.pipe(v.string(), v.minLength(1)),
+});
+
 const defaultDependencies: AppDependencies = {
   syncTrackedAccount,
   syncTrackedMatchDetail,
   importPublicMatchDetail,
   resolveDotaPlayer,
   resolveSteamProfileInput,
-};
-
-const requireAuth: MiddlewareHandler<AppEnvironment> = async (context, next) => {
-  const { userId } = getAuth(context);
-
-  if (!userId) {
-    return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
-  }
-
-  context.set('userId', userId);
-  await next();
+  getAuth,
 };
 
 export function createApp(overrides: Partial<AppDependencies> = {}) {
   const dependencies = { ...defaultDependencies, ...overrides };
   const app = new Hono<AppEnvironment>();
+  const requireAuth: MiddlewareHandler<AppEnvironment> = async (context, next) => {
+    const { userId } = dependencies.getAuth(context);
+
+    if (!userId) {
+      return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
+    }
+
+    context.set('userId', userId);
+    await next();
+  };
 
   app.get('/api/health/live', (context) =>
     context.json({ status: 'ok' as const }),
@@ -80,17 +86,13 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
       return context.json({ error: 'Invalid JSON', code: 'INVALID_JSON' }, 400);
     }
 
-    if (
-      typeof payload !== 'object' ||
-      payload === null ||
-      !('steamProfile' in payload) ||
-      typeof payload.steamProfile !== 'string'
-    ) {
+    const parsedPayload = v.safeParse(ResolvePlayerBodySchema, payload);
+    if (!parsedPayload.success) {
       return context.json({ error: 'Steam profile is required', code: 'STEAM_PROFILE_REQUIRED' }, 400);
     }
 
     const steamId64 = await dependencies.resolveSteamProfileInput(
-      payload.steamProfile,
+      parsedPayload.output.steamProfile,
     );
     const profile = await dependencies.resolveDotaPlayer(
       context.env.OPENDOTA_BASE_URL,

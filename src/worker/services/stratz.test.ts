@@ -213,6 +213,19 @@ describe('STRATZ match provider', () => {
       message: 'Rate limit exceeded',
     });
   });
+  it('preserves the provider error for non-ok responses with a body', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new Uint8Array(1_000_001), { status: 403 }),
+    );
+
+    await expect(
+      loadStratzPlayerMatchesPage('token', 93_447_624, 0, 100, fetcher),
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'STRATZ_CHALLENGE_OR_REJECTED',
+    });
+  });
+
 
   it('combines up to five provider pages into one atomic sync batch', async () => {
     const fetcher = vi
@@ -288,6 +301,24 @@ describe('STRATZ match provider', () => {
       payloads: [expect.objectContaining({ section: 'metadata' })],
     });
   });
+  it('rejects a response whose streamed body exceeds the provider limit', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array(1_000_001));
+          controller.close();
+        },
+      })),
+    );
+
+    await expect(
+      loadStratzPlayerMatchesPage('token', 93_447_624, 0, 100, fetcher),
+    ).rejects.toMatchObject({
+      statusCode: 502,
+      code: 'STRATZ_RESPONSE_TOO_LARGE',
+    });
+  });
+
 });
 
 function createStratzPageResponse(offset: number, count: number): Response {

@@ -1,5 +1,11 @@
 import type { DotaPlayerProfile } from '../../shared/dota';
 import {
+  RequestTimeoutError,
+  ResponseBodyTooLargeError,
+  readBoundedText,
+  withTimeout,
+} from '../../shared/http';
+import {
   isJsonValue as isJson,
   isShallowObject as isObject,
   readNullableSafeInteger as readNullableInteger,
@@ -165,46 +171,40 @@ async function fetchOpenDotaJson(
     throw new OpenDotaError('OpenDota URL is misconfigured', 502, 'OPENDOTA_URL_MISCONFIGURED');
   }
 
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
-
   try {
-    const response = await fetcher(endpoint, {
-      headers: { Accept: 'application/json' },
-      signal: abortController.signal,
+    return await withTimeout(REQUEST_TIMEOUT_MS, async (signal) => {
+      const response = await fetcher(endpoint, {
+        headers: { Accept: 'application/json' },
+        signal,
+      });
+
+      if (!response.ok) {
+        await response.body?.cancel();
+
+        if (response.status === 404) {
+          throw new OpenDotaError('OpenDota profile not found', 404, 'OPENDOTA_PROFILE_NOT_FOUND');
+        }
+        if (response.status === 429) {
+          throw new OpenDotaError('OpenDota rate limit exceeded, please retry later', 429, 'OPENDOTA_LIMIT_EXCEEDED');
+        }
+
+        throw new OpenDotaError('OpenDota is temporarily unavailable', 502, 'OPENDOTA_UNAVAILABLE');
+      }
+
+      return JSON.parse(await readBoundedText(response, MAX_RESPONSE_BYTES));
     });
-
-    if (!response.ok) {
-      await response.body?.cancel();
-
-      if (response.status === 404) {
-        throw new OpenDotaError('OpenDota profile not found', 404, 'OPENDOTA_PROFILE_NOT_FOUND');
-      }
-      if (response.status === 429) {
-        throw new OpenDotaError('OpenDota rate limit exceeded, please retry later', 429, 'OPENDOTA_LIMIT_EXCEEDED');
-      }
-
-      throw new OpenDotaError('OpenDota is temporarily unavailable', 502, 'OPENDOTA_UNAVAILABLE');
-    }
-
-    const contentLength = Number(response.headers.get('content-length') ?? 0);
-    if (contentLength > MAX_RESPONSE_BYTES) {
-      await response.body?.cancel();
-      throw new OpenDotaError('OpenDota response exceeds allowed size', 502, 'OPENDOTA_RESPONSE_TOO_LARGE');
-    }
-
-    return await response.json();
   } catch (error) {
     if (error instanceof OpenDotaError) {
       throw error;
     }
-    if (abortController.signal.aborted) {
+    if (error instanceof ResponseBodyTooLargeError) {
+      throw new OpenDotaError('OpenDota response exceeds allowed size', 502, 'OPENDOTA_RESPONSE_TOO_LARGE');
+    }
+    if (error instanceof RequestTimeoutError) {
       throw new OpenDotaError('OpenDota did not respond in time', 504, 'OPENDOTA_TIMEOUT');
     }
 
     throw new OpenDotaError('Failed to connect to OpenDota', 502, 'OPENDOTA_CONN_ERROR');
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

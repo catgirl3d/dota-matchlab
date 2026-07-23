@@ -122,4 +122,29 @@ describe('protected API routes', () => {
     expect(response.status).toBe(401); // Authentication is deliberately checked before ID parsing.
     expect(importPublicMatchDetail).not.toHaveBeenCalled();
   });
+  it('rejects an empty steam profile before provider work', async () => {
+    const getAuth = vi.fn().mockReturnValue({ userId: 'user-a' });
+    const resolveSteamProfileInput = vi.fn();
+    const resolveDotaPlayer = vi.fn();
+    const app = createApp({ getAuth, resolveSteamProfileInput, resolveDotaPlayer });
+
+    const response = await app.request(
+      'https://example.com/api/dota/players/resolve',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ steamProfile: '' }),
+      },
+      testEnv,
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Steam profile is required',
+      code: 'STEAM_PROFILE_REQUIRED',
+    });
+    expect(resolveSteamProfileInput).not.toHaveBeenCalled();
+    expect(resolveDotaPlayer).not.toHaveBeenCalled();
+  });
+
 });

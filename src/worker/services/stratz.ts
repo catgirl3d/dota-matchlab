@@ -1,4 +1,10 @@
 import type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
+import {
+  RequestTimeoutError,
+  ResponseBodyTooLargeError,
+  readBoundedText,
+  withTimeout,
+} from '../../shared/http';
 import * as v from 'valibot';
 import {
   NormalizedDetailPlayerSchema,
@@ -440,66 +446,64 @@ export async function fetchStratzJson(
   fetcher: typeof fetch,
   maxResponseBytes: number = MAX_RESPONSE_BYTES,
 ): Promise<JsonObject> {
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
-
   try {
-    const response = await fetcher(STRATZ_GRAPHQL_URL, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'STRATZ_API',
-      },
-      body: JSON.stringify(body),
-      signal: abortController.signal,
+    return await withTimeout(REQUEST_TIMEOUT_MS, async (signal) => {
+      const response = await fetcher(STRATZ_GRAPHQL_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'STRATZ_API',
+        },
+        body: JSON.stringify(body),
+        signal,
+      });
+
+      if (!response.ok) {
+        await response.body?.cancel();
+
+        if (response.status === 403) {
+          throw new StratzError('STRATZ rejected request or returned Cloudflare challenge', 403, 'STRATZ_CHALLENGE_OR_REJECTED');
+        }
+        if (response.status === 404) {
+          throw new StratzError('STRATZ player not found', 404, 'STRATZ_PLAYER_NOT_FOUND');
+        }
+        if (response.status === 429) {
+          throw new StratzError('STRATZ rate limit exceeded, please retry later', 429, 'STRATZ_LIMIT_EXCEEDED');
+        }
+        throw new StratzError('STRATZ is temporarily unavailable', 502, 'STRATZ_UNAVAILABLE');
+      }
+
+      const responseText = await readBoundedText(response, maxResponseBytes);
+
+      let responseBody: unknown;
+      try {
+        responseBody = JSON.parse(responseText);
+      } catch {
+        throw new StratzError('STRATZ returned invalid JSON', 502, 'STRATZ_INVALID_JSON');
+      }
+
+      if (!isJsonValue(responseBody) || !isShallowObject(responseBody)) {
+        throw new StratzError('STRATZ returned unexpected response', 502, 'STRATZ_UNEXPECTED_RESPONSE');
+      }
+      if (Array.isArray(responseBody.errors) && responseBody.errors.length > 0) {
+        throw new StratzError(readGraphqlError(responseBody.errors), 502, 'STRATZ_GRAPHQL_ERROR');
+      }
+
+      return responseBody;
     });
-
-    const contentLength = Number(response.headers.get('content-length') ?? 0);
-    if (contentLength > maxResponseBytes) {
-      await response.body?.cancel();
-      throw new StratzError('STRATZ response exceeds allowed size', 502, 'STRATZ_RESPONSE_TOO_LARGE');
-    }
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        throw new StratzError('STRATZ rejected request or returned Cloudflare challenge', 403, 'STRATZ_CHALLENGE_OR_REJECTED');
-      }
-      if (response.status === 404) {
-        throw new StratzError('STRATZ player not found', 404, 'STRATZ_PLAYER_NOT_FOUND');
-      }
-      if (response.status === 429) {
-        throw new StratzError('STRATZ rate limit exceeded, please retry later', 429, 'STRATZ_LIMIT_EXCEEDED');
-      }
-      throw new StratzError('STRATZ is temporarily unavailable', 502, 'STRATZ_UNAVAILABLE');
-    }
-
-    let responseBody: unknown;
-    try {
-      responseBody = await response.json();
-    } catch {
-      throw new StratzError('STRATZ returned invalid JSON', 502, 'STRATZ_INVALID_JSON');
-    }
-
-    if (!isJsonValue(responseBody) || !isShallowObject(responseBody)) {
-      throw new StratzError('STRATZ returned unexpected response', 502, 'STRATZ_UNEXPECTED_RESPONSE');
-    }
-    if (Array.isArray(responseBody.errors) && responseBody.errors.length > 0) {
-      throw new StratzError(readGraphqlError(responseBody.errors), 502, 'STRATZ_GRAPHQL_ERROR');
-    }
-
-    return responseBody;
   } catch (error) {
     if (error instanceof StratzError) {
       throw error;
     }
-    if (abortController.signal.aborted) {
+    if (error instanceof ResponseBodyTooLargeError) {
+      throw new StratzError('STRATZ response exceeds allowed size', 502, 'STRATZ_RESPONSE_TOO_LARGE');
+    }
+    if (error instanceof RequestTimeoutError) {
       throw new StratzError('STRATZ did not respond in time', 504, 'STRATZ_TIMEOUT');
     }
     throw new StratzError('Failed to connect to STRATZ', 502, 'STRATZ_CONN_ERROR');
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

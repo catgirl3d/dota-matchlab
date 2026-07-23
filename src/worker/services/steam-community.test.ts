@@ -49,4 +49,38 @@ describe('Steam Community profile resolver', () => {
       'https://steamcommunity.com/id/alina_f0xy?xml=1',
     );
   });
+  it('maps an oversized streamed response to a Steam provider error', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array(64_001));
+          controller.close();
+        },
+      })),
+    );
+
+    await expect(resolveSteamProfileInput('alina_f0xy', fetcher)).rejects.toMatchObject({
+      statusCode: 502,
+      code: 'STEAM_RESPONSE_TOO_LARGE',
+    });
+  });
+
+  it('maps an aborted request to a Steam timeout error', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi.fn<typeof fetch>((_, init) => new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      }));
+      const pending = resolveSteamProfileInput('alina_f0xy', fetcher);
+      const assertion = expect(pending).rejects.toMatchObject({
+        statusCode: 504,
+        code: 'STEAM_COMMUNITY_TIMEOUT',
+      });
+
+      await vi.advanceTimersByTimeAsync(6_000);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

@@ -233,6 +233,68 @@ describe('STRATZ detail archive', () => {
       ],
     }));
   });
+  it('limits concurrent detail loads while preserving result order', async () => {
+    const client = claimedClient();
+    client.claimSpecificMatchDetail.mockResolvedValueOnce({
+      data: {
+        owned: true,
+        claimed: true,
+        status: 'syncing',
+        dotaAccountId: 123,
+        leaseToken: 'specific-lease',
+        matchIds: [9001, 9002, 9003, 9004],
+        backfillComplete: false,
+      },
+      error: null,
+    });
+    client.applyMatchDetailBatch.mockResolvedValueOnce({
+      data: { processedMatches: 4, backfillComplete: false },
+      error: null,
+    });
+
+    let activeLoads = 0;
+    let maxConcurrentLoads = 0;
+    const resolvers = new Map<number, () => void>();
+    const loadDetail = vi.fn(async (_token: string, matchId: number) => {
+      activeLoads += 1;
+      maxConcurrentLoads = Math.max(maxConcurrentLoads, activeLoads);
+      await new Promise<void>((resolve) => resolvers.set(matchId, resolve));
+      activeLoads -= 1;
+      return availableDetail(matchId);
+    });
+
+    const syncPromise = syncTrackedMatchDetail(
+      env,
+      'user-a',
+      '00000000-0000-0000-0000-000000000202',
+      9001,
+      { createClient: () => client, loadDetail },
+    );
+
+    await vi.waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(3));
+    expect(maxConcurrentLoads).toBe(3);
+    resolvers.get(9003)?.();
+    resolvers.get(9002)?.();
+    resolvers.get(9001)?.();
+    await vi.waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(4));
+    expect(resolvers.has(9004)).toBe(true);
+    resolvers.get(9004)?.();
+
+    await expect(syncPromise).resolves.toMatchObject({
+      processedMatches: 4,
+      availableMatches: 4,
+      failedMatches: 0,
+    });
+    expect(client.applyMatchDetailBatch).toHaveBeenCalledWith(expect.objectContaining({
+      p_results: [
+        expect.objectContaining({ match_id: 9001 }),
+        expect.objectContaining({ match_id: 9002 }),
+        expect.objectContaining({ match_id: 9003 }),
+        expect.objectContaining({ match_id: 9004 }),
+      ],
+    }));
+  });
+
 });
 
 function availableDetail(matchId: number, players = [{

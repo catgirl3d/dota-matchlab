@@ -1,4 +1,10 @@
 import { InvalidSteamIdError, steamId64ToAccountId } from './steam-id';
+import {
+  RequestTimeoutError,
+  ResponseBodyTooLargeError,
+  readBoundedText,
+  withTimeout,
+} from '../../shared/http';
 
 const STEAM_COMMUNITY_HOSTS = new Set([
   'steamcommunity.com',
@@ -39,46 +45,46 @@ export async function resolveSteamProfileInput(
   );
   endpoint.searchParams.set('xml', '1');
 
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
-
   try {
-    const response = await fetcher(endpoint, {
-      headers: {
-        Accept: 'application/xml,text/xml',
-        'User-Agent': 'DotaMatchLab/0.1',
-      },
-      signal: abortController.signal,
+    return await withTimeout(REQUEST_TIMEOUT_MS, async (signal) => {
+      const response = await fetcher(endpoint, {
+        headers: {
+          Accept: 'application/xml,text/xml',
+          'User-Agent': 'DotaMatchLab/0.1',
+        },
+        signal,
+      });
+
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new SteamCommunityError('Steam profile not found', 404, 'STEAM_PROFILE_NOT_FOUND');
+      }
+
+      const xml = await readBoundedText(response, MAX_XML_BYTES);
+      const steamId64 = /<steamID64>([0-9]{16,20})<\/steamID64>/.exec(xml)?.[1];
+      if (!steamId64) {
+        throw new SteamCommunityError(
+          'Steam did not return ID for the specified profile',
+          404,
+          'STEAM_NO_ID_RETURNED',
+        );
+      }
+
+      steamId64ToAccountId(steamId64);
+      return steamId64;
     });
-
-    if (!response.ok) {
-      await response.body?.cancel();
-      throw new SteamCommunityError('Steam profile not found', 404, 'STEAM_PROFILE_NOT_FOUND');
-    }
-
-    const xml = await readBoundedText(response, MAX_XML_BYTES);
-    const steamId64 = /<steamID64>([0-9]{16,20})<\/steamID64>/.exec(xml)?.[1];
-    if (!steamId64) {
-      throw new SteamCommunityError(
-        'Steam did not return ID for the specified profile',
-        404,
-        'STEAM_NO_ID_RETURNED',
-      );
-    }
-
-    steamId64ToAccountId(steamId64);
-    return steamId64;
   } catch (error) {
     if (error instanceof SteamCommunityError) {
       throw error;
     }
-    if (abortController.signal.aborted) {
+    if (error instanceof ResponseBodyTooLargeError) {
+      throw new SteamCommunityError('Steam response exceeds allowed size', 502, 'STEAM_RESPONSE_TOO_LARGE');
+    }
+    if (error instanceof RequestTimeoutError) {
       throw new SteamCommunityError('Steam Community did not respond in time', 504, 'STEAM_COMMUNITY_TIMEOUT');
     }
 
     throw new SteamCommunityError('Failed to connect with Steam Community', 502, 'STEAM_COMMUNITY_CONN_ERROR');
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -149,44 +155,3 @@ export function parseSteamProfileInput(input: string): SteamProfileReference {
   throw new SteamCommunityError('Steam profile link is invalid', 400, 'STEAM_PROFILE_LINK_INVALID');
 }
 
-async function readBoundedText(
-  response: Response,
-  maxBytes: number,
-): Promise<string> {
-  const contentLength = Number(response.headers.get('content-length') ?? 0);
-  if (contentLength > maxBytes) {
-    await response.body?.cancel();
-    throw new SteamCommunityError('Steam response exceeds allowed size', 502, 'STEAM_RESPONSE_TOO_LARGE');
-  }
-
-  if (!response.body) {
-    return '';
-  }
-
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let receivedBytes = 0;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    receivedBytes += value.byteLength;
-    if (receivedBytes > maxBytes) {
-      await reader.cancel();
-      throw new SteamCommunityError('Steam response exceeds allowed size', 502, 'STEAM_RESPONSE_TOO_LARGE');
-    }
-    chunks.push(value);
-  }
-
-  const bytes = new Uint8Array(receivedBytes);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  return new TextDecoder().decode(bytes);
-}
