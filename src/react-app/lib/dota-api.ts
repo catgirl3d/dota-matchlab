@@ -1,7 +1,4 @@
-import type {
-  DotaPlayerProfile,
-  RecentMatchesResponse,
-} from '../../shared/dota';
+import type { DotaPlayerProfile } from '../../shared/dota';
 import type { MatchDetailSyncResult, MatchImportResult, MatchSyncResult } from '../../shared/match-archive';
 
 type ApiErrorPayload = {
@@ -43,17 +40,6 @@ export async function resolveSteamProfile(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ steamProfile }),
   }, token);
-}
-
-export async function fetchRecentMatches(
-  token: string,
-  accountId: number,
-): Promise<RecentMatchesResponse> {
-  return requestJson<RecentMatchesResponse>(
-    `/api/dota/players/${accountId}/recent-matches`,
-    {},
-    token,
-  );
 }
 
 export async function syncTrackedAccount(

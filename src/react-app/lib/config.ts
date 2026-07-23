@@ -13,6 +13,3 @@ export const clientConfig: ClientConfig = {
 };
 
 export const hasClerkConfig = clientConfig.clerkPublishableKey.length > 0;
-export const hasSupabaseConfig =
-  clientConfig.supabaseUrl.length > 0 &&
-  clientConfig.supabasePublishableKey.length > 0;

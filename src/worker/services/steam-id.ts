@@ -24,16 +24,3 @@ export function steamId64ToAccountId(steamId64: string): number {
 
   return Number(accountId);
 }
-
-export function parseDotaAccountId(value: string): number {
-  if (!/^[0-9]{1,10}$/.test(value)) {
-    throw new InvalidSteamIdError();
-  }
-
-  const accountId = BigInt(value);
-  if (accountId > MAX_DOTA_ACCOUNT_ID) {
-    throw new InvalidSteamIdError();
-  }
-
-  return Number(accountId);
-}

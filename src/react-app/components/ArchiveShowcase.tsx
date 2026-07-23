@@ -61,7 +61,7 @@ export function ArchiveShowcase({ dotaAccountId, fallback }: ArchiveShowcaseProp
       overview={overview}
       page={pageQuery.data}
       filters={filters}
-        heroNames={DOTA_HERO_NAMES}
+      heroNames={DOTA_HERO_NAMES}
       isLoading={overviewQuery.isPending || pageQuery.isPending}
       isRefreshing={overviewQuery.isFetching || pageQuery.isFetching}
       error={null}

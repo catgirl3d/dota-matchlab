@@ -29,26 +29,7 @@ export const translations = {
     newMatchHintAfterSignIn: '// New matches can be loaded after signing in.',
     workflowHeader: 'From Match ID to Analysis',
 
-    // AccessPanel
-    accessHeading: 'Access Control',
-    setupTitle: 'Framework is ready',
-    setupDesc: 'Add Clerk and Supabase keys to .env.local and .dev.vars to enable sign in.',
-    accessCopy: 'Access is limited to beta test participants. Matches and state are protected by RLS rules.',
-    signInToLab: 'Sign in to Lab',
-    checkingRls: 'Checking RLS...',
-    checkDataAccess: 'Check database access',
-    rlsQuerySuccess: 'RLS request succeeded',
-    accessApproved: 'Access Approved',
-
-    // SystemStatus
-    statusOnline: 'online',
-    statusError: 'error',
-    statusNotConfigured: 'not configured',
     statusChecking: 'checking',
-    diagnosticHeading: 'System Diagnostics',
-    diagnosticRetry: 'Retry Diagnostics',
-    diagnosticChecking: 'Checking...',
-
     // ArchiveShowcase
     loadingPublicArchive: 'Loading public archive...',
     publicArchiveAriaLabel: 'Public player archive',

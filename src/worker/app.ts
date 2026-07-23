@@ -1,9 +1,6 @@
 import { clerkMiddleware, getAuth } from '@clerk/hono';
 import { Hono } from 'hono';
-import type { SystemHealth } from '../shared/health';
-import { checkSupabaseHealth } from './services/supabase-health';
 import {
-  loadRecentMatches,
   OpenDotaError,
   resolveDotaPlayer,
 } from './services/opendota';
@@ -20,11 +17,9 @@ import {
   resolveSteamProfileInput,
   SteamCommunityError,
 } from './services/steam-community';
-import { InvalidSteamIdError, parseDotaAccountId } from './services/steam-id';
+import { InvalidSteamIdError } from './services/steam-id';
 
 type AppDependencies = {
-  checkSupabase: typeof checkSupabaseHealth;
-  loadRecentMatches: typeof loadRecentMatches;
   syncTrackedAccount: typeof syncTrackedAccount;
   syncTrackedMatchDetail: typeof syncTrackedMatchDetail;
   importPublicMatchDetail: typeof importPublicMatchDetail;
@@ -33,8 +28,6 @@ type AppDependencies = {
 };
 
 const defaultDependencies: AppDependencies = {
-  checkSupabase: checkSupabaseHealth,
-  loadRecentMatches,
   syncTrackedAccount,
   syncTrackedMatchDetail,
   importPublicMatchDetail,
@@ -49,21 +42,6 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
   app.get('/api/health/live', (context) =>
     context.json({ status: 'ok' as const }),
   );
-
-  app.get('/api/health', async (context) => {
-    const supabase = await dependencies.checkSupabase(context.env);
-    const status = supabase.status === 'ok' ? 'ok' : 'degraded';
-    const response: SystemHealth = {
-      status,
-      checkedAt: new Date().toISOString(),
-      services: {
-        worker: 'ok',
-        supabase,
-      },
-    };
-
-    return context.json(response, status === 'ok' ? 200 : 503);
-  });
 
   app.use('/api/session', clerkMiddleware());
   app.get('/api/session', (context) => {
@@ -113,22 +91,6 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
     );
 
     return context.json(profile);
-  });
-
-  app.get('/api/dota/players/:accountId/recent-matches', async (context) => {
-    const auth = getAuth(context);
-    if (!auth.userId) {
-      return context.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
-    }
-
-    const accountId = parseDotaAccountId(context.req.param('accountId'));
-    const matches = await dependencies.loadRecentMatches(
-      context.env.OPENDOTA_BASE_URL,
-      accountId,
-    );
-
-    context.header('Cache-Control', 'private, max-age=60');
-    return context.json(matches);
   });
 
   app.post(

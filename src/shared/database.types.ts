@@ -466,7 +466,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      app_healthcheck: { Args: never; Returns: Json }
       apply_match_detail_batch: {
         Args: {
           p_actor_user_id: string
@@ -780,4 +779,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

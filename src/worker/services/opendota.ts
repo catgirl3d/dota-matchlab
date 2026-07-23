@@ -1,9 +1,4 @@
-import type {
-  DotaPlayerProfile,
-  RecentDotaMatch,
-  RecentMatchesResponse,
-} from '../../shared/dota';
-import { DOTA_HERO_NAMES } from '../../shared/hero-names';
+import type { DotaPlayerProfile } from '../../shared/dota';
 import {
   isJsonValue as isJson,
   isShallowObject as isObject,
@@ -17,7 +12,6 @@ export type { ArchivedPlayerMatch, PlayerMatchesPage } from './match-provider';
 
 const REQUEST_TIMEOUT_MS = 8_000;
 const MAX_RESPONSE_BYTES = 1_000_000;
-const RECENT_MATCH_LIMIT = 20;
 export const HISTORY_PAGE_SIZE = 100;
 const HISTORY_PROJECT_FIELDS = [
   'match_id',
@@ -102,65 +96,6 @@ export async function resolveDotaPlayer(
     avatarUrl: readString(payload.profile.avatarfull),
     rankTier: readNullableInteger(payload.rank_tier),
   };
-}
-
-export async function loadRecentMatches(
-  baseUrl: string,
-  accountId: number,
-  fetcher: typeof fetch = fetch,
-): Promise<RecentMatchesResponse> {
-  const matchesPayload = await fetchOpenDotaJson(
-    baseUrl,
-    `/players/${accountId}/recentMatches`,
-    fetcher,
-  );
-
-  if (!Array.isArray(matchesPayload)) {
-    throw new OpenDotaError('OpenDota returned unexpected data format', 502, 'OPENDOTA_UNEXPECTED_FORMAT');
-  }
-
-  const matches = matchesPayload
-    .slice(0, RECENT_MATCH_LIMIT)
-    .flatMap((value): RecentDotaMatch[] => {
-      if (!isObject(value)) {
-        return [];
-      }
-
-      const heroId = readInteger(value.hero_id);
-      const playerSlot = readInteger(value.player_slot);
-      const radiantWin = readBoolean(value.radiant_win);
-      const matchId = readInteger(value.match_id);
-      if (
-        heroId === null ||
-        playerSlot === null ||
-        radiantWin === null ||
-        matchId === null
-      ) {
-        return [];
-      }
-
-      const heroName = DOTA_HERO_NAMES[heroId] ?? `Hero #${heroId}`;
-      const isRadiant = playerSlot < 128;
-
-      return [
-        {
-          matchId: String(matchId),
-          startTime: readInteger(value.start_time) ?? 0,
-          durationSeconds: readInteger(value.duration) ?? 0,
-          heroId,
-          heroName,
-          won: isRadiant === radiantWin,
-          kills: readInteger(value.kills) ?? 0,
-          deaths: readInteger(value.deaths) ?? 0,
-          assists: readInteger(value.assists) ?? 0,
-          goldPerMinute: readInteger(value.gold_per_min) ?? 0,
-          xpPerMinute: readInteger(value.xp_per_min) ?? 0,
-          lastHits: readInteger(value.last_hits) ?? 0,
-        },
-      ];
-    });
-
-  return { accountId, matches };
 }
 
 export async function loadPlayerMatchesPage(

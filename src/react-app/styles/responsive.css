@@ -58,14 +58,8 @@
       width: min(100%, 520px);
     }
 
-    .control-grid,
     .workflow {
       grid-template-columns: 1fr;
-    }
-
-    .status-panel {
-      border-right: 0;
-      border-bottom: 1px solid var(--line-strong);
     }
 
     .workflow {
@@ -221,27 +215,6 @@
 
     .archive-gate {
       min-height: 460px;
-    }
-
-    .status-panel,
-    .access-panel {
-      min-height: 330px;
-      padding: 34px 22px;
-    }
-
-    .section-heading {
-      display: block;
-    }
-
-    .section-heading h2 {
-      margin-top: 14px;
-    }
-
-    .status-list,
-    .access-copy,
-    .setup-message,
-    .signed-in-card {
-      margin-top: 42px;
     }
 
     .workflow {

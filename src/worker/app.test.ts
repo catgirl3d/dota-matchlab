@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from './app';
-import { StratzError } from './services/stratz';
 
 const testEnv: Env = {
   CLERK_PUBLISHABLE_KEY:
@@ -14,75 +13,17 @@ const testEnv: Env = {
 };
 
 describe('API health routes', () => {
-  it('preserves STRATZ status instead of returning a generic 500', async () => {
-    const app = createApp({
-      checkSupabase: async () => {
-        throw new StratzError('STRATZ rejected query', 403, 'STRATZ_QUERY_REJECTED');
-      },
-    });
+  it('does not retain the aggregate health endpoint', async () => {
+    const app = createApp();
 
-    const response = await app.request(
-      'https://example.com/api/health',
-      undefined,
-      testEnv,
-    );
+    const response = await app.request('https://example.com/api/health', undefined, testEnv);
 
-    expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({
-      error: 'STRATZ rejected query',
-      code: 'STRATZ_QUERY_REJECTED',
-    });
-  });
-
-  it('reports a healthy vertical slice', async () => {
-    const app = createApp({
-      checkSupabase: async () => ({ status: 'ok', latencyMs: 7 }),
-    });
-
-    const response = await app.request(
-      'https://example.com/api/health',
-      undefined,
-      testEnv,
-    );
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      status: 'ok',
-      services: {
-        worker: 'ok',
-        supabase: { status: 'ok', latencyMs: 7 },
-      },
-    });
-  });
-
-  it('reports a degraded service when Supabase is unavailable', async () => {
-    const app = createApp({
-      checkSupabase: async () => ({
-        status: 'error',
-        latencyMs: 12,
-        statusCode: 401,
-      }),
-    });
-
-    const response = await app.request(
-      'https://example.com/api/health',
-      undefined,
-      testEnv,
-    );
-
-    expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toMatchObject({
-      status: 'degraded',
-      services: {
-        supabase: { status: 'error', statusCode: 401 },
-      },
-    });
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: 'Not found', code: 'NOT_FOUND' });
   });
 
   it('keeps liveness independent from external services', async () => {
-    const app = createApp({
-      checkSupabase: async () => ({ status: 'error', latencyMs: 0 }),
-    });
+    const app = createApp();
 
     const response = await app.request(
       'https://example.com/api/health/live',

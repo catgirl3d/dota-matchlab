@@ -1,6 +1,6 @@
 begin;
 
-select plan(65);
+select plan(66);
 
 select ok(not (select prosecdef from pg_proc where oid = 'public.get_match_archive_overview(uuid, text, text, text, text, text, smallint, date, date)'::regprocedure), 'owner overview RPC is SECURITY INVOKER');
 select ok(not (select prosecdef from pg_proc where oid = 'public.get_match_archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer, date, date)'::regprocedure), 'owner page RPC is SECURITY INVOKER');
@@ -44,6 +44,7 @@ select ok(not exists (select 1 from pg_proc as proc cross join lateral aclexplod
 select ok(not has_function_privilege('service_role', 'archive_private.archive_page(uuid, text, text, text, text, text, smallint, bigint, bigint, integer, date, date)', 'execute'), 'service role cannot execute archive page helper');
 
 select ok(to_regprocedure('public.rls_auto_enable()') is null, 'legacy public RLS handler is absent');
+select ok(to_regprocedure('public.app_healthcheck()') is null, 'retired healthcheck RPC is absent');
 select ok(to_regprocedure('private.rls_auto_enable()') is not null, 'private RLS handler exists');
 select ok((select prosecdef from pg_proc where oid = 'private.rls_auto_enable()'::regprocedure), 'private RLS handler is SECURITY DEFINER');
 select ok((select proconfig @> array['search_path=pg_catalog'] from pg_proc where oid = 'private.rls_auto_enable()'::regprocedure), 'private RLS handler has a secure search path');
