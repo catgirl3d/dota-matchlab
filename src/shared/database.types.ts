@@ -70,12 +70,12 @@ export type Database = {
           consecutive_failures: number
           created_at: string
           dota_account_id: number
+          history_provider: string
           last_attempt_at: string | null
           last_error_code: string | null
           last_error_message: string | null
-           last_success_at: string | null
-           history_provider: string
-           lease_expires_at: string | null
+          last_success_at: string | null
+          lease_expires_at: string | null
           lease_token: string | null
           newest_match_id: number | null
           next_retry_at: string | null
@@ -90,12 +90,12 @@ export type Database = {
           consecutive_failures?: number
           created_at?: string
           dota_account_id: number
+          history_provider?: string
           last_attempt_at?: string | null
           last_error_code?: string | null
           last_error_message?: string | null
-           last_success_at?: string | null
-           history_provider?: string
-           lease_expires_at?: string | null
+          last_success_at?: string | null
+          lease_expires_at?: string | null
           lease_token?: string | null
           newest_match_id?: number | null
           next_retry_at?: string | null
@@ -110,12 +110,12 @@ export type Database = {
           consecutive_failures?: number
           created_at?: string
           dota_account_id?: number
+          history_provider?: string
           last_attempt_at?: string | null
           last_error_code?: string | null
           last_error_message?: string | null
-           last_success_at?: string | null
-           history_provider?: string
-           lease_expires_at?: string | null
+          last_success_at?: string | null
+          lease_expires_at?: string | null
           lease_token?: string | null
           newest_match_id?: number | null
           next_retry_at?: string | null
@@ -467,6 +467,16 @@ export type Database = {
     }
     Functions: {
       app_healthcheck: { Args: never; Returns: Json }
+      apply_match_detail_batch: {
+        Args: {
+          p_actor_user_id: string
+          p_dota_account_id: number
+          p_lease_token: string
+          p_results: Json
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
       apply_match_sync_page: {
         Args: {
           p_actor_user_id: string
@@ -534,9 +544,22 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_public_match_import: {
+        Args: { p_match_id: number; p_result: Json }
+        Returns: Json
+      }
       claim_match_sync: {
         Args: {
           p_actor_user_id: string
+          p_lease_seconds?: number
+          p_tracked_account_id: string
+        }
+        Returns: Json
+      }
+      claim_match_sync_for_provider: {
+        Args: {
+          p_actor_user_id: string
+          p_history_provider?: string
           p_lease_seconds?: number
           p_tracked_account_id: string
         }
@@ -551,82 +574,67 @@ export type Database = {
         }
         Returns: Json
       }
-      claim_match_sync_for_provider: {
-        Args: {
-          p_actor_user_id: string
-          p_history_provider?: string
-          p_lease_seconds?: number
-          p_tracked_account_id: string
-        }
-        Returns: Json
-      }
-      get_match_archive_overview: {
-        Args: {
-          p_tracked_account_id: string
-          p_period?: string
-          p_mode?: string
-          p_result?: string
-          p_party?: string
-          p_position?: string
-          p_hero_id?: number | null
-          p_start_date?: string | null
-          p_end_date?: string | null
-        }
-        Returns: Json
-      }
-      get_match_archive_page: {
-        Args: {
-          p_tracked_account_id: string
-          p_period?: string
-          p_mode?: string
-          p_result?: string
-          p_party?: string
-          p_position?: string
-          p_hero_id?: number | null
-          p_cursor_start_time?: number | null
-          p_cursor_match_id?: number | null
-          p_limit?: number
-          p_start_date?: string | null
-          p_end_date?: string | null
-        }
-        Returns: Json
-      }
       get_archive_showcase_overview: {
         Args: {
           p_dota_account_id: number
-          p_period?: string
+          p_end_date?: string
+          p_hero_id?: number
           p_mode?: string
-          p_result?: string
           p_party?: string
+          p_period?: string
           p_position?: string
-          p_hero_id?: number | null
-          p_start_date?: string | null
-          p_end_date?: string | null
+          p_result?: string
+          p_start_date?: string
         }
         Returns: Json
       }
       get_archive_showcase_page: {
         Args: {
+          p_cursor_match_id?: number
+          p_cursor_start_time?: number
           p_dota_account_id: number
-          p_period?: string
-          p_mode?: string
-          p_result?: string
-          p_party?: string
-          p_position?: string
-          p_hero_id?: number | null
-          p_cursor_start_time?: number | null
-          p_cursor_match_id?: number | null
+          p_end_date?: string
+          p_hero_id?: number
           p_limit?: number
-          p_start_date?: string | null
-          p_end_date?: string | null
+          p_mode?: string
+          p_party?: string
+          p_period?: string
+          p_position?: string
+          p_result?: string
+          p_start_date?: string
         }
         Returns: Json
       }
-      resolve_archive_showcase: {
+      get_match_archive_overview: {
         Args: {
-          p_slug: string
+          p_end_date?: string
+          p_hero_id?: number
+          p_mode?: string
+          p_party?: string
+          p_period?: string
+          p_position?: string
+          p_result?: string
+          p_start_date?: string
+          p_tracked_account_id: string
         }
-        Returns: number | null
+        Returns: Json
+      }
+      get_match_archive_page: {
+        Args: {
+          p_cursor_match_id?: number
+          p_cursor_start_time?: number
+          p_end_date?: string
+          p_hero_id?: number
+          p_limit?: number
+          p_mode?: string
+          p_party?: string
+          p_period?: string
+          p_position?: string
+          p_result?: string
+          p_start_date?: string
+          p_tracked_account_id: string
+        }
+        Returns: Json
       }
       record_match_sync_failure: {
         Args: {
@@ -639,20 +647,7 @@ export type Database = {
         }
         Returns: Json
       }
-      apply_match_detail_batch: {
-        Args: {
-          p_actor_user_id: string
-          p_dota_account_id: number
-          p_lease_token: string
-          p_results: Json
-          p_tracked_account_id: string
-        }
-        Returns: Json
-      }
-      apply_public_match_import: {
-        Args: { p_match_id: number; p_result: Json }
-        Returns: Json
-      }
+      resolve_archive_showcase: { Args: { p_slug: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never
@@ -785,3 +780,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

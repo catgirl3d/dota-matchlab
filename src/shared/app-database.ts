@@ -17,6 +17,29 @@ import type {
 
 type GeneratedFunctions = Database['public']['Functions'];
 
+type NullableOptionalArgs<Args, Name extends keyof Args> = Omit<Args, Name> & {
+  [Key in Name]?: Exclude<Args[Key], undefined> | null;
+};
+
+type RpcArgsOverrides = {
+  get_match_archive_overview: NullableOptionalArgs<
+    GeneratedFunctions['get_match_archive_overview']['Args'],
+    'p_hero_id' | 'p_start_date' | 'p_end_date'
+  >;
+  get_match_archive_page: NullableOptionalArgs<
+    GeneratedFunctions['get_match_archive_page']['Args'],
+    'p_hero_id' | 'p_start_date' | 'p_end_date' | 'p_cursor_start_time' | 'p_cursor_match_id'
+  >;
+  get_archive_showcase_overview: NullableOptionalArgs<
+    GeneratedFunctions['get_archive_showcase_overview']['Args'],
+    'p_hero_id' | 'p_start_date' | 'p_end_date'
+  >;
+  get_archive_showcase_page: NullableOptionalArgs<
+    GeneratedFunctions['get_archive_showcase_page']['Args'],
+    'p_hero_id' | 'p_start_date' | 'p_end_date' | 'p_cursor_start_time' | 'p_cursor_match_id'
+  >;
+};
+
 type RpcReturnOverrides = {
   claim_match_sync_for_provider: HistorySyncClaim;
   apply_match_sync_page_with_boundary_source_and_payloads: HistorySyncApplyResponse;
@@ -26,14 +49,23 @@ type RpcReturnOverrides = {
   apply_public_match_import: PublicDetailApplyResponse;
   get_match_archive_overview: ArchiveOverviewProjection;
   get_match_archive_page: ArchivePageProjection;
-  get_archive_showcase_overview: ArchiveShowcaseOverviewProjection;
-  get_archive_showcase_page: ArchivePageProjection;
+  get_archive_showcase_overview: ArchiveShowcaseOverviewProjection | null;
+  get_archive_showcase_page: ArchivePageProjection | null;
+  resolve_archive_showcase: number | null;
 };
 
 type Assert<T extends true> = T;
 export type OverridesNameExistingFunctions = Assert<
-  Exclude<keyof RpcReturnOverrides, keyof GeneratedFunctions> extends never ? true : false
+  Exclude<keyof RpcArgsOverrides | keyof RpcReturnOverrides, keyof GeneratedFunctions> extends never ? true : false
 >;
+
+type WithContractArgs<TFunctions> = {
+  [Name in keyof TFunctions]: Name extends keyof RpcArgsOverrides
+    ? TFunctions[Name] extends { Args: unknown }
+      ? Omit<TFunctions[Name], 'Args'> & { Args: RpcArgsOverrides[Name] }
+      : TFunctions[Name]
+    : TFunctions[Name];
+};
 
 type WithContractReturns<TFunctions> = {
   [Name in keyof TFunctions]: Name extends keyof RpcReturnOverrides
@@ -44,7 +76,7 @@ type WithContractReturns<TFunctions> = {
 };
 
 type AppPublicSchema = Omit<Database['public'], 'Functions'> & {
-  Functions: WithContractReturns<GeneratedFunctions>;
+  Functions: WithContractReturns<WithContractArgs<GeneratedFunctions>>;
 };
 
 export type AppDatabase = Omit<Database, 'public'> & { public: AppPublicSchema };
@@ -56,8 +88,4 @@ export type ClaimArgsRemainGenerated = Assert<Equal<
   AppDatabase['public']['Functions']['claim_match_sync_for_provider']['Args'],
   Database['public']['Functions']['claim_match_sync_for_provider']['Args']
 >>;
-export type ArchiveArgsRemainGenerated = Assert<Equal<
-  AppDatabase['public']['Functions']['get_match_archive_overview']['Args'],
-  Database['public']['Functions']['get_match_archive_overview']['Args']
->>;
-export type RpcOverlayArgsRemainGenerated = ClaimArgsRemainGenerated | ArchiveArgsRemainGenerated;
+export type RpcOverlayArgsRemainGenerated = ClaimArgsRemainGenerated;

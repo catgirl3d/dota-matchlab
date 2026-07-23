@@ -1,6 +1,10 @@
 import type { Json } from './database.types';
 import type { AppDatabase } from './app-database';
-import type { ArchiveOverviewProjection } from './contracts/archive-rpc';
+import type {
+  ArchiveOverviewProjection,
+  ArchivePageProjection,
+  ArchiveShowcaseOverviewProjection,
+} from './contracts/archive-rpc';
 import type { TrackedDetailClaim } from './contracts/detail-rpc';
 import type { HistorySyncClaim } from './contracts/history-rpc';
 
@@ -20,6 +24,26 @@ type _ArchiveReturnIsSchemaDto = Assert<Equal<
   AppDatabase['public']['Functions']['get_match_archive_overview']['Returns'],
   ArchiveOverviewProjection
 >>;
+type _ArchiveHeroArgAcceptsNull = Assert<Equal<
+  Extract<AppDatabase['public']['Functions']['get_match_archive_overview']['Args']['p_hero_id'], null>,
+  null
+>>;
+type _ArchiveCursorArgAcceptsNull = Assert<Equal<
+  Extract<AppDatabase['public']['Functions']['get_match_archive_page']['Args']['p_cursor_match_id'], null>,
+  null
+>>;
+type _ShowcaseOverviewReturnIsNullableDto = Assert<Equal<
+  AppDatabase['public']['Functions']['get_archive_showcase_overview']['Returns'],
+  ArchiveShowcaseOverviewProjection | null
+>>;
+type _ShowcasePageReturnIsNullableDto = Assert<Equal<
+  AppDatabase['public']['Functions']['get_archive_showcase_page']['Returns'],
+  ArchivePageProjection | null
+>>;
+type _ShowcaseResolverReturnIsNullable = Assert<Equal<
+  AppDatabase['public']['Functions']['resolve_archive_showcase']['Returns'],
+  number | null
+>>;
 type _HistoryClaimReturnIsNotGenericJson = Assert<Equal<
   Equal<AppDatabase['public']['Functions']['claim_match_sync_for_provider']['Returns'], Json>,
   false
@@ -33,5 +57,10 @@ export type RpcDatabaseContractTypecheck =
   | _HistoryClaimReturnIsSchemaDto
   | _DetailClaimReturnIsSchemaDto
   | _ArchiveReturnIsSchemaDto
+  | _ArchiveHeroArgAcceptsNull
+  | _ArchiveCursorArgAcceptsNull
+  | _ShowcaseOverviewReturnIsNullableDto
+  | _ShowcasePageReturnIsNullableDto
+  | _ShowcaseResolverReturnIsNullable
   | _HistoryClaimReturnIsNotGenericJson
   | _PreserveGeneratedArgs;
