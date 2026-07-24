@@ -815,6 +815,54 @@ describe('MatchDetailView', () => {
     expect(purchaseCount()).toBe('5');
   });
 
+  it('filters ability progression into all, skills, and talents', () => {
+    const abilityDetail: MatchDetailSnapshot = {
+      ...detail,
+      detailStatus: 'available',
+      availableSections: ['players', 'player_stats', 'player_playback'],
+      players: [
+        createPlayer({
+          key: 'ability-player',
+          name: 'Ability player',
+          abilityBuild: [
+            { abilityId: 6_900, time: 10, level: 1, name: null, isTalent: true },
+            { abilityId: 1_000, time: 20, level: 2, name: null, isTalent: false },
+            { abilityId: 1_001, time: 30, level: 3, name: 'missing_ability', isTalent: false },
+          ],
+          hasAbilityBuildData: true,
+        }),
+      ],
+    };
+    render(<MatchDetailView detail={abilityDetail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const build = screen.getByRole('article', { name: 'Build for Ability player' });
+    const abilityTimeline = within(build).getByText('ABILITIES').closest<HTMLElement>('.build-timeline');
+    expect(abilityTimeline).toBeTruthy();
+    const abilityFilters = within(abilityTimeline as HTMLElement).getByRole('group', { name: 'Ability filter' });
+    const abilityTokens = () => Array.from(abilityTimeline?.querySelectorAll<HTMLElement>('.build-timeline__token') ?? []);
+    const abilityLabels = () => abilityTokens().map((token) => token.getAttribute('aria-label'));
+
+    expect(abilityTokens()).toHaveLength(3);
+    expect(abilityTimeline?.querySelector('.build-timeline__count')).toHaveTextContent('3');
+    fireEvent.click(within(abilityFilters).getByRole('button', { name: 'SKILLS' }));
+    expect(abilityTokens()).toHaveLength(2);
+    expect(abilityTimeline?.querySelector('.build-timeline__count')).toHaveTextContent('2');
+    expect(abilityLabels()).toEqual(expect.arrayContaining([
+      'Ability #1000, 0:20 · level 3',
+      'Ability #1001, 0:30 · level 4',
+    ]));
+    expect(abilityLabels()).not.toContain('Talent: +12 Desolate Damage, 0:10');
+
+    fireEvent.click(within(abilityFilters).getByRole('button', { name: 'TALENTS' }));
+    expect(abilityTokens()).toHaveLength(1);
+    expect(abilityTimeline?.querySelector('.build-timeline__count')).toHaveTextContent('1');
+    expect(abilityLabels()).toEqual(['Talent: +12 Desolate Damage, 0:10']);
+
+    fireEvent.click(within(abilityFilters).getByRole('button', { name: 'ALL' }));
+    expect(abilityTokens()).toHaveLength(3);
+    expect(abilityTimeline?.querySelector('.build-timeline__count')).toHaveTextContent('3');
+  });
+
   it('sorts both team build columns by the selected descending metric', () => {
     const sortableDetail = createSortableDetail();
 

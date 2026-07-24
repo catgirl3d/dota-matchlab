@@ -191,13 +191,21 @@ function PlayerBuild({
   highlighted: boolean;
   maxStats: BuildMetricRanks;
 }) {
+  type AbilityFilterMode = 'all' | 'skills' | 'talents';
   type PurchaseFilterMode = 'all' | 'core' | 'consumables';
+  const [abilityFilter, setAbilityFilter] = useState<AbilityFilterMode>('all');
   const [purchaseFilter, setPurchaseFilter] = useState<PurchaseFilterMode>('all');
   const teamClass = player.isRadiant ? 'player-build--radiant' : 'player-build--dire';
   const impVal = player.imp;
   const impClass = impVal === null ? 'is-neutral' : impVal > 0 ? 'is-positive' : 'is-negative';
   const impText = impVal === null ? '— IMP' : `${impVal > 0 ? '+' : ''}${impVal} IMP`;
   const positionIcon = player.position === null ? null : getPositionIcon(player.position);
+
+  const abilityEvents = abilityFilter === 'skills'
+    ? player.abilityBuild.filter((a) => !a.isTalent)
+    : abilityFilter === 'talents'
+    ? player.abilityBuild.filter((a) => a.isTalent)
+    : player.abilityBuild;
 
   const purchaseEvents = purchaseFilter === 'core'
     ? player.purchaseEvents.filter((p) => !isConsumableItem(p.itemId))
@@ -241,7 +249,38 @@ function PlayerBuild({
         </div>
       </PlayerBuildSection>
       <div className="player-build__progression">
-        <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={player.abilityBuild}>
+        <BuildTimeline
+          label="ABILITIES"
+          emptyLabel="No ability events"
+          unavailableLabel="Ability progression unavailable."
+          available={player.hasAbilityBuildData}
+          events={abilityEvents}
+          extraHeaderControl={
+            <div className="build-timeline__filter-group" role="group" aria-label="Ability filter">
+              <button
+                type="button"
+                className={`build-timeline__filter-btn${abilityFilter === 'all' ? ' is-active' : ''}`}
+                onClick={() => setAbilityFilter('all')}
+              >
+                ALL
+              </button>
+              <button
+                type="button"
+                className={`build-timeline__filter-btn${abilityFilter === 'skills' ? ' is-active' : ''}`}
+                onClick={() => setAbilityFilter('skills')}
+              >
+                SKILLS
+              </button>
+              <button
+                type="button"
+                className={`build-timeline__filter-btn${abilityFilter === 'talents' ? ' is-active' : ''}`}
+                onClick={() => setAbilityFilter('talents')}
+              >
+                TALENTS
+              </button>
+            </div>
+          }
+        >
           {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
         </BuildTimeline>
         <BuildTimeline
