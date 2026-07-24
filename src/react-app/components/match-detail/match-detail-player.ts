@@ -7,6 +7,15 @@ export function sortPlayers(players: MatchDetailPlayer[], sort: PlayerSort): Mat
       return left.playerSlot - right.playerSlot;
     }
 
+    if (sort === 'role') {
+      const leftPos = left.position ?? 99;
+      const rightPos = right.position ?? 99;
+      if (leftPos !== rightPos) {
+        return leftPos - rightPos;
+      }
+      return left.playerSlot - right.playerSlot;
+    }
+
     const leftValue = playerSortValue(left, sort);
     const rightValue = playerSortValue(right, sort);
     if (leftValue === null && rightValue !== null) {

@@ -1,7 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useRef, type ReactNode } from 'react';
 import type { MatchDetailPlayer, MatchDetailSnapshot } from '../../lib/match-detail';
 import { getAbilityIcon } from '../../lib/ability-icons';
 import { getItemIcon } from '../../lib/item-icons';
+import { itemIconSlugs } from '../../lib/item-icon-slugs';
+import { getPositionIcon } from '../../lib/position-icons';
 import { useTranslation } from '../../lib/i18n';
 import { talentDescriptions } from '../../lib/talent-descriptions';
 import { HeroPortrait } from '../HeroPortrait';
@@ -11,6 +13,36 @@ import { formatAccount, formatCompact, formatEventTime, heroLabel, heroMark } fr
 import { sortPlayers } from './match-detail-player';
 import { DetailHeading } from './match-detail-primitives';
 import { PermanentUpgradeSlot } from './PermanentUpgradeSlot';
+
+const CONSUMABLE_ITEM_SLUGS = new Set([
+  'tpscroll',
+  'clarity',
+  'flask',
+  'tango',
+  'tango_single',
+  'enchanted_mango',
+  'greater_mango',
+  'faerie_fire',
+  'greater_faerie_fire',
+  'bottle',
+  'famango',
+  'great_famango',
+  'greater_famango',
+  'blood_grenade',
+  'dust',
+  'ward_observer',
+  'ward_sentry',
+  'ward_dispenser',
+  'smoke_of_deceit',
+  'tome_of_knowledge',
+  'cheese',
+  'refresher_shard',
+]);
+
+function isConsumableItem(itemId: number): boolean {
+  const slug = itemIconSlugs[itemId];
+  return slug ? CONSUMABLE_ITEM_SLUGS.has(slug) : false;
+}
 
 type BuildMetricRanks = {
   first: {
@@ -122,9 +154,10 @@ function BuildTeamColumn({
     <section className={`build-team build-team--${side}`} aria-labelledby={`build-team-${side}`}>
       <header className="build-team__header">
         <div className="build-team__header-title">
-          <span className="micro-label">
-            {side === 'radiant' ? 'Radiant Faction' : 'Dire Faction'}
-          </span>
+          <div className="build-team__faction-tag">
+            <span className="build-team__faction-dot" aria-hidden="true" />
+            <span className="micro-label">Faction Loadout</span>
+          </div>
           <h4 id={`build-team-${side}`}>{side === 'radiant' ? 'Radiant builds' : 'Dire builds'}</h4>
         </div>
         <div className="build-team__badge">
@@ -158,10 +191,19 @@ function PlayerBuild({
   highlighted: boolean;
   maxStats: BuildMetricRanks;
 }) {
+  type PurchaseFilterMode = 'all' | 'core' | 'consumables';
+  const [purchaseFilter, setPurchaseFilter] = useState<PurchaseFilterMode>('all');
   const teamClass = player.isRadiant ? 'player-build--radiant' : 'player-build--dire';
   const impVal = player.imp;
   const impClass = impVal === null ? 'is-neutral' : impVal > 0 ? 'is-positive' : 'is-negative';
   const impText = impVal === null ? '— IMP' : `${impVal > 0 ? '+' : ''}${impVal} IMP`;
+  const positionIcon = player.position === null ? null : getPositionIcon(player.position);
+
+  const purchaseEvents = purchaseFilter === 'core'
+    ? player.purchaseEvents.filter((p) => !isConsumableItem(p.itemId))
+    : purchaseFilter === 'consumables'
+    ? player.purchaseEvents.filter((p) => isConsumableItem(p.itemId))
+    : player.purchaseEvents;
 
   return (
     <article
@@ -171,9 +213,19 @@ function PlayerBuild({
     >
       <div className="player-build__header">
         <TeamBuildHeroPortrait heroId={player.heroId} heroNames={heroNames} />
-        <div>
-          <strong>{player.name ?? formatAccount(player.accountId)}</strong>
-          <span>{heroLabel(player.heroId, heroNames)} · {player.level} lvl</span>
+        <div className="player-build__identity">
+          <strong className="player-build__name">{player.name ?? formatAccount(player.accountId)}</strong>
+          <div className="player-build__hero-meta">
+            {positionIcon ? (
+              <Tooltip content={positionIcon.label} focusable={false}>
+                <img className="player-build__position-icon" src={positionIcon.src} alt={positionIcon.label} />
+              </Tooltip>
+            ) : null}
+            <span className="player-build__hero-name">{heroLabel(player.heroId, heroNames)}</span>
+            <span className="player-build__level-badge">
+              <small>LVL</small> <strong>{player.level}</strong>
+            </span>
+          </div>
         </div>
         <span className={`player-build__imp-badge ${impClass}`}>
           {impText}
@@ -189,10 +241,41 @@ function PlayerBuild({
         </div>
       </PlayerBuildSection>
       <div className="player-build__progression">
-        <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={player.abilityBuild} total={player.abilityBuild.length}>
+        <BuildTimeline label="ABILITIES" emptyLabel="No ability events" unavailableLabel="Ability progression unavailable." available={player.hasAbilityBuildData} events={player.abilityBuild}>
           {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
         </BuildTimeline>
-        <BuildTimeline label="PURCHASES" emptyLabel="No purchase events" unavailableLabel="Purchase progression unavailable." available={player.hasPurchaseEventsData} events={player.purchaseEvents} total={player.purchaseEvents.length}>
+        <BuildTimeline
+          label="PURCHASES"
+          emptyLabel="No purchase events"
+          unavailableLabel="Purchase progression unavailable."
+          available={player.hasPurchaseEventsData}
+          events={purchaseEvents}
+          extraHeaderControl={
+            <div className="build-timeline__filter-group" role="group" aria-label="Purchase filter">
+              <button
+                type="button"
+                className={`build-timeline__filter-btn${purchaseFilter === 'all' ? ' is-active' : ''}`}
+                onClick={() => setPurchaseFilter('all')}
+              >
+                ALL
+              </button>
+              <button
+                type="button"
+                className={`build-timeline__filter-btn${purchaseFilter === 'core' ? ' is-active' : ''}`}
+                onClick={() => setPurchaseFilter('core')}
+              >
+                CORE
+              </button>
+              <button
+                type="button"
+                className={`build-timeline__filter-btn${purchaseFilter === 'consumables' ? ' is-active' : ''}`}
+                onClick={() => setPurchaseFilter('consumables')}
+              >
+                SUPPLIES
+              </button>
+            </div>
+          }
+        >
           {(purchase, index) => <PurchaseToken purchase={purchase} key={`${purchase.time}-${purchase.itemId}-${index}`} />}
         </BuildTimeline>
       </div>
@@ -201,14 +284,14 @@ function PlayerBuild({
           player.heroDamage > 0 && player.heroDamage === maxStats.first.heroDamage ? ' is-highest' :
           player.heroDamage > 0 && player.heroDamage === maxStats.second.heroDamage ? ' is-second' : ''
         }`}>
-          <span className="player-build__metric-label">Hero Dmg</span>
+          <span className="player-build__metric-label">Hero DMG</span>
           <span className="player-build__metric-value">{formatCompact(player.heroDamage)}</span>
         </div>
         <div className={`player-build__metric${
           player.towerDamage > 0 && player.towerDamage === maxStats.first.towerDamage ? ' is-highest' :
           player.towerDamage > 0 && player.towerDamage === maxStats.second.towerDamage ? ' is-second' : ''
         }`}>
-          <span className="player-build__metric-label">Tower Dmg</span>
+          <span className="player-build__metric-label">Tower DMG</span>
           <span className="player-build__metric-value">{formatCompact(player.towerDamage)}</span>
         </div>
         <div className={`player-build__metric${
@@ -260,7 +343,7 @@ function BuildTimeline<T extends { time: number }>({
   unavailableLabel,
   available,
   events,
-  total,
+  extraHeaderControl,
   children,
 }: {
   label: string;
@@ -268,13 +351,92 @@ function BuildTimeline<T extends { time: number }>({
   unavailableLabel: string;
   available: boolean;
   events: T[];
-  total: number;
+  extraHeaderControl?: ReactNode;
   children: (event: T, index: number) => ReactNode;
 }) {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const holdTimeoutRef = useRef<number | null>(null);
+
+  const scrollStep = (direction: 'left' | 'right') => {
+    if (!stripRef.current) return;
+    stripRef.current.scrollBy({
+      left: direction === 'left' ? -160 : 160,
+      behavior: 'smooth',
+    });
+  };
+
+  const startContinuousScroll = (direction: 'left' | 'right') => {
+    stopContinuousScroll();
+    scrollStep(direction);
+
+    holdTimeoutRef.current = window.setTimeout(() => {
+      const step = () => {
+        if (stripRef.current) {
+          stripRef.current.scrollLeft += direction === 'left' ? -3.5 : 3.5;
+        }
+        animFrameRef.current = requestAnimationFrame(step);
+      };
+      animFrameRef.current = requestAnimationFrame(step);
+    }, 220);
+  };
+
+  const stopContinuousScroll = () => {
+    if (holdTimeoutRef.current !== null) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  };
+
   return (
-    <PlayerBuildSection label={label} count={total} className="build-timeline">
-      {!available ? <span className="build-timeline__empty">{unavailableLabel}</span> : events.length === 0 ? <span className="build-timeline__empty">{emptyLabel}</span> : <div className="build-timeline__strip">{events.map(children)}</div>}
-    </PlayerBuildSection>
+    <div className="player-build__section build-timeline">
+      <div className="player-build__section-header">
+        <div className="build-timeline__header-title">
+          <span className="player-build__label">{label}</span>
+          <span className="build-timeline__count">{events.length}</span>
+          {extraHeaderControl}
+        </div>
+        {available && events.length > 0 ? (
+          <div className="build-timeline__scroll-controls">
+            <button
+              type="button"
+              className="build-timeline__scroll-btn"
+              onPointerDown={() => startContinuousScroll('left')}
+              onPointerUp={stopContinuousScroll}
+              onPointerLeave={stopContinuousScroll}
+              onPointerCancel={stopContinuousScroll}
+              aria-label={`Scroll ${label} left`}
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="build-timeline__scroll-btn"
+              onPointerDown={() => startContinuousScroll('right')}
+              onPointerUp={stopContinuousScroll}
+              onPointerLeave={stopContinuousScroll}
+              onPointerCancel={stopContinuousScroll}
+              aria-label={`Scroll ${label} right`}
+            >
+              ›
+            </button>
+          </div>
+        ) : null}
+      </div>
+      {!available ? (
+        <span className="build-timeline__empty">{unavailableLabel}</span>
+      ) : events.length === 0 ? (
+        <span className="build-timeline__empty">{emptyLabel}</span>
+      ) : (
+        <div className="build-timeline__strip" ref={stripRef}>
+          {events.map(children)}
+        </div>
+      )}
+    </div>
   );
 }
 

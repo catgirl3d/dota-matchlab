@@ -736,6 +736,83 @@ describe('MatchDetailView', () => {
     expect(shrapnelAbility.querySelector('small')).toHaveTextContent('2:10');
     expect(shrapnelAbility.querySelector('small')).not.toHaveTextContent(/L\d/);
     expect(within(currentBuild).queryByRole('button', { name: /more events/i })).not.toBeInTheDocument();
+    expect(within(currentBuild).getByRole('button', { name: 'Scroll ABILITIES left' })).toBeVisible();
+    expect(within(currentBuild).getByRole('button', { name: 'Scroll PURCHASES right' })).toBeVisible();
+    const opponentBuild = screen.getByRole('article', { name: 'Build for Opponent' });
+    expect(within(opponentBuild).queryByRole('button', { name: 'Scroll ABILITIES left' })).not.toBeInTheDocument();
+    expect(within(opponentBuild).queryByRole('button', { name: 'Scroll PURCHASES right' })).not.toBeInTheDocument();
+  });
+
+  it('sorts team builds by position role instead of player slot order', () => {
+    const roleDetail: MatchDetailSnapshot = {
+      ...detail,
+      players: [
+        createPlayer({ key: 'radiant-pos-five', name: 'Radiant position five', playerSlot: 0, position: 5 }),
+        createPlayer({ key: 'radiant-pos-one', name: 'Radiant position one', playerSlot: 1, position: 1 }),
+        createPlayer({ key: 'dire-unknown', name: 'Dire unknown', playerSlot: 128, isRadiant: false, position: null }),
+        createPlayer({ key: 'dire-pos-two', name: 'Dire position two', playerSlot: 129, isRadiant: false, position: 2 }),
+      ],
+    };
+    render(<MatchDetailView detail={roleDetail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const sortControls = within(screen.getByRole('group', { name: 'Sort team builds' }));
+    fireEvent.click(sortControls.getByRole('button', { name: 'Role' }));
+
+    expect(buildOrder(screen.getByRole('heading', { name: 'Radiant builds' }).closest('section'))).toEqual([
+      'Build for Radiant position one',
+      'Build for Radiant position five',
+    ]);
+    expect(buildOrder(screen.getByRole('heading', { name: 'Dire builds' }).closest('section'))).toEqual([
+      'Build for Dire position two',
+      'Build for Dire unknown',
+    ]);
+  });
+
+  it('filters purchase progression into all, core, and supply events', () => {
+    const purchaseDetail: MatchDetailSnapshot = {
+      ...detail,
+      detailStatus: 'available',
+      availableSections: ['players', 'player_stats', 'player_playback'],
+      players: [
+        createPlayer({
+          key: 'buyer',
+          name: 'Buyer',
+          purchaseEvents: [
+            { time: 0, itemId: 38 },
+            { time: 30, itemId: 63 },
+            { time: 60, itemId: 44 },
+            { time: 90, itemId: 50 },
+            { time: 120, itemId: 46 },
+          ],
+          hasPurchaseEventsData: true,
+        }),
+      ],
+    };
+    render(<MatchDetailView detail={purchaseDetail} heroNames={{}} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const build = screen.getByRole('article', { name: 'Build for Buyer' });
+    const purchaseTimeline = within(build).getByText('PURCHASES').closest<HTMLElement>('.build-timeline');
+    expect(purchaseTimeline).toBeTruthy();
+    const purchaseTokens = () => Array.from(purchaseTimeline?.querySelectorAll<HTMLElement>('.build-timeline__token--item') ?? []);
+    const purchaseCount = () => purchaseTimeline?.querySelector('.build-timeline__count')?.textContent;
+    const purchaseLabels = () => purchaseTokens().map((token) => token.getAttribute('aria-label'));
+    const filters = within(purchaseTimeline as HTMLElement).getByRole('group', { name: 'Purchase filter' });
+
+    expect(purchaseTokens()).toHaveLength(5);
+    expect(purchaseCount()).toBe('5');
+    fireEvent.click(within(filters).getByRole('button', { name: 'CORE' }));
+    expect(purchaseTokens()).toHaveLength(2);
+    expect(purchaseCount()).toBe('2');
+    expect(purchaseLabels()).toEqual(expect.arrayContaining(['Power Treads, 0:30', 'Phase Boots, 1:30']));
+
+    fireEvent.click(within(filters).getByRole('button', { name: 'SUPPLIES' }));
+    expect(purchaseTokens()).toHaveLength(3);
+    expect(purchaseCount()).toBe('3');
+    expect(purchaseLabels()).toEqual(expect.arrayContaining(['Clarity, 0:00', 'Tango, 1:00', 'Tpscroll, 2:00']));
+
+    fireEvent.click(within(filters).getByRole('button', { name: 'ALL' }));
+    expect(purchaseTokens()).toHaveLength(5);
+    expect(purchaseCount()).toBe('5');
   });
 
   it('sorts both team build columns by the selected descending metric', () => {
@@ -753,11 +830,11 @@ describe('MatchDetailView', () => {
     expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant high', 'Build for Radiant low']);
     expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
 
-    fireEvent.click(buildSortControls.getByRole('button', { name: 'Hero damage' }));
+    fireEvent.click(buildSortControls.getByRole('button', { name: 'Hero DMG' }));
     expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant low', 'Build for Radiant high']);
     expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
 
-    fireEvent.click(buildSortControls.getByRole('button', { name: 'Tower damage' }));
+    fireEvent.click(buildSortControls.getByRole('button', { name: 'Tower DMG' }));
     expect(buildOrder(radiantColumn)).toEqual(['Build for Radiant high', 'Build for Radiant low']);
     expect(buildOrder(direColumn)).toEqual(['Build for Dire high', 'Build for Dire low']);
   });
@@ -780,7 +857,7 @@ describe('MatchDetailView', () => {
     expect(within(direHigh).getByText('MOST DMG')).toBeVisible();
 
     const scoreboardSortControls = within(screen.getByRole('group', { name: 'Sort ten-player breakdown' }));
-    fireEvent.click(scoreboardSortControls.getByRole('button', { name: 'Hero damage' }));
+    fireEvent.click(scoreboardSortControls.getByRole('button', { name: 'Hero DMG' }));
     expect(scoreboardOrder(radiantRoster)).toEqual(['Scoreboard entry for Radiant low', 'Scoreboard entry for Radiant high']);
     expect(scoreboardOrder(direRoster)).toEqual(['Scoreboard entry for Dire high', 'Scoreboard entry for Dire low']);
 
@@ -855,7 +932,7 @@ describe('MatchDetailView', () => {
     expect(radiantHighRow.querySelectorAll('td')[7]?.querySelector('.scoreboard-table__record')).toHaveTextContent('900');
     expect(direHighRow.querySelectorAll('td')[6]?.querySelector('.scoreboard-table__record')).toHaveTextContent('1.2K');
 
-    fireEvent.click(within(screen.getByRole('group', { name: 'Sort ten-player breakdown' })).getByRole('button', { name: 'Hero damage' }));
+    fireEvent.click(within(screen.getByRole('group', { name: 'Sort ten-player breakdown' })).getByRole('button', { name: 'Hero DMG' }));
     expect(tableRows(table)).toEqual([
       'Scoreboard row for Radiant low',
       'Scoreboard row for Radiant high',
