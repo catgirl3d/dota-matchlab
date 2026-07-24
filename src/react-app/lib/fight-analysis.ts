@@ -14,11 +14,12 @@ export type PlayerFightParticipation = {
   adjustedAbsence: number;
 };
 
-type FightCluster = {
+export type FightCluster = {
   startTime: number;
   endTime: number;
   weight: number;
-  participantKeys: Set<string>;
+  participantKeys: ReadonlySet<string>;
+  kills: readonly MatchTimelineEvent[];
 };
 
 export function analyzePlayerFightParticipation(
@@ -30,7 +31,7 @@ export function analyzePlayerFightParticipation(
   if (!player) return null;
 
   const participantKeys = buildParticipantKeyResolver(players);
-  const fights = buildFightClusters(players, events, participantKeys);
+  const fights = buildFightClusters(players, events);
   let eligibleWeight = 0;
   let missedWeight = 0;
   let adjustedMissedWeight = 0;
@@ -69,11 +70,11 @@ export function analyzePlayerFightParticipation(
   };
 }
 
-function buildFightClusters(
+export function buildFightClusters(
   players: readonly MatchDetailPlayer[],
   events: readonly MatchTimelineEvent[],
-  participantKey: (participant: MatchTimelineParticipant | null) => string | null,
 ): FightCluster[] {
+  const participantKey = buildParticipantKeyResolver(players);
   const kills = events.filter((event) => event.type === 'kill').sort((left, right) => left.time - right.time || left.key.localeCompare(right.key));
   const groupedKills: MatchTimelineEvent[][] = [];
 
@@ -115,6 +116,7 @@ function buildFightClusters(
       endTime: last.time,
       weight: cluster.length,
       participantKeys: participants,
+      kills: cluster,
     }];
   });
 }

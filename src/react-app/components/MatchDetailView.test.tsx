@@ -382,6 +382,53 @@ describe('MatchDetailView', () => {
     expect(within(killHistory).getByText('No kills for this hero.')).toBeVisible();
   });
 
+  it('groups only confirmed multi-hero fights in the kill breakdown', () => {
+    const killBreakdownDetail: MatchDetailSnapshot = {
+      ...detail,
+      availableSections: ['player_stats'],
+      players: [
+        createPlayer({ key: 'radiant-core', accountId: 1, heroId: 1, position: 1 }),
+        createPlayer({ key: 'radiant-support', accountId: 2, heroId: 2, playerSlot: 1, position: 5 }),
+        createPlayer({ key: 'dire-core', accountId: 3, heroId: 3, playerSlot: 128, isRadiant: false, position: 1 }),
+        createPlayer({ key: 'dire-support', accountId: 4, heroId: 4, playerSlot: 129, isRadiant: false, position: 5 }),
+      ],
+      timelineEvents: [
+        { key: 'fight-1', time: 100, type: 'kill', actor: { accountId: 1, heroId: 1, name: 'Radiant core', isRadiant: true }, target: { accountId: 3, heroId: 3, name: 'Dire core', isRadiant: false }, isRadiant: true, targetIsRadiant: false },
+        { key: 'fight-2', time: 108, type: 'kill', actor: { accountId: 4, heroId: 4, name: 'Dire support', isRadiant: false }, target: { accountId: 2, heroId: 2, name: 'Radiant support', isRadiant: true }, isRadiant: false, targetIsRadiant: true },
+        { key: 'pickoff', time: 180, type: 'kill', actor: { accountId: 1, heroId: 1, name: 'Radiant core', isRadiant: true }, target: { accountId: 3, heroId: 3, name: 'Dire core', isRadiant: false }, isRadiant: true, targetIsRadiant: false },
+      ],
+    };
+
+    render(<MatchDetailView detail={killBreakdownDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Lina' }} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
+
+    const panel = screen.getByRole('heading', { name: 'Kill breakdown' }).closest('section');
+    const fights = within(panel as HTMLElement).getAllByRole('article');
+
+    expect(fights).toHaveLength(1);
+    expect(fights[0]).toHaveAccessibleName('Fight from 1:40-1:48: 2 kills');
+    expect(fights[0]).toHaveTextContent('Radiant');
+    expect(fights[0]).toHaveTextContent('Dire');
+    expect(within(fights[0]).getByLabelText('Radiant 1, Dire 1')).toBeVisible();
+    expect(within(fights[0]).getByRole('listitem', { name: 'Radiant Anti-Mage killed Dire Bane, 1 time' })).toBeVisible();
+    expect(within(fights[0]).getByRole('listitem', { name: 'Dire Lina killed Radiant Axe, 1 time' })).toBeVisible();
+
+    const modes = within(panel as HTMLElement).getByRole('group', { name: 'Kill breakdown mode' });
+    expect(within(modes).getByRole('button', { name: 'Fights' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(modes).getByRole('button', { name: 'Full match' }));
+
+    const killers = within(panel as HTMLElement).getAllByRole('article');
+    expect(killers).toHaveLength(2);
+    expect(within(panel as HTMLElement).getByRole('region', { name: 'Radiant kills' })).toBeVisible();
+    expect(within(panel as HTMLElement).getByRole('region', { name: 'Dire kills' })).toBeVisible();
+    expect(killers[0]).toHaveAccessibleName('Radiant Anti-Mage killed 2 heroes');
+    expect(within(killers[0]).getByRole('listitem', { name: 'Dire Bane, killed 2 times' })).toBeVisible();
+    expect(killers[0]).toHaveTextContent('×2');
+
+    fireEvent.click(within(killers[0]).getByRole('button', { name: 'Filter by Bane' }));
+    expect(within(screen.getByRole('region', { name: 'Kill history' })).getByRole('button', { name: 'Hero: Bane' })).toBeVisible();
+    expect(killers[0]).toHaveClass('is-selected');
+  });
+
   it('synchronizes a scoreboard player selection across match detail analytics', () => {
     const globalFilterDetail = createGlobalPlayerFilterDetail();
     render(<MatchDetailView detail={globalFilterDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Lina' }} currentAccountId={1} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);

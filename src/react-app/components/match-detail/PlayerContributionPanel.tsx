@@ -116,7 +116,7 @@ function heroOptions(players: readonly MatchDetailPlayer[], heroNames: Record<nu
 
 function HeroSideSwitch({ value, onChange }: { value: HeroSideFilter; onChange: (value: HeroSideFilter) => void }) {
   return (
-    <div className="player-contribution__hero-side-switch" role="group" aria-label="Hero side">
+    <div className="detail-segmented-control player-contribution__hero-side-switch" role="group" aria-label="Hero side">
       <button type="button" className={value === 'all' ? 'is-active' : ''} aria-pressed={value === 'all'} onClick={() => onChange('all')}>All</button>
       <button type="button" className={value === 'radiant' ? 'is-active' : ''} aria-pressed={value === 'radiant'} onClick={() => onChange('radiant')}>Radiant</button>
       <button type="button" className={value === 'dire' ? 'is-active' : ''} aria-pressed={value === 'dire'} onClick={() => onChange('dire')}>Dire</button>

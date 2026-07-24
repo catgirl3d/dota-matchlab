@@ -500,6 +500,313 @@
     text-align: center;
   }
 
+  .detail-kill-breakdown {
+    overflow: hidden;
+  }
+
+  .kill-breakdown__header {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .kill-breakdown__header .detail-heading {
+    flex: 1;
+  }
+
+  .kill-breakdown__header > .detail-segmented-control {
+    align-self: center;
+    min-width: 168px;
+    margin-right: 12px;
+  }
+
+  .kill-breakdown__list {
+    display: grid;
+    margin: 0;
+    padding: 12px;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    list-style: none;
+  }
+
+  .kill-breakdown__fight,
+  .kill-breakdown__killer {
+    display: grid;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid rgba(224, 230, 208, 0.1);
+    background: rgba(7, 9, 7, 0.3);
+    gap: 8px;
+    transition: opacity 180ms ease, filter 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .kill-breakdown__fight.is-selected,
+  .kill-breakdown__killer.is-selected {
+    position: relative;
+    z-index: 1;
+    border-color: rgba(73, 199, 229, 0.44);
+    background: rgba(73, 199, 229, 0.06);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+    transform: translateY(-2px);
+  }
+
+  .kill-breakdown__fight.is-muted,
+  .kill-breakdown__killer.is-muted {
+    filter: saturate(0.45);
+    opacity: 0.38;
+  }
+
+  .kill-breakdown__fight-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .kill-breakdown__fight time,
+  .kill-breakdown__fight-score,
+  .kill-breakdown__pairs > li > strong,
+  .kill-breakdown__killer > header > span,
+  .kill-breakdown__killer ol > li > span {
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-nano);
+    letter-spacing: 0.06em;
+  }
+
+  .kill-breakdown__fight time,
+  .kill-breakdown__pairs > li > strong,
+  .kill-breakdown__killer > header > span,
+  .kill-breakdown__killer ol > li > span {
+    color: var(--muted);
+  }
+
+  .kill-breakdown__fight-score {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--paper);
+  }
+
+  .kill-breakdown__fight-score strong {
+    font-size: var(--detail-fs-small);
+  }
+
+  .kill-breakdown__pairs,
+  .kill-breakdown__killer ol,
+  .kill-breakdown__killer-group > ol {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    gap: 4px;
+    list-style: none;
+  }
+
+  .kill-breakdown__pairs > li {
+    display: grid;
+    min-width: 0;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(224, 230, 208, 0.08);
+    gap: 6px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  }
+
+  .kill-breakdown__pairs > li:last-child {
+    border-bottom: 0;
+  }
+
+  .kill-breakdown__arrow {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-small);
+  }
+
+  .kill-breakdown__player {
+    display: grid;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    grid-template-columns: 25px minmax(0, 1fr);
+  }
+
+  .kill-breakdown__player > span {
+    display: grid;
+    min-width: 0;
+    gap: 1px;
+  }
+
+  .kill-breakdown__player strong {
+    overflow: hidden;
+    color: var(--paper);
+    font-size: var(--detail-fs-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .kill-breakdown__team-label {
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-nano);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .kill-breakdown__team-label--radiant {
+    color: var(--radiant-strong);
+  }
+
+  .kill-breakdown__team-label--dire {
+    color: #ff5e82;
+  }
+
+  .kill-breakdown__player > button,
+  .kill-breakdown__killer button {
+    display: grid;
+  }
+
+  .kill-breakdown__player > button,
+  .kill-breakdown__killer button {
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: var(--ink-soft);
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .kill-breakdown__player > button:hover,
+  .kill-breakdown__killer button:hover {
+    border-color: var(--signal-blue);
+    box-shadow: 0 0 10px rgba(73, 199, 229, 0.22);
+  }
+
+  .kill-breakdown__player > button:focus-visible,
+  .kill-breakdown__killer button:focus-visible {
+    outline: 1px solid var(--paper);
+    outline-offset: 2px;
+  }
+
+  .kill-breakdown__full-match {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .kill-breakdown__killer-group {
+    display: grid;
+    padding: 12px;
+    gap: 7px;
+  }
+
+  .kill-breakdown__killer-group--radiant {
+    border-right: 1px solid var(--line);
+  }
+
+  .kill-breakdown__killer-group h4 {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-small);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .kill-breakdown__killer-group > ol {
+    gap: 5px;
+    grid-template-columns: 1fr;
+  }
+
+  .kill-breakdown__killer {
+    display: grid;
+    align-items: center;
+    border-left-width: 2px;
+    gap: 7px;
+    grid-template-columns: minmax(120px, 0.7fr) auto minmax(0, 2fr);
+  }
+
+  .kill-breakdown__killer-group--radiant .kill-breakdown__killer {
+    border-left-color: var(--radiant);
+  }
+
+  .kill-breakdown__killer-group--dire .kill-breakdown__killer {
+    border-left-color: var(--signal-red);
+  }
+
+  .kill-breakdown__killer-source {
+    display: grid;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    grid-template-columns: 25px minmax(0, 1fr);
+  }
+
+  .kill-breakdown__killer-source > span {
+    display: grid;
+    min-width: 0;
+    gap: 1px;
+  }
+
+  .kill-breakdown__killer-source strong {
+    overflow: hidden;
+    color: var(--paper);
+    font-size: var(--detail-fs-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .kill-breakdown__killer-source small {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-nano);
+    letter-spacing: 0.05em;
+  }
+
+  .kill-breakdown__victims {
+    display: flex !important;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px !important;
+  }
+
+  .kill-breakdown__killer .kill-breakdown__victims > li {
+    display: grid;
+    width: auto;
+    min-height: 27px;
+    align-items: center;
+    padding: 1px 5px 1px 1px;
+    border: 1px solid rgba(224, 230, 208, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    gap: 4px;
+    grid-template-columns: 25px auto;
+  }
+
+  .kill-breakdown__killer .kill-breakdown__victims > li > span {
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: var(--detail-fs-small);
+    letter-spacing: 0;
+  }
+
+  .kill-breakdown__hero,
+  .kill-breakdown__hero > span,
+  .kill-breakdown__hero .hero-mark__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .kill-breakdown__hero .hero-mark__image {
+    object-fit: cover;
+  }
+
+  .kill-breakdown__empty {
+    margin: 0;
+    padding: 24px 22px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    text-align: center;
+  }
+
   .detail-heading {
     min-height: 82px;
     padding: 18px 22px;

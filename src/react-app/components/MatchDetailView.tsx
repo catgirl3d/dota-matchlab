@@ -9,6 +9,7 @@ import { TeamBuildsPanel } from './match-detail/TeamBuildsPanel';
 import { useTranslation } from '../lib/i18n';
 import { AdvantagePanel } from './match-detail/AdvantagePanel';
 import { KillHistoryPanel } from './match-detail/KillHistoryPanel';
+import { KillBreakdownPanel } from './match-detail/KillBreakdownPanel';
 import { LaneAnalysisPanel } from './match-detail/LaneAnalysisPanel';
 import { PlayerContributionPanel } from './match-detail/PlayerContributionPanel';
 import { RoleBreakdownPanel } from './match-detail/RoleBreakdownPanel';
@@ -116,6 +117,15 @@ export function MatchDetailView({
           onPlayerSelect={selectPlayer}
         />
       </div>
+
+      <KillBreakdownPanel
+        players={detail.players}
+        events={detail.timelineEvents}
+        heroNames={heroNames}
+        isAvailable={hasPlayerStats}
+        selectedPlayerKey={selectedPlayerKey}
+        onPlayerSelect={selectPlayer}
+      />
 
       <LaneAnalysisPanel
         players={detail.players}

@@ -33,14 +33,14 @@
     min-height: 34px;
   }
 
-  .player-contribution__hero-side-switch {
+  .detail-segmented-control {
     display: grid;
-    margin-bottom: 5px;
     border: 1px solid var(--line);
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
   }
 
-  .player-contribution__hero-side-switch button {
+  .detail-segmented-control button {
     min-height: 22px;
     padding: 3px 2px;
     border: 0;
@@ -53,14 +53,18 @@
     text-transform: uppercase;
   }
 
-  .player-contribution__hero-side-switch button:last-child {
+  .detail-segmented-control button:last-child {
     border-right: 0;
   }
 
-  .player-contribution__hero-side-switch button:hover,
-  .player-contribution__hero-side-switch button.is-active {
+  .detail-segmented-control button:hover,
+  .detail-segmented-control button.is-active {
     background: rgba(var(--radiant-rgb), 0.1);
     color: var(--radiant-strong);
+  }
+
+  .player-contribution__hero-side-switch {
+    margin-bottom: 5px;
   }
 
   .player-contribution__player-select .filter-dropdown__menu {
