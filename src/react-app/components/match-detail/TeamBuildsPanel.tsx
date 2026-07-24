@@ -248,76 +248,74 @@ function PlayerBuild({
           <PlayerBuildPermanentUpgrades permanentUpgradeItemIds={player.permanentUpgradeItemIds} />
         </div>
       </PlayerBuildSection>
-      <div className="player-build__progression">
-        <BuildTimeline
-          label="ABILITIES"
-          emptyLabel="No ability events"
-          unavailableLabel="Ability progression unavailable."
-          available={player.hasAbilityBuildData}
-          events={abilityEvents}
-          extraHeaderControl={
-            <div className="build-timeline__filter-group" role="group" aria-label="Ability filter">
-              <button
-                type="button"
-                className={`build-timeline__filter-btn${abilityFilter === 'all' ? ' is-active' : ''}`}
-                onClick={() => setAbilityFilter('all')}
-              >
-                ALL
-              </button>
-              <button
-                type="button"
-                className={`build-timeline__filter-btn${abilityFilter === 'skills' ? ' is-active' : ''}`}
-                onClick={() => setAbilityFilter('skills')}
-              >
-                SKILLS
-              </button>
-              <button
-                type="button"
-                className={`build-timeline__filter-btn${abilityFilter === 'talents' ? ' is-active' : ''}`}
-                onClick={() => setAbilityFilter('talents')}
-              >
-                TALENTS
-              </button>
-            </div>
-          }
-        >
-          {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
-        </BuildTimeline>
-        <BuildTimeline
-          label="PURCHASES"
-          emptyLabel="No purchase events"
-          unavailableLabel="Purchase progression unavailable."
-          available={player.hasPurchaseEventsData}
-          events={purchaseEvents}
-          extraHeaderControl={
-            <div className="build-timeline__filter-group" role="group" aria-label="Purchase filter">
-              <button
-                type="button"
-                className={`build-timeline__filter-btn${purchaseFilter === 'all' ? ' is-active' : ''}`}
-                onClick={() => setPurchaseFilter('all')}
-              >
-                ALL
-              </button>
-              <button
-                type="button"
-                className={`build-timeline__filter-btn${purchaseFilter === 'core' ? ' is-active' : ''}`}
-                onClick={() => setPurchaseFilter('core')}
-              >
-                CORE
-              </button>
-              <button
-                type="button"
-                className={`build-timeline__filter-btn${purchaseFilter === 'consumables' ? ' is-active' : ''}`}
-                onClick={() => setPurchaseFilter('consumables')}
-              >
-                SUPPLIES
-              </button>
-            </div>
-          }
-        >
-          {(purchase, index) => <PurchaseToken purchase={purchase} key={`${purchase.time}-${purchase.itemId}-${index}`} />}
-        </BuildTimeline>
-      </div>
+      <BuildTimeline
+        label="ABILITIES"
+        emptyLabel="No ability events"
+        unavailableLabel="Ability progression unavailable."
+        available={player.hasAbilityBuildData}
+        events={abilityEvents}
+        extraHeaderControl={
+          <div className="build-timeline__filter-group" role="group" aria-label="Ability filter">
+            <button
+              type="button"
+              className={`build-timeline__filter-btn${abilityFilter === 'all' ? ' is-active' : ''}`}
+              onClick={() => setAbilityFilter('all')}
+            >
+              ALL
+            </button>
+            <button
+              type="button"
+              className={`build-timeline__filter-btn${abilityFilter === 'skills' ? ' is-active' : ''}`}
+              onClick={() => setAbilityFilter('skills')}
+            >
+              SKILLS
+            </button>
+            <button
+              type="button"
+              className={`build-timeline__filter-btn${abilityFilter === 'talents' ? ' is-active' : ''}`}
+              onClick={() => setAbilityFilter('talents')}
+            >
+              TALENTS
+            </button>
+          </div>
+        }
+      >
+        {(ability, index) => <AbilityToken ability={ability} key={`${ability.time}-${ability.abilityId}-${index}`} />}
+      </BuildTimeline>
+      <BuildTimeline
+        label="PURCHASES"
+        emptyLabel="No purchase events"
+        unavailableLabel="Purchase progression unavailable."
+        available={player.hasPurchaseEventsData}
+        events={purchaseEvents}
+        extraHeaderControl={
+          <div className="build-timeline__filter-group" role="group" aria-label="Purchase filter">
+            <button
+              type="button"
+              className={`build-timeline__filter-btn${purchaseFilter === 'all' ? ' is-active' : ''}`}
+              onClick={() => setPurchaseFilter('all')}
+            >
+              ALL
+            </button>
+            <button
+              type="button"
+              className={`build-timeline__filter-btn${purchaseFilter === 'core' ? ' is-active' : ''}`}
+              onClick={() => setPurchaseFilter('core')}
+            >
+              CORE
+            </button>
+            <button
+              type="button"
+              className={`build-timeline__filter-btn${purchaseFilter === 'consumables' ? ' is-active' : ''}`}
+              onClick={() => setPurchaseFilter('consumables')}
+            >
+              SUPPLIES
+            </button>
+          </div>
+        }
+      >
+        {(purchase, index) => <PurchaseToken purchase={purchase} key={`${purchase.time}-${purchase.itemId}-${index}`} />}
+      </BuildTimeline>
       <div className="player-build__footer">
         <div className={`player-build__metric${
           player.heroDamage > 0 && player.heroDamage === maxStats.first.heroDamage ? ' is-highest' :
