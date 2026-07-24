@@ -36,6 +36,52 @@ describe('API health routes', () => {
   });
 });
 
+describe('public match-detail route', () => {
+  it('returns the Worker-normalized detail without requiring a session', async () => {
+    const readPublicMatchDetail = vi.fn().mockResolvedValue({ matchId: 9_001, players: [] });
+    const app = createApp({ readPublicMatchDetail });
+
+    const response = await app.request('https://example.com/api/dota/matches/9001', undefined, testEnv);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=300, s-maxage=86400, stale-while-revalidate=300',
+    );
+    await expect(response.json()).resolves.toEqual({ matchId: 9_001, players: [] });
+    expect(readPublicMatchDetail).toHaveBeenCalledWith(testEnv, 9_001);
+  });
+
+  it('rejects malformed IDs before reading archived detail', async () => {
+    const readPublicMatchDetail = vi.fn();
+    const app = createApp({ readPublicMatchDetail });
+
+    const response = await app.request('https://example.com/api/dota/matches/not-a-number', undefined, testEnv);
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: 'Invalid match ID', code: 'INVALID_MATCH_ID' });
+    expect(readPublicMatchDetail).not.toHaveBeenCalled();
+  });
+
+  it('logs a database failure while keeping the public 500 response sanitized', async () => {
+    const databaseError = new Error('database connection refused');
+    const readPublicMatchDetail = vi.fn().mockRejectedValue(databaseError);
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const app = createApp({ readPublicMatchDetail });
+
+    const response = await app.request('https://example.com/api/dota/matches/9001', undefined, testEnv);
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get('Cache-Control')).toBeNull();
+    await expect(response.json()).resolves.toEqual({
+      error: 'Internal server error',
+      code: 'INTERNAL_SERVER_ERROR',
+    });
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('database connection refused'));
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('/api/dota/matches/9001'));
+    log.mockRestore();
+  });
+});
+
 describe('protected API routes', () => {
   it('rejects anonymous session access through the shared auth middleware', async () => {
     const app = createApp();

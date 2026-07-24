@@ -13,6 +13,7 @@ import {
   importPublicMatchDetail,
   syncTrackedMatchDetail,
 } from './services/match-detail-archive';
+import { readPublicMatchDetail } from './services/match-detail-read';
 import { StratzError } from './services/stratz';
 import {
   resolveSteamProfileInput,
@@ -24,6 +25,7 @@ type AppDependencies = {
   syncTrackedAccount: typeof syncTrackedAccount;
   syncTrackedMatchDetail: typeof syncTrackedMatchDetail;
   importPublicMatchDetail: typeof importPublicMatchDetail;
+  readPublicMatchDetail: typeof readPublicMatchDetail;
   resolveDotaPlayer: typeof resolveDotaPlayer;
   resolveSteamProfileInput: typeof resolveSteamProfileInput;
   getAuth: typeof getAuth;
@@ -40,10 +42,13 @@ const ResolvePlayerBodySchema = v.object({
   steamProfile: v.pipe(v.string(), v.minLength(1)),
 });
 
+const PUBLIC_MATCH_DETAIL_CACHE_CONTROL = 'public, max-age=300, s-maxage=86400, stale-while-revalidate=300';
+
 const defaultDependencies: AppDependencies = {
   syncTrackedAccount,
   syncTrackedMatchDetail,
   importPublicMatchDetail,
+  readPublicMatchDetail,
   resolveDotaPlayer,
   resolveSteamProfileInput,
   getAuth,
@@ -73,6 +78,16 @@ export function createApp(overrides: Partial<AppDependencies> = {}) {
   );
 
   app.use('/api/dota/*', clerkMiddleware());
+  app.get('/api/dota/matches/:matchId', async (context) => {
+    const matchId = parseMatchId(context.req.param('matchId'));
+    if (matchId === null) {
+      return context.json({ error: 'Invalid match ID', code: 'INVALID_MATCH_ID' }, 400);
+    }
+    const response = context.json(await dependencies.readPublicMatchDetail(context.env, matchId));
+    response.headers.set('Cache-Control', PUBLIC_MATCH_DETAIL_CACHE_CONTROL);
+    return response;
+  });
+
   app.post('/api/dota/players/resolve', requireAuth, async (context) => {
     const contentLength = Number(context.req.header('content-length') ?? 0);
     if (contentLength > 2_048) {

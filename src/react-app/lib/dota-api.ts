@@ -1,5 +1,6 @@
 import type { DotaPlayerProfile } from '../../shared/dota';
 import type { MatchDetailSyncResult, MatchImportResult, MatchSyncResult } from '../../shared/match-archive';
+import type { MatchDetailSnapshot } from '../../shared/match-detail';
 
 type ApiErrorPayload = {
   error?: unknown;
@@ -71,6 +72,16 @@ export async function importMatch(
 ): Promise<MatchImportResult> {
   return requestJson<MatchImportResult>(
     `/api/dota/matches/${matchId}/import`, { method: 'POST' }, token,
+  );
+}
+
+export async function fetchPublicMatchDetail(
+  matchId: number,
+  forceRefresh = false,
+): Promise<MatchDetailSnapshot | null> {
+  return requestJson<MatchDetailSnapshot | null>(
+    `/api/dota/matches/${matchId}`,
+    forceRefresh ? { cache: 'reload' } : {},
   );
 }
 

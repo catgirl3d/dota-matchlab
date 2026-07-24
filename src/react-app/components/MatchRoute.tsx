@@ -1,13 +1,13 @@
 import { SignInButton, useAuth, useSession } from '@clerk/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate, useOutletContext, Outlet, useParams } from 'react-router';
-import type { ComponentProps } from 'react';
+import { useRef, type ComponentProps } from 'react';
 import type { Tables } from '../../shared/database.types';
 import { DOTA_HERO_NAMES } from '../../shared/hero-names';
 import { importMatch, syncTrackedMatchDetail } from '../lib/dota-api';
 import { parseMatchId } from '../lib/match-id';
 import { fetchMatchDetail } from '../lib/match-detail';
-import { createPublicSupabaseClient, createUserSupabaseClient } from '../lib/supabase';
+import { createUserSupabaseClient } from '../lib/supabase';
 import { archiveQueryKeys } from '../lib/archive-query-keys';
 import { MatchDetailView } from './MatchDetailView';
 import { useTranslation } from '../lib/i18n';
@@ -67,9 +67,14 @@ function ClerkMatchRouteData({ matchId }: { matchId: number }) {
 
 function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteDataProps) {
   const queryClient = useQueryClient();
+  const matchDetailRefreshIdRef = useRef<number | null>(null);
   const [searchParams] = useSearchParams();
   const playerId = parseMatchId(searchParams.get('player'));
   const isSignedIn = Boolean(userId && getToken);
+  const refreshMatchDetail = (detailMatchId: number) => {
+    matchDetailRefreshIdRef.current = detailMatchId;
+    void queryClient.invalidateQueries({ queryKey: ['match-detail', detailMatchId] });
+  };
 
   const perspectiveAccountQuery = useQuery({
     queryKey: ['match-route-player-perspective', userId, playerId],
@@ -93,7 +98,16 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
   const matchDetailQuery = useQuery({
     queryKey: ['match-detail', matchId],
     staleTime: 300_000,
-    queryFn: () => fetchMatchDetail(createPublicSupabaseClient(), matchId),
+    queryFn: async () => {
+      const forceRefresh = matchDetailRefreshIdRef.current === matchId;
+      const detail = forceRefresh
+        ? await fetchMatchDetail(matchId, true)
+        : await fetchMatchDetail(matchId);
+      if (forceRefresh && matchDetailRefreshIdRef.current === matchId) {
+        matchDetailRefreshIdRef.current = null;
+      }
+      return detail;
+    },
   });
   const linkedAccountQuery = useQuery({
     queryKey: ['match-linked-account', userId, matchId],
@@ -119,7 +133,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
       return syncTrackedMatchDetail(token, trackedAccountId, detailMatchId);
     },
     onSuccess: (_result, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ['match-detail', variables.detailMatchId] });
+      refreshMatchDetail(variables.detailMatchId);
       void queryClient.invalidateQueries({ queryKey: archiveQueryKeys.root(variables.trackedAccountId) });
     },
   });
@@ -131,7 +145,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
       return importMatch(token, detailMatchId);
     },
     onSuccess: (_result, detailMatchId) => {
-      void queryClient.invalidateQueries({ queryKey: ['match-detail', detailMatchId] });
+      refreshMatchDetail(detailMatchId);
       if (perspectiveAccount) {
         void queryClient.invalidateQueries({ queryKey: archiveQueryKeys.root(perspectiveAccount.id) });
       }
@@ -163,7 +177,7 @@ function MatchRouteData({ matchId, userId, getToken, canSignIn }: MatchRouteData
     parseDisabledReason: isSignedIn ? null : t('parseDisabledReason'),
     backLabel: isSignedIn ? t('backToArchive') : playerId === null ? t('backToHome') : t('backToPublicArchive'),
     onBack: () => undefined,
-    onRefresh: () => void matchDetailQuery.refetch(),
+    onRefresh: () => refreshMatchDetail(matchId),
     onParse: () => {
       if (!isSignedIn) {
         return;

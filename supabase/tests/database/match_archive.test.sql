@@ -38,8 +38,8 @@ select ok(
   'authenticated can read archived matches'
 );
 select ok(
-  has_table_privilege('authenticated', 'public.match_provider_payloads', 'select'),
-  'authenticated can read provider payloads'
+  not has_table_privilege('authenticated', 'public.match_provider_payloads', 'select'),
+  'authenticated cannot read raw provider payloads'
 );
 select ok(
   not has_table_privilege('authenticated', 'public.dota_matches', 'insert'),
@@ -121,9 +121,9 @@ select is(
   'a user can read sync state for their tracked account'
 );
 select is(
-  (select count(*) from public.match_provider_payloads),
-  2::bigint,
-  'authenticated users can read shared provider payloads'
+  has_table_privilege('anon', 'public.match_provider_payloads', 'select'),
+  false,
+  'anonymous users cannot read raw provider payloads'
 );
 
 reset role;
@@ -151,9 +151,9 @@ select is(
   'another user cannot read sync state'
 );
 select is(
-  (select count(*) from public.match_provider_payloads),
-  2::bigint,
-  'shared provider payloads do not depend on archive ownership'
+  has_table_privilege('authenticated', 'public.match_provider_payloads', 'select'),
+  false,
+  'raw provider payloads remain unavailable regardless of archive ownership'
 );
 
 reset role;

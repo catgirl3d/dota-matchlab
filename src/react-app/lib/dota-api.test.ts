@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DotaApiError,
+  fetchPublicMatchDetail,
   importMatch,
   resolveSteamProfile,
   syncAllTrackedAccount,
@@ -173,5 +174,33 @@ describe('Dota API client', () => {
     vi.stubGlobal('fetch', fetcher);
     await importMatch('clerk-token', 8_749_050_591);
     expect(fetcher).toHaveBeenCalledWith('/api/dota/matches/8749050591/import', expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer clerk-token' }) }));
+  });
+
+  it('loads the normalized public match detail through the Worker', async () => {
+    const detail = { matchId: 8_749_050_591, players: [], availableSections: [] };
+    const fetcher = vi.fn().mockResolvedValue(Response.json(detail));
+    vi.stubGlobal('fetch', fetcher);
+
+    await expect(fetchPublicMatchDetail(8_749_050_591)).resolves.toEqual(detail);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/dota/matches/8749050591',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Accept: 'application/json' }),
+      }),
+    );
+  });
+
+  it('reloads a match detail after a write invalidates it', async () => {
+    const detail = { matchId: 8_749_050_591, players: [], availableSections: [] };
+    const fetcher = vi.fn().mockResolvedValue(Response.json(detail));
+    vi.stubGlobal('fetch', fetcher);
+
+    await expect(fetchPublicMatchDetail(8_749_050_591, true)).resolves.toEqual(detail);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/dota/matches/8749050591',
+      expect.objectContaining({ cache: 'reload' }),
+    );
   });
 });

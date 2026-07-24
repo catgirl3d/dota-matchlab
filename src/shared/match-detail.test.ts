@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Json } from '../../shared/database.types';
+import type { Json } from './database.types';
 import { buildMatchDetailSnapshot } from './match-detail';
 
 describe('match detail read model', () => {

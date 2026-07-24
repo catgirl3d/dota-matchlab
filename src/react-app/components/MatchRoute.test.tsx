@@ -30,7 +30,6 @@ vi.mock('../lib/dota-api', () => ({
   syncTrackedMatchDetail: mocks.syncTrackedMatchDetail,
 }));
 vi.mock('../lib/supabase', () => ({
-  createPublicSupabaseClient: () => ({ scope: 'public' }),
   createUserSupabaseClient: () => ({
     from: (table: string) => {
       if (table === 'tracked_accounts') {
@@ -97,7 +96,7 @@ describe('match router', () => {
   it('loads a direct detail route without importing until the explicit action', async () => {
     renderRoute();
     const importButton = await screen.findByRole('button', { name: 'Load match from STRATZ' });
-    expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_591);
+    expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(8_749_050_591);
     expect(mocks.importMatch).not.toHaveBeenCalled();
     expect(mocks.readPerspectiveAccount).not.toHaveBeenCalled();
     fireEvent.click(importButton);
@@ -111,7 +110,20 @@ describe('match router', () => {
     await waitFor(() => expect(mocks.readLinkedAccount).toHaveBeenCalledOnce());
     fireEvent.click(await screen.findByRole('button', { name: 'Parse detail' }));
     await waitFor(() => expect(mocks.syncTrackedMatchDetail).toHaveBeenCalledWith('clerk-token', 'tracked-1', 8_749_050_591));
+    await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(8_749_050_591, true));
     expect(mocks.importMatch).not.toHaveBeenCalled();
+  });
+
+  it('bypasses the HTTP cache after importing a previously missing match', async () => {
+    mocks.fetchMatchDetail
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ players: [] });
+    renderRoute();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Load match from STRATZ' }));
+
+    await waitFor(() => expect(mocks.importMatch).toHaveBeenCalledWith('clerk-token', 8_749_050_591));
+    await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(8_749_050_591, true));
   });
 
   it('does not leak a public import result when navigating to another match', async () => {
@@ -120,7 +132,7 @@ describe('match router', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Load match from STRATZ' }));
     expect(await screen.findByText('Match is unavailable on STRATZ.')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
-    await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_592));
+    await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(8_749_050_592));
     expect(await screen.findByText('Match has not been loaded yet.')).toBeVisible();
     expect(screen.queryByText('Match is unavailable on STRATZ.')).not.toBeInTheDocument();
   });
@@ -133,7 +145,7 @@ describe('match router', () => {
     expect(await screen.findByText('import failed')).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next match' }));
-    await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(expect.anything(), 8_749_050_592));
+    await waitFor(() => expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(8_749_050_592));
     expect(screen.queryByText('import failed')).not.toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Load match from STRATZ' })).toBeEnabled();
   });
@@ -226,7 +238,7 @@ describe('match router', () => {
 
     expect(await screen.findByRole('button', { name: 'Back to home' })).toBeVisible();
     expect(screen.getByText('Sign in to load missing data.')).toBeVisible();
-    expect(mocks.fetchMatchDetail).toHaveBeenCalledWith({ scope: 'public' }, 8_749_050_591);
+    expect(mocks.fetchMatchDetail).toHaveBeenCalledWith(8_749_050_591);
     expect(mocks.readPerspectiveAccount).not.toHaveBeenCalled();
     expect(mocks.readLinkedAccount).not.toHaveBeenCalled();
     expect(mocks.importMatch).not.toHaveBeenCalled();

@@ -119,9 +119,9 @@ select is(
   'anonymous users can read public match stats'
 );
 select is(
-  (select count(*) from public.match_provider_payloads where match_id = 8749050700),
-  1::bigint,
-  'anonymous users can read public match detail payloads'
+  has_table_privilege('anon', 'public.match_provider_payloads', 'select'),
+  false,
+  'anonymous users cannot read raw match detail payloads'
 );
 reset role;
 
