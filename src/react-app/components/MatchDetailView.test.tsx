@@ -91,6 +91,9 @@ describe('MatchDetailView', () => {
     const scoreline = document.querySelector<HTMLElement>('.match-detail__scoreline');
     const radiantOutcome = within(scoreline as HTMLElement).getByText('Radiant').closest<HTMLElement>('.team-outcome');
     const direOutcome = within(scoreline as HTMLElement).getByText('Dire').closest<HTMLElement>('.team-outcome');
+    expect(radiantOutcome).toHaveClass('is-winner');
+    expect(within(radiantOutcome as HTMLElement).getByText('WINNER')).toBeVisible();
+    expect(within(direOutcome as HTMLElement).queryByText('WINNER')).not.toBeInTheDocument();
     const radiantKills = killStrip.querySelector<HTMLElement>('.match-detail__kill-strip-track-value--radiant');
     fireEvent.pointerEnter(radiantKills as HTMLElement);
     expect(radiantOutcome).toHaveClass('is-focused');

@@ -177,6 +177,7 @@ function TeamOutcome({
       <div>
         <span className="micro-label">{outcome}</span>
         <strong>{label}</strong>
+        {won ? <span className="team-outcome__winner-mark">WINNER</span> : null}
       </div>
       <span className="team-outcome__score">{score}</span>
     </div>
