@@ -37,7 +37,7 @@
     align-items: center;
     justify-content: space-between;
     min-height: 64px;
-    padding: 12px 18px;
+    padding: 12px 14px;
     margin-bottom: 16px;
     border: 1px solid var(--line);
     backdrop-filter: blur(8px);
