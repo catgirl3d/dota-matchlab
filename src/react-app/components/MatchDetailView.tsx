@@ -101,6 +101,22 @@ export function MatchDetailView({
         onPlayerSelect={selectPlayer}
       />
 
+      {contributionPlayer ? (
+        <PlayerContributionPanel
+          player={contributionPlayer}
+          players={detail.players}
+          heroNames={heroNames}
+          hasDetailedEvents={hasPlayerStats}
+          events={detail.timelineEvents}
+          durationSeconds={detail.durationSeconds}
+          onPlayerSelect={selectPlayer}
+        />
+      ) : null}
+
+      {hasPlayerStats && analysisPlayer ? (
+          <FocusedPlayerAnalysis player={analysisPlayer} heroNames={heroNames} durationSeconds={detail.durationSeconds} />
+      ) : null}
+
       <div className="detail-panel-grid detail-panel-grid--timeline">
         <AdvantagePanel
           networth={detail.radiantNetworthLeads}
@@ -118,15 +134,6 @@ export function MatchDetailView({
         />
       </div>
 
-      <KillBreakdownPanel
-        players={detail.players}
-        events={detail.timelineEvents}
-        heroNames={heroNames}
-        isAvailable={hasPlayerStats}
-        selectedPlayerKey={selectedPlayerKey}
-        onPlayerSelect={selectPlayer}
-      />
-
       <LaneAnalysisPanel
         players={detail.players}
         heroNames={heroNames}
@@ -141,21 +148,14 @@ export function MatchDetailView({
         selectedPlayerKey={selectedPlayerKey}
       />
 
-      {contributionPlayer ? (
-        <PlayerContributionPanel
-          player={contributionPlayer}
-          players={detail.players}
-          heroNames={heroNames}
-          hasDetailedEvents={hasPlayerStats}
-          events={detail.timelineEvents}
-          durationSeconds={detail.durationSeconds}
-          onPlayerSelect={selectPlayer}
-        />
-      ) : null}
-
-      {hasPlayerStats && analysisPlayer ? (
-          <FocusedPlayerAnalysis player={analysisPlayer} heroNames={heroNames} durationSeconds={detail.durationSeconds} />
-      ) : null}
+      <KillBreakdownPanel
+        players={detail.players}
+        events={detail.timelineEvents}
+        heroNames={heroNames}
+        isAvailable={hasPlayerStats}
+        selectedPlayerKey={selectedPlayerKey}
+        onPlayerSelect={selectPlayer}
+      />
 
       {detail.chatMessages.length > 0 ? (
         <MatchChatPanel messages={detail.chatMessages} heroNames={heroNames} />

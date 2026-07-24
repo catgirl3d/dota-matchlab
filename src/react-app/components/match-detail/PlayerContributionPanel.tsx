@@ -2,11 +2,9 @@ import { useState } from 'react';
 import type { MatchDetailPlayer, MatchTimelineEvent } from '../../lib/match-detail';
 import { calculatePlayerResponsibility, calculateTeamOutputShare, OBJECTIVE_EXPOSURE_WINDOW_SECONDS, type ContributionDimensionId, type LiabilityDimensionId, type PlayerResponsibilityResult, type TeamOutputComponentId, type TeamOutputShareResult } from '../../lib/player-contribution';
 import { FilterDropdown } from '../FilterDropdown';
-import { getPositionLabel } from '../../lib/position-icons';
-import { HeroMark } from '../HeroMark';
 import { Tooltip } from '../Tooltip';
-import { heroLabel, heroMark } from './match-detail-display';
-import { DetailHeading } from './match-detail-primitives';
+import { heroLabel } from './match-detail-display';
+import { DetailPlayerIdentity } from './DetailPlayerIdentity';
 
 type PlayerContributionPanelProps = {
   player: MatchDetailPlayer;
@@ -50,17 +48,12 @@ export function PlayerContributionPanel({ player, players, heroNames, hasDetaile
   const teamOutput = calculateTeamOutputShare(players, player.key);
   const isTeamOutput = viewMode === 'team-output';
   const hero = heroLabel(player.heroId, heroNames);
-  const playerLabel = player.name ?? (player.accountId === null ? 'Unknown player' : `Player #${player.accountId}`);
 
   return (
     <section className="detail-panel player-contribution" aria-labelledby="player-contribution-title">
       <header className="player-contribution__header">
         <div className="player-contribution__identity">
-          <HeroMark heroId={player.heroId} label={hero} fallback={heroMark(player.heroId, heroNames)} className="player-contribution__hero" />
-          <div>
-            <DetailHeading eyebrow={isTeamOutput ? 'PLAYER FILTER / OWN TEAM' : 'PLAYER FILTER / ROLE-ADJUSTED'} title={isTeamOutput ? `${hero} team output share` : `${hero} contribution index`} id="player-contribution-title" />
-            <span>{playerLabel} · {roleLabel(player)}</span>
-          </div>
+          <DetailPlayerIdentity player={player} heroNames={heroNames} eyebrow={isTeamOutput ? 'PLAYER FILTER / OWN TEAM' : 'PLAYER FILTER / ROLE-ADJUSTED'} title={isTeamOutput ? `${hero} team output share` : `${hero} contribution index`} headingId="player-contribution-title" />
           <div className="player-contribution__player-select">
             <HeroSideSwitch value={heroSideFilter} onChange={setHeroSideFilter} />
             <FilterDropdown label="Hero" value={player.key} selectedLabel={hero} options={heroOptions(players, heroNames, heroSideFilter)} searchable onChange={onPlayerSelect} />
@@ -224,10 +217,6 @@ function MetricLabel({ label, help }: { label: string; help: string }) {
       <Tooltip content={help} ariaLabel={`Explain ${label}`} className="player-contribution__metric-help"><span aria-hidden="true">?</span></Tooltip>
     </span>
   );
-}
-
-function roleLabel(player: MatchDetailPlayer): string {
-  return player.position === null ? 'Unknown role' : getPositionLabel(player.position);
 }
 
 function scoreTone(score: number): 'positive' | 'neutral' | 'negative' {

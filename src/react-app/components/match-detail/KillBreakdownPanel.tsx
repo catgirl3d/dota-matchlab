@@ -30,7 +30,7 @@ export function KillBreakdownPanel({
   selectedPlayerKey,
   onPlayerSelect,
 }: KillBreakdownPanelProps) {
-  const [mode, setMode] = useState<KillBreakdownMode>('fights');
+  const [mode, setMode] = useState<KillBreakdownMode>('full-match');
   const fights = buildKillBreakdown(players, events, selectedPlayerKey);
   const killers = buildKillKillerBreakdown(players, events, selectedPlayerKey);
   const isFightsMode = mode === 'fights';
@@ -40,11 +40,11 @@ export function KillBreakdownPanel({
       <div className="kill-breakdown__header">
         <DetailHeading eyebrow={isFightsMode ? 'KILLS / CONFIRMED FIGHTS' : 'KILLS / FULL MATCH'} title="Kill breakdown" id="kill-breakdown-title" />
         <div className="detail-segmented-control" role="group" aria-label="Kill breakdown mode">
-          <KillBreakdownModeButton mode="fights" selectedMode={mode} onSelect={setMode}>Fights</KillBreakdownModeButton>
           <KillBreakdownModeButton mode="full-match" selectedMode={mode} onSelect={setMode}>Full match</KillBreakdownModeButton>
+          <KillBreakdownModeButton mode="fights" selectedMode={mode} onSelect={setMode}>Fights</KillBreakdownModeButton>
         </div>
       </div>
-      {!isAvailable ? <p className="kill-breakdown__empty">Kill data is unavailable.</p> : isFightsMode && fights.length === 0 ? <p className="kill-breakdown__empty">No confirmed multi-hero fights.</p> : !isFightsMode && killers.length === 0 ? <p className="kill-breakdown__empty">No recorded hero kills.</p> : isFightsMode ? (
+      {!isAvailable ? <p className="kill-breakdown__empty">Kill data is unavailable.</p> : !isFightsMode && killers.length === 0 ? <p className="kill-breakdown__empty">No recorded hero kills.</p> : isFightsMode && fights.length === 0 ? <p className="kill-breakdown__empty">No confirmed multi-hero fights.</p> : isFightsMode ? (
         <ol className="kill-breakdown__list">
           {fights.map((fight) => <KillBreakdownFightCard
             fight={fight}

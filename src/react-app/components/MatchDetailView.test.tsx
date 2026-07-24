@@ -405,19 +405,8 @@ describe('MatchDetailView', () => {
     render(<MatchDetailView detail={killBreakdownDetail} heroNames={{ 1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Lina' }} currentAccountId={null} isLoading={false} error={null} parseError={null} isParsing={false} onBack={vi.fn()} onRefresh={vi.fn()} onParse={vi.fn()} />);
 
     const panel = screen.getByRole('heading', { name: 'Kill breakdown' }).closest('section');
-    const fights = within(panel as HTMLElement).getAllByRole('article');
-
-    expect(fights).toHaveLength(1);
-    expect(fights[0]).toHaveAccessibleName('Fight from 1:40-1:48: 2 kills');
-    expect(fights[0]).toHaveTextContent('Radiant');
-    expect(fights[0]).toHaveTextContent('Dire');
-    expect(within(fights[0]).getByLabelText('Radiant 1, Dire 1')).toBeVisible();
-    expect(within(fights[0]).getByRole('listitem', { name: 'Radiant Anti-Mage killed Dire Bane, 1 time' })).toBeVisible();
-    expect(within(fights[0]).getByRole('listitem', { name: 'Dire Lina killed Radiant Axe, 1 time' })).toBeVisible();
-
     const modes = within(panel as HTMLElement).getByRole('group', { name: 'Kill breakdown mode' });
-    expect(within(modes).getByRole('button', { name: 'Fights' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(within(modes).getByRole('button', { name: 'Full match' }));
+    expect(within(modes).getByRole('button', { name: 'Full match' })).toHaveAttribute('aria-pressed', 'true');
 
     const killers = within(panel as HTMLElement).getAllByRole('article');
     expect(killers).toHaveLength(2);
@@ -427,9 +416,22 @@ describe('MatchDetailView', () => {
     expect(within(killers[0]).getByRole('listitem', { name: 'Dire Bane, killed 2 times' })).toBeVisible();
     expect(killers[0]).toHaveTextContent('×2');
 
-    fireEvent.click(within(killers[0]).getByRole('button', { name: 'Filter by Bane' }));
+    fireEvent.click(within(modes).getByRole('button', { name: 'Fights' }));
+    const fights = within(panel as HTMLElement).getAllByRole('article');
+    expect(fights).toHaveLength(1);
+    expect(fights[0]).toHaveAccessibleName('Fight from 1:40-1:48: 2 kills');
+    expect(fights[0]).toHaveTextContent('Radiant');
+    expect(fights[0]).toHaveTextContent('Dire');
+    expect(within(fights[0]).getByLabelText('Radiant 1, Dire 1')).toBeVisible();
+    expect(within(fights[0]).getByRole('listitem', { name: 'Radiant Anti-Mage killed Dire Bane, 1 time' })).toBeVisible();
+    expect(within(fights[0]).getByRole('listitem', { name: 'Dire Lina killed Radiant Axe, 1 time' })).toBeVisible();
+
+    fireEvent.click(within(modes).getByRole('button', { name: 'Full match' }));
+    const restoredKillers = within(panel as HTMLElement).getAllByRole('article');
+
+    fireEvent.click(within(restoredKillers[0]).getByRole('button', { name: 'Filter by Bane' }));
     expect(within(screen.getByRole('region', { name: 'Kill history' })).getByRole('button', { name: 'Hero: Bane' })).toBeVisible();
-    expect(killers[0]).toHaveClass('is-selected');
+    expect(restoredKillers[0]).toHaveClass('is-selected');
   });
 
   it('synchronizes a scoreboard player selection across match detail analytics', () => {
@@ -448,9 +450,14 @@ describe('MatchDetailView', () => {
     expect(within(killHistory).getAllByRole('listitem')).toHaveLength(1);
     expect(within(killHistory).getByRole('listitem')).toHaveAccessibleName('Selected killed Dire support at 2:00');
 
-    expect(screen.getByRole('heading', { name: 'Axe performance tape' })).toBeVisible();
+    const performancePanel = screen.getByRole('heading', { name: 'Axe performance tape' }).closest('section');
+    expect(performancePanel).toBeVisible();
     const contributionPanel = screen.getByRole('heading', { name: 'Axe contribution index' }).closest('section');
     expect(contributionPanel).toBeVisible();
+    expect(contributionPanel?.querySelector('.detail-player-identity')).toBeInTheDocument();
+    expect(performancePanel?.querySelector('.detail-player-identity')).toBeInTheDocument();
+    expect(contributionPanel?.querySelector('.detail-player-portrait')).toBeInTheDocument();
+    expect(performancePanel?.querySelector('.detail-player-portrait')).toBeInTheDocument();
     expect(within(contributionPanel as HTMLElement).getByLabelText(/Contribution index \d+ out of 100/)).toBeVisible();
     expect(within(contributionPanel as HTMLElement).getByLabelText(/Liability index \d+ out of 100/)).toBeVisible();
     expect(within(contributionPanel as HTMLElement).getByLabelText(/Responsibility balance/)).toBeVisible();
@@ -607,7 +614,7 @@ describe('MatchDetailView', () => {
     const performancePanel = screen.getByRole('heading', { name: 'Sniper performance tape' }).closest('section');
     expect(performancePanel).toBeVisible();
     expect(performancePanel).toHaveClass('full-analysis--radiant');
-    expect(within(performancePanel as HTMLElement).getByText('Player #111')).toBeVisible();
+    expect(within(performancePanel as HTMLElement).getByText('Player #111 · Carry')).toBeVisible();
     expect(within(performancePanel as HTMLElement).getByText('RADIANT / TELEMETRY')).toBeVisible();
     expect(screen.getByRole('group', { name: 'Gold per-minute chart' })).toBeVisible();
     expect(within(performancePanel as HTMLElement).getByText('+19')).toBeVisible();
