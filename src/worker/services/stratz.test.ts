@@ -101,6 +101,7 @@ describe('STRATZ match provider', () => {
                 players: [
                   {
                     steamAccountId: 93_447_624,
+                    steamAccount: { name: 'History player' },
                     heroId: 1,
                     isRadiant: true,
                     playerSlot: 0,
@@ -172,6 +173,7 @@ describe('STRATZ match provider', () => {
             pickBans: [{ isPick: true, heroId: 1, order: 0 }],
             chatEvents: [{ time: 12, type: 1, fromHeroId: 1 }],
             towerDeaths: [{ time: 300, npcId: 123, isRadiant: false }],
+            players: [expect.objectContaining({ steamAccount: { name: 'History player' } })],
           }),
           rawPayloadSchemaVersion: 'stratz.match.history.v1',
         }),
@@ -195,6 +197,7 @@ describe('STRATZ match provider', () => {
     expect(requestBody.query).toContain('chatEvents');
     expect(requestBody.query).toContain('towerDeaths');
     expect(requestBody.query).toContain('winRates');
+    expect(requestBody.query).toContain('steamAccount { name }');
   });
 
   it('maps GraphQL errors and upstream limits to provider errors', async () => {

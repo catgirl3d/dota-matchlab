@@ -41,6 +41,7 @@ describe('match detail read model', () => {
             players: [
               {
                 steamAccountId: 111,
+                steamAccount: { name: 'Radiant player' },
                 playerSlot: 0,
                 isRadiant: true,
                 heroId: 1,
@@ -59,6 +60,7 @@ describe('match detail read model', () => {
               },
               {
                 steamAccountId: 222,
+                steamAccount: { name: 'Dire player' },
                 playerSlot: 128,
                 isRadiant: false,
                 heroId: 2,
@@ -83,6 +85,7 @@ describe('match detail read model', () => {
       players: [
         expect.objectContaining({
           accountId: 111,
+          name: 'Radiant player',
           isRadiant: true,
           heroId: 1,
           goldPerMinute: 700,
@@ -91,7 +94,7 @@ describe('match detail read model', () => {
           lane: 1,
           position: 1,
         }),
-        expect.objectContaining({ accountId: 222, isRadiant: false, heroId: 2 }),
+        expect.objectContaining({ accountId: 222, name: 'Dire player', isRadiant: false, heroId: 2 }),
       ],
     });
     expect(snapshot.pickBans).toEqual([

@@ -171,6 +171,7 @@ const PLAYER_MATCHES_QUERY = `
         players {
           matchId
           steamAccountId
+          steamAccount { name }
           heroId
           isRadiant
           isVictory
