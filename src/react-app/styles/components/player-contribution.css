@@ -292,6 +292,11 @@
     color: var(--radiant-strong);
   }
 
+  .player-contribution__liability-card > header em.is-medium {
+    border-color: rgba(229, 196, 75, 0.45);
+    color: #e5c44b;
+  }
+
   .player-contribution__liability-card > header em.is-high {
     border-color: rgba(255, 94, 130, 0.3);
     color: #ff5e82;
